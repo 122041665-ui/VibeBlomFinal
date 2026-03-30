@@ -1,0 +1,299 @@
+
+
+{% extends "base.html" %}
+
+{% block page_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/usuarios.css') }}">
+<style>
+    .user-edit-card {
+        width: 100%;
+        min-width: 0;
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 24px;
+        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.06);
+        padding: 24px;
+        box-sizing: border-box;
+        overflow: hidden;
+    }
+
+    .user-edit-grid {
+        display: grid;
+        gap: 18px;
+    }
+
+    .user-edit-meta {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 14px;
+    }
+
+    .user-edit-meta-item {
+        border: 1px solid #e2e8f0;
+        background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+        border-radius: 16px;
+        padding: 14px;
+        min-width: 0;
+    }
+
+    .user-edit-meta-label {
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: .04em;
+        text-transform: uppercase;
+        color: #64748b;
+        display: block;
+        margin-bottom: 6px;
+    }
+
+    .user-edit-meta-value {
+        font-size: 14px;
+        font-weight: 700;
+        color: #0f172a;
+        line-height: 1.45;
+        word-break: break-word;
+    }
+
+    .user-edit-fields {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 16px;
+    }
+
+    .user-edit-field {
+        display: grid;
+        gap: 8px;
+        min-width: 0;
+    }
+
+    .user-edit-field.user-edit-field-full {
+        grid-column: 1 / -1;
+    }
+
+    .user-edit-label {
+        font-size: 13px;
+        font-weight: 800;
+        color: #0f172a;
+    }
+
+    .user-edit-input,
+    .user-edit-select {
+        width: 100%;
+        min-height: 44px;
+        border: 1px solid #cbd5e1;
+        border-radius: 14px;
+        padding: 0 14px;
+        font-size: 14px;
+        color: #0f172a;
+        background: #ffffff;
+        box-sizing: border-box;
+        outline: none;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .user-edit-input:focus,
+    .user-edit-select:focus {
+        border-color: #93c5fd;
+        box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.12);
+    }
+
+    .user-edit-help {
+        font-size: 12px;
+        color: #64748b;
+        line-height: 1.45;
+    }
+
+    .user-edit-password-wrap {
+        position: relative;
+        width: 100%;
+    }
+
+    .user-edit-password-input {
+        padding-right: 52px;
+    }
+
+    .user-edit-password-toggle {
+        position: absolute;
+        top: 50%;
+        right: 12px;
+        transform: translateY(-50%);
+        appearance: none;
+        -webkit-appearance: none;
+        border: none;
+        background: transparent;
+        color: #475569;
+        font-size: 12px;
+        font-weight: 800;
+        cursor: pointer;
+        padding: 0;
+        line-height: 1;
+    }
+
+    .user-edit-password-toggle:hover {
+        color: #1d4ed8;
+    }
+
+    .user-edit-actions {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .user-edit-btn,
+    .user-edit-link {
+        appearance: none;
+        -webkit-appearance: none;
+        min-height: 40px;
+        padding: 0 16px;
+        border-radius: 12px;
+        border: 1px solid transparent;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        font-size: 12px;
+        font-weight: 800;
+        line-height: 1;
+        cursor: pointer;
+        box-sizing: border-box;
+        transition: transform 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+    }
+
+    .user-edit-btn:hover,
+    .user-edit-link:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 10px 20px rgba(15, 23, 42, 0.08);
+    }
+
+    .user-edit-btn:active,
+    .user-edit-link:active {
+        transform: translateY(0);
+    }
+
+    .user-edit-btn-primary {
+        background: #2563eb;
+        color: #ffffff;
+        border-color: #2563eb;
+    }
+
+    .user-edit-btn-primary:hover {
+        background: #1d4ed8;
+        color: #ffffff;
+        border-color: #1d4ed8;
+    }
+
+    .user-edit-link-secondary {
+        background: #f8fafc;
+        color: #0f172a;
+        border-color: #e2e8f0;
+    }
+
+    .user-edit-link-secondary:hover {
+        background: #e2e8f0;
+        color: #020617;
+        border-color: #cbd5e1;
+    }
+
+    @media (max-width: 768px) {
+        .user-edit-meta,
+        .user-edit-fields {
+            grid-template-columns: 1fr;
+        }
+
+        .user-edit-card {
+            padding: 20px;
+            border-radius: 20px;
+        }
+
+        .user-edit-actions {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .user-edit-btn,
+        .user-edit-link {
+            width: 100%;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block page_header %}
+<h1>Editar usuario</h1>
+<p>Actualiza la información del usuario seleccionado</p>
+{% endblock %}
+
+{% block content %}
+<div class="users-container">
+    <section class="user-edit-card">
+        <form method="POST" class="user-edit-grid">
+            <div class="user-edit-meta">
+                <div class="user-edit-meta-item">
+                    <span class="user-edit-meta-label">ID</span>
+                    <div class="user-edit-meta-value">#{{ user.id }}</div>
+                </div>
+
+                <div class="user-edit-meta-item">
+                    <span class="user-edit-meta-label">Correo actual</span>
+                    <div class="user-edit-meta-value">{{ user.email if user.email else 'Sin correo' }}</div>
+                </div>
+
+                <div class="user-edit-meta-item">
+                    <span class="user-edit-meta-label">Rol actual</span>
+                    <div class="user-edit-meta-value">{{ user.role if user.role else 'user' }}</div>
+                </div>
+            </div>
+
+            <div class="user-edit-fields">
+                <div class="user-edit-field">
+                    <label for="name" class="user-edit-label">Nombre</label>
+                    <input id="name" name="name" type="text" class="user-edit-input" value="{{ user.name if user and user.name else '' }}" required>
+                </div>
+
+                <div class="user-edit-field">
+                    <label for="email" class="user-edit-label">Correo electrónico</label>
+                    <input id="email" name="email" type="email" class="user-edit-input" value="{{ user.email if user and user.email else '' }}" required>
+                </div>
+
+                <div class="user-edit-field">
+                    <label for="role" class="user-edit-label">Rol</label>
+                    <select id="role" name="role" class="user-edit-select">
+                        <option value="user" {% if (user.role or 'user') == 'user' %}selected{% endif %}>Usuario</option>
+                        <option value="moderator" {% if user.role == 'moderator' %}selected{% endif %}>Moderador</option>
+                        <option value="admin" {% if user.role == 'admin' %}selected{% endif %}>Administrador</option>
+                    </select>
+                </div>
+
+                <div class="user-edit-field user-edit-field-full">
+                    <label for="password" class="user-edit-label">Nueva contraseña</label>
+                    <div class="user-edit-password-wrap">
+                        <input id="password" name="password" type="password" class="user-edit-input user-edit-password-input" value="" placeholder="Dejar vacío para conservar la contraseña actual">
+                        <button type="button" class="user-edit-password-toggle" id="togglePasswordButton">Ver</button>
+                    </div>
+                    <p class="user-edit-help">Solo escribe una contraseña nueva si deseas reemplazar la actual.</p>
+                </div>
+            </div>
+
+            <div class="user-edit-actions">
+                <button type="submit" class="user-edit-btn user-edit-btn-primary">Guardar cambios</button>
+                <a href="{{ url_for('users.list_users') }}" class="user-edit-link user-edit-link-secondary">Cancelar</a>
+            </div>
+        </form>
+    </section>
+</div>
+<script>
+(function () {
+    const passwordInput = document.getElementById('password');
+    const toggleButton = document.getElementById('togglePasswordButton');
+
+    if (!passwordInput || !toggleButton) return;
+
+    toggleButton.addEventListener('click', function () {
+        const isPassword = passwordInput.getAttribute('type') === 'password';
+        passwordInput.setAttribute('type', isPassword ? 'text' : 'password');
+        toggleButton.textContent = isPassword ? 'Ocultar' : 'Ver';
+    });
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+
+{% block page_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/places.css') }}">
+{% endblock %}
+
+{% block page_header %}
+<h1>Lugares</h1>
+<p>Administración de lugares registrados en la plataforma</p>
+{% endblock %}
+
+{% block content %}
+<div class="places-container">
+
+    <section class="places-hero-card">
+        <div class="places-title-row">
+            <div>
+                <div class="places-title">Administración de lugares</div>
+                <div class="places-subtitle">
+                    Consulta, edita y elimina los lugares disponibles dentro de la plataforma desde el panel administrativo.
+                </div>
+            </div>
+        </div>
+
+        <div class="places-kpis">
+            <article class="places-kpi">
+                <span class="places-kpi-label">Registros visibles</span>
+                <strong class="places-kpi-value">{{ places|length if places else 0 }}</strong>
+            </article>
+
+            <article class="places-kpi">
+                <span class="places-kpi-label">Módulo</span>
+                <strong class="places-kpi-value">Lugares</strong>
+            </article>
+
+            <article class="places-kpi">
+                <span class="places-kpi-label">Acceso</span>
+                <strong class="places-kpi-value">Staff</strong>
+            </article>
+        </div>
+    </section>
+
+    <section class="places-table-card">
+        <div class="places-table-head">
+            <div>
+                <h3>Lista de lugares</h3>
+                <p>Selecciona un lugar para habilitar las acciones de edición y eliminación.</p>
+            </div>
+        </div>
+
+        <div class="places-table-wrapper">
+            <table class="places-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Lugar</th>
+                        <th>Ciudad</th>
+                        <th>Tipo</th>
+                        <th>Rating</th>
+                        <th>Precio</th>
+                        <th>Descripción</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if places %}
+                        {% for p in places %}
+                        {% set place_name = p.name or 'Sin nombre' %}
+                        {% set place_city = p.city or 'Sin ciudad' %}
+                        {% set place_type = p.type or 'OTRO' %}
+                        {% set place_rating = p.rating if p.rating is not none else 0 %}
+                        {% set place_price = p.price_range if p.price_range is not none else (p.price if p.price is not none else None) %}
+                        {% set place_description = p.description or 'Sin descripción' %}
+                        {% set edit_url = p.edit_url if p.edit_url else '' %}
+                        {% set delete_url = p.delete_url if p.delete_url else '' %}
+
+                        <tr
+                            class="place-row"
+                            tabindex="0"
+                            role="button"
+                            aria-label="Seleccionar lugar #{{ p.id }}"
+                            data-place-id="{{ p.id }}"
+                            data-place-name="{{ place_name }}"
+                            data-place-city="{{ place_city }}"
+                            data-edit-url="{{ edit_url }}"
+                            data-delete-url="{{ delete_url }}"
+                        >
+                            <td>
+                                <span class="place-id">#{{ p.id }}</span>
+                            </td>
+
+                            <td>
+                                <div class="place-name">{{ place_name }}</div>
+                            </td>
+
+                            <td>
+                                <div class="place-city">{{ place_city }}</div>
+                            </td>
+
+                            <td>
+                                <span class="type-badge">{{ place_type|replace('_', ' ')|title }}</span>
+                            </td>
+
+                            <td>
+                                <span>{{ place_rating }}</span>
+                            </td>
+
+                            <td>
+                                <span class="place-price">
+                                    {% if place_price is not none and place_price != '' %}
+                                        ${{ '%.2f'|format(place_price|float) }} MXN
+                                    {% else %}
+                                        Sin precio
+                                    {% endif %}
+                                </span>
+                            </td>
+
+                            <td>
+                                <div class="place-description">
+                                    {{ place_description }}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="7" class="empty-state-cell">
+                                <div class="empty-state-box">
+                                    <strong>No hay lugares registrados por mostrar.</strong>
+                                    <span>No se encontraron resultados disponibles en este momento.</span>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if places %}
+        <div class="places-actions-panel" id="placesActionsPanel">
+            <div class="places-actions-info">
+                <span class="places-actions-label">Lugar seleccionado</span>
+                <strong id="selectedPlaceText">Ningún lugar seleccionado</strong>
+            </div>
+
+            <div class="places-actions-buttons">
+                <a
+                    href="#"
+                    id="editPlaceButton"
+                    class="places-panel-btn places-panel-btn-edit is-disabled"
+                    aria-disabled="true"
+                >
+                    Editar
+                </a>
+
+                <form id="deletePlaceForm" method="POST" action="">
+                    <button
+                        type="submit"
+                        id="deletePlaceButton"
+                        class="places-panel-btn places-panel-btn-delete"
+                        disabled
+                    >
+                        Eliminar
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+    </section>
+
+</div>
+{% endblock %}
+
+{% block page_js %}
+<script src="{{ url_for('static', filename='js/places.js') }}"></script>
+{% endblock %}

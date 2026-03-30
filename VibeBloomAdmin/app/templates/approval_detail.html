@@ -1,0 +1,573 @@
+{% extends "base.html" %}
+
+{% block page_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/aprobaciones.css') }}">
+<style>
+    .approval-detail-page {
+        display: grid;
+        gap: 24px;
+    }
+
+    .approval-detail-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1.45fr) minmax(320px, 0.95fr);
+        gap: 24px;
+        align-items: start;
+    }
+
+    .approval-detail-card,
+    .approval-side-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 24px;
+        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.06);
+        overflow: hidden;
+    }
+
+    .approval-detail-header {
+        padding: 26px 28px 18px;
+        border-bottom: 1px solid #eef2f7;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 16px;
+        flex-wrap: wrap;
+    }
+
+    .approval-detail-title h2 {
+        margin: 0;
+        font-size: 1.5rem;
+        line-height: 1.2;
+        color: #0f172a;
+    }
+
+    .approval-detail-title p {
+        margin: 8px 0 0;
+        color: #64748b;
+        font-size: 0.96rem;
+        line-height: 1.6;
+    }
+
+    .approval-status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 14px;
+        border-radius: 999px;
+        font-size: 0.85rem;
+        font-weight: 700;
+        letter-spacing: 0.01em;
+        border: 1px solid transparent;
+        white-space: nowrap;
+    }
+
+    .approval-status-badge.pending {
+        background: #eff6ff;
+        color: #1d4ed8;
+        border-color: #bfdbfe;
+    }
+
+    .approval-status-badge.approved {
+        background: #ecfdf5;
+        color: #047857;
+        border-color: #a7f3d0;
+    }
+
+    .approval-status-badge.rejected {
+        background: #fef2f2;
+        color: #b91c1c;
+        border-color: #fecaca;
+    }
+
+    .approval-status-badge.reviewed {
+        background: #f8fafc;
+        color: #475569;
+        border-color: #cbd5e1;
+    }
+
+    .approval-detail-body {
+        padding: 24px 28px 28px;
+        display: grid;
+        gap: 24px;
+    }
+
+    .approval-section {
+        display: grid;
+        gap: 14px;
+    }
+
+    .approval-section-title {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
+    .approval-section-title h3 {
+        margin: 0;
+        font-size: 1rem;
+        color: #0f172a;
+    }
+
+    .approval-section-title span {
+        font-size: 0.83rem;
+        color: #64748b;
+    }
+
+    .approval-info-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px;
+    }
+
+    .approval-info-item {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 18px;
+        padding: 15px 16px;
+        min-width: 0;
+    }
+
+    .approval-info-item span {
+        display: block;
+        font-size: 0.8rem;
+        font-weight: 700;
+        color: #64748b;
+        margin-bottom: 6px;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+    }
+
+    .approval-info-item strong,
+    .approval-info-item p {
+        margin: 0;
+        font-size: 0.96rem;
+        color: #0f172a;
+        line-height: 1.6;
+        word-break: break-word;
+    }
+
+    .approval-description {
+        background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+        border: 1px solid #dbeafe;
+        border-radius: 20px;
+        padding: 18px;
+        color: #334155;
+        line-height: 1.75;
+        font-size: 0.96rem;
+        white-space: pre-line;
+    }
+
+    .approval-photo-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 14px;
+    }
+
+    .approval-photo-card {
+        border: 1px solid #e2e8f0;
+        border-radius: 20px;
+        overflow: hidden;
+        background: #f8fafc;
+        min-height: 180px;
+    }
+
+    .approval-photo-card img {
+        width: 100%;
+        height: 180px;
+        object-fit: cover;
+        display: block;
+        background: #e2e8f0;
+    }
+
+    .approval-photo-empty {
+        min-height: 220px;
+        border: 1px dashed #cbd5e1;
+        border-radius: 20px;
+        background: #f8fafc;
+        display: grid;
+        place-items: center;
+        text-align: center;
+        color: #64748b;
+        padding: 22px;
+        line-height: 1.6;
+    }
+
+    .approval-side-body {
+        padding: 24px;
+        display: grid;
+        gap: 20px;
+    }
+
+    .approval-meta-list {
+        display: grid;
+        gap: 12px;
+    }
+
+    .approval-meta-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 16px;
+        padding: 12px 0;
+        border-bottom: 1px solid #eef2f7;
+    }
+
+    .approval-meta-item:last-child {
+        border-bottom: 0;
+        padding-bottom: 0;
+    }
+
+    .approval-meta-item span {
+        color: #64748b;
+        font-size: 0.88rem;
+        font-weight: 600;
+    }
+
+    .approval-meta-item strong {
+        color: #0f172a;
+        font-size: 0.93rem;
+        text-align: right;
+        line-height: 1.5;
+        word-break: break-word;
+    }
+
+    .approval-side-actions {
+        display: grid;
+        gap: 12px;
+    }
+
+    .approval-form-stack {
+        display: grid;
+        gap: 12px;
+    }
+
+    .approval-reject-form {
+        display: grid;
+        gap: 12px;
+    }
+
+    .approval-textarea {
+        width: 100%;
+        min-height: 110px;
+        resize: vertical;
+        border: 1px solid #cbd5e1;
+        border-radius: 16px;
+        padding: 14px 16px;
+        font-size: 0.94rem;
+        line-height: 1.6;
+        color: #0f172a;
+        background: #ffffff;
+        box-sizing: border-box;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .approval-textarea:focus {
+        outline: none;
+        border-color: #93c5fd;
+        box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.12);
+    }
+
+    .approval-btn {
+        display: inline-flex;
+        justify-content: center;
+        align-items: center;
+        gap: 10px;
+        width: 100%;
+        text-decoration: none;
+        border-radius: 16px;
+        padding: 12px 16px;
+        font-weight: 700;
+        font-size: 0.94rem;
+        transition: 0.2s ease;
+        border: 1px solid transparent;
+        cursor: pointer;
+        box-sizing: border-box;
+    }
+
+    .approval-btn-primary {
+        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+        color: #ffffff;
+        box-shadow: 0 14px 30px rgba(37, 99, 235, 0.18);
+    }
+
+    .approval-btn-primary:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 18px 34px rgba(37, 99, 235, 0.22);
+    }
+
+    .approval-btn-success {
+        background: linear-gradient(135deg, #059669 0%, #047857 100%);
+        color: #ffffff;
+        box-shadow: 0 14px 30px rgba(5, 150, 105, 0.18);
+    }
+
+    .approval-btn-success:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 18px 34px rgba(5, 150, 105, 0.22);
+    }
+
+    .approval-btn-danger {
+        background: #fff1f2;
+        color: #be123c;
+        border-color: #fecdd3;
+    }
+
+    .approval-btn-danger:hover {
+        background: #ffe4e6;
+    }
+
+    .approval-btn-secondary {
+        background: #f8fafc;
+        color: #0f172a;
+        border-color: #e2e8f0;
+    }
+
+    .approval-btn-secondary:hover {
+        background: #f1f5f9;
+    }
+
+    .approval-btn-disabled {
+        background: #f8fafc;
+        color: #64748b;
+        border-color: #e2e8f0;
+        cursor: default;
+    }
+
+    .approval-note-box {
+        background: #eff6ff;
+        border: 1px solid #bfdbfe;
+        border-radius: 18px;
+        padding: 16px;
+        color: #1e3a8a;
+        font-size: 0.92rem;
+        line-height: 1.7;
+    }
+
+    @media (max-width: 1100px) {
+        .approval-detail-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @media (max-width: 680px) {
+        .approval-detail-header,
+        .approval-detail-body,
+        .approval-side-body {
+            padding-left: 18px;
+            padding-right: 18px;
+        }
+
+        .approval-info-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block page_header %}
+<h1>Detalle de aprobación</h1>
+<p>Consulta la información enviada desde Laravel para revisar la solicitud.</p>
+{% endblock %}
+
+{% block content %}
+{% set approval_name = approval.name or approval.place_name or approval.title or approval.business_name or 'Solicitud sin título' %}
+{% set approval_city = approval.city or approval.location_city or approval.municipality or 'Sin ciudad registrada' %}
+{% set approval_type = approval.type or approval.place_type or approval.category or 'Sin tipo' %}
+{% set approval_price = approval.price_range or approval.price_label or approval.price or approval.budget or 'No definido' %}
+{% set approval_user_name = approval.user.name if approval.user is defined and approval.user and approval.user.name is defined and approval.user.name else None %}
+{% set approval_user_email = approval.user.email if approval.user is defined and approval.user and approval.user.email is defined and approval.user.email else None %}
+{% set approval_user_id = approval.user_id if approval.user_id is defined and approval.user_id else None %}
+{% set approval_user = approval_user_name or approval.created_by_name or approval.owner_name or approval.user_name or approval.user_email or ('#' ~ approval_user_id if approval_user_id else 'Sin usuario relacionado') %}
+{% set approval_email = approval_user_email or approval.user_email or approval.email or 'No disponible' %}
+{% set approval_status = (approval.status or approval.approval_status or 'pending')|lower %}
+{% set approval_description = approval.description or approval.details or approval.notes or 'No se proporcionó una descripción para esta solicitud.' %}
+{% set approval_address = approval.address or approval.location or approval.street or 'No disponible' %}
+{% set approval_created = approval.created_at or approval.submitted_at or approval.requested_at or 'No disponible' %}
+{% set approval_updated = approval.updated_at or approval.reviewed_at or approval.modified_at or 'No disponible' %}
+{% set approval_photos = approval.photos if approval.photos is defined and approval.photos else [] %}
+{% set approval_latitude = approval.latitude if approval.latitude is defined and approval.latitude is not none else approval.lat if approval.lat is defined and approval.lat is not none else None %}
+{% set approval_longitude = approval.longitude if approval.longitude is defined and approval.longitude is not none else approval.lng if approval.lng is defined and approval.lng is not none else None %}
+
+<div class="approval-detail-page">
+    <div class="approval-detail-grid">
+        <section class="approval-detail-card">
+            <div class="approval-detail-header">
+                <div class="approval-detail-title">
+                    <h2>{{ approval_name }}</h2>
+                    <p>{{ approval_city }} · {{ approval_type }}</p>
+                </div>
+
+                <span class="approval-status-badge {{ 'approved' if approval_status in ['approved', 'aprobado'] else 'rejected' if approval_status in ['rejected', 'rechazado'] else 'reviewed' if approval_status in ['reviewed', 'revisado'] else 'pending' }}">
+                    {% if approval_status in ['approved', 'aprobado'] %}
+                        Aprobada
+                    {% elif approval_status in ['rejected', 'rechazado'] %}
+                        Rechazada
+                    {% elif approval_status in ['reviewed', 'revisado'] %}
+                        Revisada
+                    {% else %}
+                        Pendiente
+                    {% endif %}
+                </span>
+            </div>
+
+            <div class="approval-detail-body">
+                <div class="approval-section">
+                    <div class="approval-section-title">
+                        <h3>Información general</h3>
+                        <span>Datos principales de la solicitud</span>
+                    </div>
+
+                    <div class="approval-info-grid">
+                        <article class="approval-info-item">
+                            <span>Nombre</span>
+                            <strong>{{ approval_name }}</strong>
+                        </article>
+                        <article class="approval-info-item">
+                            <span>Tipo</span>
+                            <strong>{{ approval_type }}</strong>
+                        </article>
+                        <article class="approval-info-item">
+                            <span>Ciudad</span>
+                            <strong>{{ approval_city }}</strong>
+                        </article>
+                        <article class="approval-info-item">
+                            <span>Rango de precio</span>
+                            <strong>{{ approval_price }}</strong>
+                        </article>
+                        <article class="approval-info-item">
+                            <span>Dirección</span>
+                            <p>{{ approval_address }}</p>
+                        </article>
+                        <article class="approval-info-item">
+                            <span>Usuario</span>
+                            <p>{{ approval_user }}</p>
+                        </article>
+                    </div>
+                </div>
+
+                <div class="approval-section">
+                    <div class="approval-section-title">
+                        <h3>Descripción enviada</h3>
+                        <span>Contenido capturado en la solicitud</span>
+                    </div>
+
+                    <div class="approval-description">{{ approval_description }}</div>
+                </div>
+
+                <div class="approval-section">
+                    <div class="approval-section-title">
+                        <h3>Fotos adjuntas</h3>
+                        <span>
+                            {% if approval_photos %}
+                                {{ approval_photos|length }} archivo{{ '' if approval_photos|length == 1 else 's' }} disponible{{ '' if approval_photos|length == 1 else 's' }}
+                            {% else %}
+                                Sin imágenes cargadas
+                            {% endif %}
+                        </span>
+                    </div>
+
+                    {% if approval_photos %}
+                        <div class="approval-photo-grid">
+                            {% for photo in approval_photos %}
+                                <div class="approval-photo-card">
+                                    <img
+                                        src="{{ photo.url if photo.url is defined else photo.photo_url if photo.photo_url is defined else photo.path if photo.path is defined else photo }}"
+                                        alt="Foto {{ loop.index }} de la solicitud">
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="approval-photo-empty">
+                            No hay imágenes asociadas a esta aprobación en este momento.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </section>
+
+        <aside class="approval-side-card">
+            <div class="approval-detail-header">
+                <div class="approval-detail-title">
+                    <h2>Resumen</h2>
+                    <p>Información administrativa de la solicitud</p>
+                </div>
+            </div>
+
+            <div class="approval-side-body">
+                <div class="approval-meta-list">
+                    <div class="approval-meta-item">
+                        <span>ID</span>
+                        <strong>#{{ approval.id or '—' }}</strong>
+                    </div>
+                    <div class="approval-meta-item">
+                        <span>Estado</span>
+                        <strong>
+                            {% if approval_status in ['approved', 'aprobado'] %}
+                                Aprobada
+                            {% elif approval_status in ['rejected', 'rechazado'] %}
+                                Rechazada
+                            {% elif approval_status in ['reviewed', 'revisado'] %}
+                                Revisada
+                            {% else %}
+                                Pendiente
+                            {% endif %}
+                        </strong>
+                    </div>
+                    <div class="approval-meta-item">
+                        <span>Fecha de envío</span>
+                        <strong>{{ approval_created }}</strong>
+                    </div>
+                    <div class="approval-meta-item">
+                        <span>Última actualización</span>
+                        <strong>{{ approval_updated }}</strong>
+                    </div>
+                    <div class="approval-meta-item">
+                        <span>Correo del usuario</span>
+                        <strong>{{ approval_email }}</strong>
+                    </div>
+                    <div class="approval-meta-item">
+                        <span>Coordenadas</span>
+                        <strong>
+                            {% if approval_latitude is not none and approval_longitude is not none %}
+                                {{ approval_latitude }}, {{ approval_longitude }}
+                            {% else %}
+                                No disponibles
+                            {% endif %}
+                        </strong>
+                    </div>
+                </div>
+
+                <div class="approval-note-box">
+                    Esta vista permite revisar la información cargada antes de tomar una decisión administrativa dentro del panel.
+                </div>
+
+                <div class="approval-side-actions">
+                    {% if approval_status == 'pending' %}
+                        <div class="approval-form-stack">
+                            <form action="{{ url_for('approvals.approve_place', place_id=approval.id) }}" method="POST">
+                                <button type="submit" class="approval-btn approval-btn-success">Aprobar solicitud</button>
+                            </form>
+
+                            <form action="{{ url_for('approvals.reject_place', place_id=approval.id) }}" method="POST" class="approval-reject-form">
+                                <textarea name="reason" class="approval-textarea" placeholder="Motivo del rechazo (opcional)"></textarea>
+                                <button type="submit" class="approval-btn approval-btn-danger">Rechazar solicitud</button>
+                            </form>
+                        </div>
+                    {% elif approval_status in ['approved', 'aprobado'] %}
+                        <div class="approval-btn approval-btn-disabled">La solicitud ya fue aprobada</div>
+                    {% elif approval_status in ['rejected', 'rechazado'] %}
+                        <div class="approval-btn approval-btn-disabled">La solicitud ya fue rechazada</div>
+                    {% else %}
+                        <div class="approval-btn approval-btn-disabled">La solicitud ya fue revisada</div>
+                    {% endif %}
+
+                    <a href="{{ url_for('approvals.list_approvals') }}" class="approval-btn approval-btn-primary">Volver a aprobaciones</a>
+                    <a href="javascript:history.back()" class="approval-btn approval-btn-secondary">Regresar</a>
+                </div>
+            </div>
+        </aside>
+    </div>
+</div>
+{% endblock %}

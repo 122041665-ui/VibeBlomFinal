@@ -1,0 +1,187 @@
+{% extends "base.html" %}
+
+{% block page_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/usuarios.css') }}">
+{% endblock %}
+
+{% block page_header %}
+<h1>Usuarios</h1>
+<p>Gestión administrativa de usuarios registrados en la plataforma</p>
+{% endblock %}
+
+{% block content %}
+<div class="users-container">
+
+    <section class="users-hero-card">
+        <div class="users-title-row">
+            <div>
+                <div class="users-title">Administración de usuarios</div>
+                <div class="users-subtitle">
+                    Consulta, actualiza roles, edita información y elimina usuarios registrados desde el panel administrativo.
+                </div>
+            </div>
+        </div>
+
+        <div class="users-kpis">
+            <article class="users-kpi">
+                <span class="users-kpi-label">Registros visibles</span>
+                <strong class="users-kpi-value">{{ users|length if users else 0 }}</strong>
+            </article>
+
+            <article class="users-kpi">
+                <span class="users-kpi-label">Acceso permitido</span>
+                <strong class="users-kpi-value">Administrador</strong>
+            </article>
+
+            <article class="users-kpi">
+                <span class="users-kpi-label">Módulo</span>
+                <strong class="users-kpi-value">Usuarios</strong>
+            </article>
+        </div>
+    </section>
+
+    <section class="users-table-card">
+        <div class="users-table-head">
+            <div>
+                <h3>Lista de usuarios</h3>
+                <p>Selecciona un usuario para habilitar las acciones de edición y eliminación. La actualización de rol se mantiene dentro de la tabla.</p>
+            </div>
+        </div>
+
+        <div class="users-table-wrapper">
+            <table class="users-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Usuario</th>
+                        <th>Correo</th>
+                        <th>Rol actual</th>
+                        <th>Actualizar rol</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if users %}
+                        {% for user in users %}
+                        {% set user_name = user.name or 'Sin nombre' %}
+                        {% set user_email = user.email or 'Sin correo' %}
+                        {% set user_role = user.role or 'user' %}
+                        {% set edit_url = user.edit_url if user.edit_url else '' %}
+                        {% set delete_url = user.delete_url if user.delete_url else '' %}
+
+                        <tr
+                            class="user-row"
+                            tabindex="0"
+                            role="button"
+                            aria-label="Seleccionar usuario #{{ user.id }}"
+                            data-user-id="{{ user.id }}"
+                            data-user-name="{{ user_name }}"
+                            data-user-email="{{ user_email }}"
+                            data-user-role="{{ user_role }}"
+                            data-edit-url="{{ edit_url }}"
+                            data-delete-url="{{ delete_url }}"
+                        >
+                            <td>
+                                <span class="user-id">#{{ user.id }}</span>
+                            </td>
+
+                            <td>
+                                <div class="user-cell">
+                                    <div class="user-avatar">
+                                        {{ user_name[:1]|upper }}
+                                    </div>
+
+                                    <div class="user-info">
+                                        <div class="user-name">{{ user_name }}</div>
+                                    </div>
+                                </div>
+                            </td>
+
+                            <td>
+                                <div class="user-mail-block">
+                                    <span class="user-mail-main">{{ user_email }}</span>
+                                </div>
+                            </td>
+
+                            <td>
+                                <div class="role-stack">
+                                    {% if user_role == 'admin' %}
+                                        <span class="role-badge role-badge-admin">Administrador</span>
+                                    {% elif user_role == 'moderator' %}
+                                        <span class="role-badge role-badge-moderator">Moderador</span>
+                                    {% else %}
+                                        <span class="role-badge role-badge-user">Usuario</span>
+                                    {% endif %}
+                                </div>
+                            </td>
+
+                            <td>
+                                <form method="POST"
+                                      action="{{ url_for('users.update_user_role', user_id=user.id) }}"
+                                      class="role-form">
+                                    <div class="actions actions-role">
+                                        <select name="role" class="role-select">
+                                            <option value="user" {% if user_role == 'user' %}selected{% endif %}>Usuario</option>
+                                            <option value="moderator" {% if user_role == 'moderator' %}selected{% endif %}>Moderador</option>
+                                            <option value="admin" {% if user_role == 'admin' %}selected{% endif %}>Administrador</option>
+                                        </select>
+
+                                        <button class="btn-action btn-edit" type="submit">
+                                            Guardar
+                                        </button>
+                                    </div>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="5" class="empty-state-cell">
+                                <div class="empty-state-box">
+                                    <strong>No hay usuarios registrados por mostrar.</strong>
+                                    <span>No se encontraron resultados disponibles en este momento.</span>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if users %}
+        <div class="users-actions-panel" id="usersActionsPanel">
+            <div class="users-actions-info">
+                <span class="users-actions-label">Usuario seleccionado</span>
+                <strong id="selectedUserText">Ningún usuario seleccionado</strong>
+            </div>
+
+            <div class="users-actions-buttons">
+                <a
+                    href="#"
+                    id="editUserButton"
+                    class="users-panel-btn users-panel-btn-edit is-disabled"
+                    aria-disabled="true"
+                >
+                    Editar
+                </a>
+
+                <form id="deleteUserForm" method="POST" action="">
+                    <button
+                        type="submit"
+                        id="deleteUserButton"
+                        class="users-panel-btn users-panel-btn-delete"
+                        disabled
+                    >
+                        Eliminar
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+    </section>
+
+</div>
+{% endblock %}
+
+{% block page_js %}
+<script src="{{ url_for('static', filename='js/users.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,362 @@
+{% extends "base.html" %}
+
+{% block page_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+{% endblock %}
+
+{% block page_header %}
+<h1>Dashboard</h1>
+<p>Vista general del sistema, actividad reciente, métricas visuales y reportes por categoría</p>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-shell">
+
+    <section class="dashboard-stats-card">
+        <div class="dashboard-stats-grid">
+            <article class="stat-box">
+                <div class="stat-label">Usuarios</div>
+                <div class="stat-value">{{ data.stats.users if data and data.stats else 0 }}</div>
+                <div class="stat-text">Total registrados</div>
+            </article>
+
+            <article class="stat-box">
+                <div class="stat-label">Lugares</div>
+                <div class="stat-value">{{ data.stats.places if data and data.stats else 0 }}</div>
+                <div class="stat-text">Total registrados</div>
+            </article>
+
+            <article class="stat-box">
+                <div class="stat-label">Reseñas</div>
+                <div class="stat-value">{{ data.stats.reviews if data and data.stats else 0 }}</div>
+                <div class="stat-text">Total registradas</div>
+            </article>
+
+            <article class="stat-box">
+                <div class="stat-label">Favoritos</div>
+                <div class="stat-value">{{ data.stats.favorites if data and data.stats else 0 }}</div>
+                <div class="stat-text">Total marcados</div>
+            </article>
+
+            <article class="stat-box stat-box-highlight">
+                <div class="stat-label">Aprobaciones</div>
+                <div class="stat-value">{{ data.stats.approvals if data and data.stats and data.stats.approvals is not none else 0 }}</div>
+                <div class="stat-text">Pendientes, aprobadas o rechazadas</div>
+            </article>
+        </div>
+    </section>
+
+    <section class="dashboard-card dashboard-hero-card">
+        <div class="card-head">
+            <div>
+                <h3>Sesión actual</h3>
+                <p>Usuario autenticado en el panel administrativo</p>
+            </div>
+        </div>
+
+        <div class="recent-list recent-list-vertical">
+            {% if data and data.current_user %}
+                <article class="recent-item">
+                    <div class="recent-badge">{{ data.current_user.role or 'staff' }}</div>
+                    <div class="recent-content">
+                        <strong>{{ data.current_user.name or 'Usuario' }}</strong>
+                        <span>{{ data.current_user.email or 'Sin correo' }}</span>
+
+                        <div class="recent-meta">
+                            <span class="recent-meta-pill">ID: {{ data.current_user.id }}</span>
+                            <span class="recent-meta-pill">Rol: {{ data.current_user.role }}</span>
+                        </div>
+                    </div>
+                </article>
+            {% else %}
+                <div class="empty-state">No se pudo cargar la información del usuario actual.</div>
+            {% endif %}
+        </div>
+    </section>
+
+    <section class="dashboard-card dashboard-report-card">
+        <div class="card-head">
+            <div>
+                <h3>Reportes por categoría</h3>
+                <p>Filtra por módulo, acción y rango de fechas para consultar e imprimir resultados</p>
+            </div>
+        </div>
+
+        <div class="report-toolbar">
+            <div class="field-group">
+                <label for="reportModule">Categoría</label>
+                <select id="reportModule" class="field-control">
+                    <option value="places">Lugares</option>
+                    <option value="reviews">Reseñas</option>
+                    <option value="users">Usuarios</option>
+                    <option value="approvals">Aprobaciones</option>
+                </select>
+            </div>
+
+            <div class="field-group">
+                <label for="reportScope">Acción</label>
+                <select id="reportScope" class="field-control"></select>
+            </div>
+
+            <div class="field-group">
+                <label for="reportStartDate">Desde</label>
+                <input id="reportStartDate" type="date" class="field-control">
+            </div>
+
+            <div class="field-group">
+                <label for="reportEndDate">Hasta</label>
+                <input id="reportEndDate" type="date" class="field-control">
+            </div>
+
+            <div class="toolbar-actions">
+                <button type="button" id="generateReportBtn" class="btn-ui btn-ui-primary">
+                    Generar reporte
+                </button>
+
+                <div class="export-dropdown">
+                    <button type="button" id="toggleExportMenu" class="btn-ui btn-ui-soft">
+                        Exportar
+                    </button>
+
+                    <div id="exportMenu" class="export-menu">
+                        <a id="exportPdfBtn" href="#" class="export-item">Exportar PDF</a>
+                        <a id="exportXlsBtn" href="#" class="export-item">Exportar XLS</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="report-summary-wrap">
+            <p id="reportSummary" class="report-summary-text">
+                Selecciona una categoría, una acción y un rango de fechas para generar el reporte.
+            </p>
+        </div>
+
+        <div class="report-table-wrap">
+            <table class="report-table">
+                <thead id="reportThead">
+                    <tr>
+                        <th>id</th>
+                        <th>nombre</th>
+                        <th>accion</th>
+                        <th>realizado_por</th>
+                        <th>puesto</th>
+                        <th>fecha</th>
+                        <th>estado</th>
+                    </tr>
+                </thead>
+                <tbody id="reportTbody">
+                    <tr>
+                        <td colspan="7" class="empty-cell">Aún no se ha generado ningún reporte.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <section class="dashboard-chart-grid">
+        <article class="dashboard-card chart-card">
+            <div class="card-head">
+                <div>
+                    <h3>Lugares por tipo</h3>
+                    <p>Distribución actual de lugares registrados</p>
+                </div>
+            </div>
+            <div class="chart-shell">
+                <canvas id="placesTypeChart"></canvas>
+            </div>
+        </article>
+
+        <article class="dashboard-card chart-card">
+            <div class="card-head">
+                <div>
+                    <h3>Usuarios por mes</h3>
+                    <p>Crecimiento mensual de registros</p>
+                </div>
+            </div>
+            <div class="chart-shell">
+                <canvas id="usersMonthlyChart"></canvas>
+            </div>
+        </article>
+
+        <article class="dashboard-card chart-card">
+            <div class="card-head">
+                <div>
+                    <h3>Lugares por mes</h3>
+                    <p>Tendencia mensual de nuevos lugares</p>
+                </div>
+            </div>
+            <div class="chart-shell">
+                <canvas id="placesMonthlyChart"></canvas>
+            </div>
+        </article>
+    </section>
+
+    <section class="dashboard-grid-two">
+        <article class="dashboard-card">
+            <div class="card-head">
+                <div>
+                    <h3>Últimos usuarios</h3>
+                    <p>Registros más recientes del sistema</p>
+                </div>
+            </div>
+
+            <div class="recent-list recent-list-vertical">
+                {% if data and data.recent and data.recent.users %}
+                    {% for user in data.recent.users %}
+                    <article class="recent-item">
+                        <div class="recent-badge">{{ user.role or 'user' }}</div>
+                        <div class="recent-content">
+                            <strong>{{ user.name or 'Sin nombre' }}</strong>
+                            <span>{{ user.email or 'Sin correo' }}</span>
+                            <div class="recent-meta">
+                                <span class="recent-meta-pill">ID: {{ user.id }}</span>
+                                <span class="recent-meta-pill">Rol: {{ user.role }}</span>
+                            </div>
+                        </div>
+                    </article>
+                    {% endfor %}
+                {% else %}
+                    <div class="empty-state">No hay usuarios recientes.</div>
+                {% endif %}
+            </div>
+        </article>
+
+        <article class="dashboard-card">
+            <div class="card-head">
+                <div>
+                    <h3>Últimos lugares</h3>
+                    <p>Lugares agregados recientemente</p>
+                </div>
+            </div>
+
+            <div class="recent-list recent-list-vertical">
+                {% if data and data.recent and data.recent.places %}
+                    {% for place in data.recent.places %}
+                    <article class="recent-item">
+                        <div class="recent-badge">{{ place.type or 'Lugar' }}</div>
+                        <div class="recent-content">
+                            <strong>{{ place.name or 'Sin nombre' }}</strong>
+                            <span>{{ place.city or 'Sin ciudad' }}</span>
+                            <div class="recent-meta">
+                                <span class="recent-meta-pill">ID: {{ place.id }}</span>
+                                {% if place.price is not none %}
+                                    <span class="recent-meta-pill">${{ place.price }}</span>
+                                {% endif %}
+                                {% if place.type %}
+                                    <span class="recent-meta-pill">{{ place.type }}</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </article>
+                    {% endfor %}
+                {% else %}
+                    <div class="empty-state">No hay lugares recientes.</div>
+                {% endif %}
+            </div>
+        </article>
+    </section>
+
+    <section class="dashboard-grid-two">
+        <article class="dashboard-card">
+            <div class="card-head">
+                <div>
+                    <h3>Últimas reseñas</h3>
+                    <p>Opiniones registradas recientemente</p>
+                </div>
+            </div>
+
+            <div class="recent-list recent-list-vertical">
+                {% if data and data.recent and data.recent.reviews %}
+                    {% for review in data.recent.reviews %}
+                    <article class="recent-item">
+                        <div class="recent-badge">Review</div>
+                        <div class="recent-content">
+                            <strong>Reseña #{{ review.id }}</strong>
+                            <span>{{ review.body or 'Sin contenido' }}</span>
+                            <div class="recent-meta">
+                                <span class="recent-meta-pill">Usuario: {{ review.user_id }}</span>
+                                <span class="recent-meta-pill">Lugar: {{ review.place_id }}</span>
+                            </div>
+                        </div>
+                    </article>
+                    {% endfor %}
+                {% else %}
+                    <div class="empty-state">No hay reseñas recientes.</div>
+                {% endif %}
+            </div>
+        </article>
+
+        <article class="dashboard-card">
+            <div class="card-head">
+                <div>
+                    <h3>Actividad reciente</h3>
+                    <p>Movimientos detectados recientemente en el sistema</p>
+                </div>
+            </div>
+
+            <div class="recent-list recent-list-vertical">
+                {% if data and data.recent_activity %}
+                    {% for item in data.recent_activity %}
+                    <article class="recent-item">
+                        <div class="recent-badge">{{ item.module or 'Sistema' }}</div>
+                        <div class="recent-content">
+                            <strong>{{ item.title or 'Movimiento registrado' }}</strong>
+                            <span>{{ item.detail or 'Sin detalle adicional' }}</span>
+                            <div class="recent-meta">
+                                {% if item.action %}
+                                    <span class="recent-meta-pill">{{ item.action }}</span>
+                                {% endif %}
+                                {% if item.created_at %}
+                                    <span class="recent-meta-pill">{{ item.created_at }}</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </article>
+                    {% endfor %}
+                {% else %}
+                    <div class="empty-state">No hay actividad reciente.</div>
+                {% endif %}
+            </div>
+        </article>
+    </section>
+
+</div>
+
+<script id="dashboard-data" type="application/json">
+{
+  "places_by_type": {{ (data.places_by_type if data and data.places_by_type else []) | tojson }},
+  "users_monthly": {{ (data.users_monthly if data and data.users_monthly else []) | tojson }},
+  "places_monthly": {{ (data.places_monthly if data and data.places_monthly else []) | tojson }},
+  "report_options": {{ (data.report_options if data and data.report_options else {
+    "places": [
+      {"value": "all", "label": "Todas las acciones"},
+      {"value": "created", "label": "Agregados"},
+      {"value": "updated", "label": "Modificaciones"},
+      {"value": "deleted", "label": "Eliminados"},
+      {"value": "current", "label": "Solo lugares actuales"}
+    ],
+    "reviews": [
+      {"value": "all", "label": "Todas las acciones"},
+      {"value": "created", "label": "Agregados"},
+      {"value": "updated", "label": "Modificaciones"},
+      {"value": "deleted", "label": "Eliminados"}
+    ],
+    "users": [
+      {"value": "all", "label": "Todas las acciones"},
+      {"value": "created", "label": "Agregados"},
+      {"value": "updated", "label": "Modificaciones"},
+      {"value": "deleted", "label": "Eliminados"}
+    ],
+    "approvals": [
+      {"value": "all", "label": "Todas las acciones"},
+      {"value": "approved", "label": "Aprobadas"},
+      {"value": "rejected", "label": "Rechazadas"}
+    ]
+  }) | tojson }}
+}
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+{% endblock %}

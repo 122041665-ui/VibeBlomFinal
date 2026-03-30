@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+
+{% block page_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/reviews.css') }}">
+{% endblock %}
+
+{% block page_header %}
+<h1>Reseñas</h1>
+<p>Administración de reseñas registradas en la plataforma</p>
+{% endblock %}
+
+{% block content %}
+<div class="reviews-container">
+
+    <section class="reviews-hero-card">
+        <div class="reviews-title-row">
+            <div>
+                <div class="reviews-title">Administración de reseñas</div>
+                <div class="reviews-subtitle">
+                    Consulta, edita y elimina las reseñas registradas por los usuarios dentro de la plataforma.
+                </div>
+            </div>
+        </div>
+
+        <div class="reviews-kpis">
+            <article class="reviews-kpi">
+                <span class="reviews-kpi-label">Registros visibles</span>
+                <strong class="reviews-kpi-value">{{ reviews|length if reviews else 0 }}</strong>
+            </article>
+
+            <article class="reviews-kpi">
+                <span class="reviews-kpi-label">Acceso</span>
+                <strong class="reviews-kpi-value">Staff</strong>
+            </article>
+
+            <article class="reviews-kpi">
+                <span class="reviews-kpi-label">Módulo</span>
+                <strong class="reviews-kpi-value">Reseñas</strong>
+            </article>
+        </div>
+    </section>
+
+    <section class="reviews-table-card">
+        <div class="reviews-table-head">
+            <div>
+                <h3>Lista de reseñas</h3>
+                <p>Selecciona una reseña para habilitar las acciones.</p>
+            </div>
+        </div>
+
+        <div class="reviews-table-wrapper">
+            <table class="reviews-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Usuario</th>
+                        <th>Lugar</th>
+                        <th>Calificación</th>
+                        <th>Contenido</th>
+                        <th>Fecha</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if reviews %}
+                        {% for r in reviews %}
+                            {% set review_body = r.body if r.body else (r.comment if r.comment else 'Sin contenido') %}
+                            {% set review_user_name = r.user_name if r.user_name else ('Usuario #' ~ (r.user_id if r.user_id else 'N/D')) %}
+                            {% set review_place_name = r.place_name if r.place_name else ('Lugar #' ~ (r.place_id if r.place_id else 'N/D')) %}
+                            {% set review_rating = r.rating if r.rating is not none else 'N/D' %}
+                            {% set review_date = r.created_at if r.created_at else 'Sin fecha' %}
+                            {% set edit_url = r.edit_url if r.edit_url else '' %}
+                            {% set delete_url = r.delete_url if r.delete_url else '' %}
+
+                            <tr
+                                class="review-row"
+                                tabindex="0"
+                                role="button"
+                                aria-label="Seleccionar reseña #{{ r.id }}"
+                                data-review-id="{{ r.id }}"
+                                data-edit-url="{{ edit_url }}"
+                                data-delete-url="{{ delete_url }}"
+                                data-user-name="{{ review_user_name }}"
+                                data-place-name="{{ review_place_name }}"
+                            >
+                                <td>
+                                    <span class="review-id">#{{ r.id }}</span>
+                                </td>
+
+                                <td>
+                                    <div class="review-user">
+                                        <div class="review-user-avatar">
+                                            {{ review_user_name[:1]|upper if review_user_name else 'U' }}
+                                        </div>
+                                        <div class="review-user-info">
+                                            <div class="review-user-name">{{ review_user_name }}</div>
+                                        </div>
+                                    </div>
+                                </td>
+
+                                <td>
+                                    <span class="review-place">{{ review_place_name }}</span>
+                                </td>
+
+                                <td>
+                                    <div class="review-rating">
+                                        {% if review_rating != 'N/D' %}
+                                            <span class="review-rating-badge">{{ review_rating }}/5</span>
+                                        {% else %}
+                                            <span class="review-rating-badge is-muted">N/D</span>
+                                        {% endif %}
+                                    </div>
+                                </td>
+
+                                <td>
+                                    <div class="review-body review-body--clamp">{{ review_body }}</div>
+                                </td>
+
+                                <td>
+                                    <span class="review-date">{{ review_date }}</span>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="6" class="empty-state-cell">
+                                <div class="empty-state-box">
+                                    <strong>No hay reseñas registradas por mostrar.</strong>
+                                    <span>No se encontraron resultados disponibles en este momento.</span>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if reviews %}
+        <div class="reviews-actions-panel" id="reviewsActionsPanel">
+            <div class="reviews-actions-info">
+                <span class="reviews-actions-label">Reseña seleccionada</span>
+                <strong id="selectedReviewText">Ninguna reseña seleccionada</strong>
+            </div>
+
+            <div class="reviews-actions-buttons">
+                <a
+                    href="#"
+                    id="editReviewButton"
+                    class="reviews-panel-btn reviews-panel-btn-edit is-disabled"
+                    aria-disabled="true"
+                >
+                    Editar
+                </a>
+
+                <form id="deleteReviewForm" method="POST" action="">
+                    <button
+                        type="submit"
+                        id="deleteReviewButton"
+                        class="reviews-panel-btn reviews-panel-btn-delete"
+                        disabled
+                    >
+                        Eliminar
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+    </section>
+
+</div>
+{% endblock %}
+
+{% block page_js %}
+<script src="{{ url_for('static', filename='js/reviews.js') }}"></script>
+{% endblock %}

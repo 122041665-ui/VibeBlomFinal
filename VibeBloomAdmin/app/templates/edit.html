@@ -1,0 +1,223 @@
+
+
+{% extends "base.html" %}
+
+{% block page_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/reviews.css') }}">
+<style>
+    .review-edit-card {
+        width: 100%;
+        min-width: 0;
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 24px;
+        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.06);
+        padding: 24px;
+        box-sizing: border-box;
+        overflow: hidden;
+    }
+
+    .review-edit-grid {
+        display: grid;
+        gap: 18px;
+    }
+
+    .review-edit-meta {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 14px;
+    }
+
+    .review-edit-meta-item {
+        border: 1px solid #e2e8f0;
+        background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+        border-radius: 16px;
+        padding: 14px;
+        min-width: 0;
+    }
+
+    .review-edit-meta-label {
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: .04em;
+        text-transform: uppercase;
+        color: #64748b;
+        display: block;
+        margin-bottom: 6px;
+    }
+
+    .review-edit-meta-value {
+        font-size: 14px;
+        font-weight: 700;
+        color: #0f172a;
+        line-height: 1.45;
+        word-break: break-word;
+    }
+
+    .review-edit-field {
+        display: grid;
+        gap: 8px;
+    }
+
+    .review-edit-label {
+        font-size: 13px;
+        font-weight: 800;
+        color: #0f172a;
+    }
+
+    .review-edit-textarea {
+        width: 100%;
+        min-height: 180px;
+        resize: vertical;
+        border: 1px solid #cbd5e1;
+        border-radius: 16px;
+        padding: 14px 16px;
+        font-size: 14px;
+        line-height: 1.6;
+        color: #0f172a;
+        background: #ffffff;
+        box-sizing: border-box;
+        outline: none;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .review-edit-textarea:focus {
+        border-color: #93c5fd;
+        box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.12);
+    }
+
+    .review-edit-help {
+        font-size: 12px;
+        color: #64748b;
+        line-height: 1.45;
+    }
+
+    .review-edit-actions {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .review-edit-btn,
+    .review-edit-link {
+        appearance: none;
+        -webkit-appearance: none;
+        min-height: 40px;
+        padding: 0 16px;
+        border-radius: 12px;
+        border: 1px solid transparent;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        font-size: 12px;
+        font-weight: 800;
+        line-height: 1;
+        cursor: pointer;
+        box-sizing: border-box;
+        transition: transform 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+    }
+
+    .review-edit-btn:hover,
+    .review-edit-link:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 10px 20px rgba(15, 23, 42, 0.08);
+    }
+
+    .review-edit-btn:active,
+    .review-edit-link:active {
+        transform: translateY(0);
+    }
+
+    .review-edit-btn-primary {
+        background: #2563eb;
+        color: #ffffff;
+        border-color: #2563eb;
+    }
+
+    .review-edit-btn-primary:hover {
+        background: #1d4ed8;
+        color: #ffffff;
+        border-color: #1d4ed8;
+    }
+
+    .review-edit-link-secondary {
+        background: #f8fafc;
+        color: #0f172a;
+        border-color: #e2e8f0;
+    }
+
+    .review-edit-link-secondary:hover {
+        background: #e2e8f0;
+        color: #020617;
+        border-color: #cbd5e1;
+    }
+
+    @media (max-width: 768px) {
+        .review-edit-meta {
+            grid-template-columns: 1fr;
+        }
+
+        .review-edit-card {
+            padding: 20px;
+            border-radius: 20px;
+        }
+
+        .review-edit-actions {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .review-edit-btn,
+        .review-edit-link {
+            width: 100%;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block page_header %}
+<h1>Editar reseña</h1>
+<p>Actualiza el contenido de la reseña seleccionada</p>
+{% endblock %}
+
+{% block content %}
+<div class="reviews-container">
+    <section class="review-edit-card">
+        <form method="POST" class="review-edit-grid">
+            <div class="review-edit-meta">
+                <div class="review-edit-meta-item">
+                    <span class="review-edit-meta-label">ID</span>
+                    <div class="review-edit-meta-value">#{{ review.id }}</div>
+                </div>
+
+                <div class="review-edit-meta-item">
+                    <span class="review-edit-meta-label">Usuario</span>
+                    <div class="review-edit-meta-value">
+                        {{ review.user.name if review.user and review.user.name else ('Usuario #' ~ (review.user_id if review.user_id else 'N/D')) }}
+                    </div>
+                </div>
+
+                <div class="review-edit-meta-item">
+                    <span class="review-edit-meta-label">Lugar</span>
+                    <div class="review-edit-meta-value">
+                        {{ review.place.name if review.place and review.place.name else ('Lugar #' ~ (review.place_id if review.place_id else 'N/D')) }}
+                    </div>
+                </div>
+            </div>
+
+            <div class="review-edit-field">
+                <label for="body" class="review-edit-label">Contenido de la reseña</label>
+                <textarea id="body" name="body" class="review-edit-textarea" required>{{ review.body if review and review.body else '' }}</textarea>
+                <p class="review-edit-help">Modifica el contenido y guarda los cambios para actualizar la reseña.</p>
+            </div>
+
+            <div class="review-edit-actions">
+                <button type="submit" class="review-edit-btn review-edit-btn-primary">Guardar cambios</button>
+                <a href="{{ url_for('reviews.list_reviews') }}" class="review-edit-link review-edit-link-secondary">Cancelar</a>
+            </div>
+        </form>
+    </section>
+</div>
+{% endblock %}

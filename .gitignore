@@ -1,0 +1,39 @@
+cat > .gitignore <<'EOF'
+.DS_Store
+.vscode/
+.idea/
+
+# env
+.env
+.env.*
+!.env.example
+
+# python
+__pycache__/
+*.py[cod]
+*.log
+venv/
+.venv/
+env/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# laravel
+VibeBloom/vendor/
+VibeBloom/node_modules/
+VibeBloom/public/build/
+VibeBloom/public/hot
+VibeBloom/storage/logs/*
+VibeBloom/storage/framework/cache/*
+VibeBloom/storage/framework/sessions/*
+VibeBloom/storage/framework/views/*
+VibeBloom/bootstrap/cache/*.php
+
+# node
+node_modules/
+
+# temp
+tmp/
+temp/
+EOF

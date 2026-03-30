@@ -1,0 +1,41 @@
+Options +FollowSymLinks
+RewriteEngine On
+
+# Permitir acceso a /storage
+<Directory "C:/xampp/htdocs/vibebloom/storage/app/public">
+    AllowOverride All
+    Require all granted
+</Directory>
+
+# Permitir acceso a los archivos enlazados
+<Directory "C:/xampp/htdocs/vibebloom/public/storage">
+    Options +Indexes +FollowSymLinks
+    AllowOverride All
+    Require all granted
+</Directory>
+
+<IfModule mod_rewrite.c>
+    <IfModule mod_negotiation.c>
+        Options -MultiViews -Indexes
+    </IfModule>
+
+    RewriteEngine On
+
+    # Handle Authorization Header
+    RewriteCond %{HTTP:Authorization} .
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+    # Handle X-XSRF-Token Header
+    RewriteCond %{HTTP:x-xsrf-token} .
+    RewriteRule .* - [E=HTTP_X_XSRF_TOKEN:%{HTTP:X-XSRF-Token}]
+
+    # Redirect Trailing Slashes If Not A Folder...
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_URI} (.+)/$
+    RewriteRule ^ %1 [L,R=301]
+
+    # Send Requests To Front Controller...
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteRule ^ index.php [L]
+</IfModule>

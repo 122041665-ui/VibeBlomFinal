@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VibeBloom Admin</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+    {% block page_css %}{% endblock %}
+</head>
+<body>
+
+    <aside class="sidebar">
+        <div class="sidebar-brand">
+            <div class="sidebar-brand-dot"></div>
+            <div>
+                <h2>VibeBloom</h2>
+                <p>Admin Panel</p>
+            </div>
+        </div>
+
+        <nav class="sidebar-nav">
+            <a href="{{ url_for('dashboard.dashboard') }}"
+               class="{% if request.path == '/dashboard' or request.path == '/' or request.path == '/dashboard/' %}active{% endif %}">
+                Dashboard
+            </a>
+
+            <a href="{{ url_for('approvals.list_approvals') }}"
+               class="{% if request.path.startswith('/approvals') %}active{% endif %}">
+                Aprobaciones
+            </a>
+
+            <a href="{{ url_for('places.list_places') }}"
+               class="{% if request.path.startswith('/places') %}active{% endif %}">
+                Lugares
+            </a>
+
+            <a href="{{ url_for('users.list_users') }}"
+               class="{% if request.path.startswith('/users') %}active{% endif %}">
+                Usuarios
+            </a>
+
+            <a href="{{ url_for('reviews.list_reviews') }}"
+               class="{% if request.path.startswith('/reviews') %}active{% endif %}">
+                Reseñas
+            </a>
+        </nav>
+
+        <div class="sidebar-note">
+            <div class="sidebar-note-title">VibeBloom Admin</div>
+            <div class="sidebar-note-text">
+                Gestiona aprobaciones, lugares, usuarios y reseñas desde un solo panel.
+            </div>
+        </div>
+    </aside>
+
+    <div class="main-shell">
+        <header class="topbar">
+            <div class="topbar-inner">
+
+                <div class="topbar-title">
+                    {% block page_header %}
+                    <h1>Dashboard</h1>
+                    <p>Resumen general y reportes administrativos de la plataforma</p>
+                    {% endblock %}
+                </div>
+
+                <div class="topbar-user">
+                    <div class="topbar-user-avatar">
+                        {{ session.get('user', {}).get('name', 'A')[:1]|upper }}
+                    </div>
+
+                    <div>
+                        <div class="topbar-user-name">
+                            {{ session.get('user', {}).get('name', 'Admin') }}
+                        </div>
+                        <div class="topbar-user-role">
+                            {{ session.get('user', {}).get('role', 'admin')|capitalize }}
+                        </div>
+                    </div>
+
+                    <button type="button"
+                        class="user-menu-btn"
+                        id="userMenuToggle"
+                        aria-label="Abrir menú de usuario"
+                        aria-expanded="false"
+                        aria-controls="userDropdown">
+
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+                            <path d="M4 7h16"></path>
+                            <path d="M4 12h16"></path>
+                            <path d="M4 17h16"></path>
+                        </svg>
+                    </button>
+
+                    <div class="user-dropdown" id="userDropdown">
+                        <form action="{{ url_for('auth.logout') }}" method="POST">
+                            <button type="submit" class="dropdown-item logout-btn">
+                                Cerrar sesión
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+            </div>
+        </header>
+
+        <main class="page-content">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div class="flash-global-stack">
+                        {% for category, message in messages %}
+                            <div class="flash-global flash-{{ category }}">
+                                {{ message }}
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+    {% block page_js %}{% endblock %}
+
+    <script>
+        const userMenuButton = document.getElementById('userMenuToggle');
+        const dropdown = document.getElementById('userDropdown');
+
+        if (userMenuButton && dropdown) {
+            userMenuButton.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const isOpen = dropdown.classList.toggle('show');
+                userMenuButton.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+            });
+
+            dropdown.addEventListener('click', (e) => {
+                e.stopPropagation();
+            });
+
+            document.addEventListener('click', () => {
+                dropdown.classList.remove('show');
+                userMenuButton.setAttribute('aria-expanded', 'false');
+            });
+        }
+    </script>
+
+</body>
+</html>

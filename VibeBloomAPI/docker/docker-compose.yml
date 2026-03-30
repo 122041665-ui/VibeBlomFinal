@@ -1,0 +1,11 @@
+services:
+  vibebloomapi:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: vibebloomapi
+    ports:
+      - "8010:8010"
+    env_file:
+      - ../.env
+    restart: unless-stopped

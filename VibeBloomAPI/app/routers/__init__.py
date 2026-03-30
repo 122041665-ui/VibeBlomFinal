@@ -1,0 +1,9 @@
+from app.routers.auth import router as auth_router
+from app.routers.users import router as users_router
+from app.routers.places import router as places_router
+from app.routers.admin import router as admin_router
+from app.routers.approvals import router as approvals_router
+from app.routers.favorites import router as favorites_router
+from app.routers.memories import router as memories_router
+from app.routers.reports import router as reports_router
+from app.routers.reviews import router as reviews_router
