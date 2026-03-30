@@ -1,3 +1,6 @@
+[variables]
+PHP_VERSION = "8.4"
+
 [phases.install]
 cmds = [
   "composer install --no-dev --optimize-autoloader",
@@ -20,12 +23,10 @@ cmd = "php artisan serve --host=0.0.0.0 --port=$PORT"
 
 ---
 
-## PASO 6.4 — Subir los cambios a GitHub Desktop
+### Subir el cambio a GitHub Desktop
 
 1. Abre **GitHub Desktop**
-2. Verás los 2 archivos nuevos:
-   - `VibeBloom/Procfile`
-   - `VibeBloom/nixpacks.toml`
+2. Verás el archivo modificado `VibeBloom/nixpacks.toml`
 3. En **"Summary"** escribe:
 ```
-Add Procfile and nixpacks config for Laravel deployment
+Fix: set PHP 8.4 in nixpacks config
