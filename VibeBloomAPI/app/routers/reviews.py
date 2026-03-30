@@ -1,3 +1,4 @@
+from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session, joinedload
@@ -118,10 +119,14 @@ def create_review(
             detail="El contenido de la reseña no puede estar vacío",
         )
 
+    now = datetime.utcnow()
+
     review = Review(
         user_id=current_user.id,
         place_id=payload.place_id,
         body=body,
+        created_at=now,
+        updated_at=now,
     )
 
     db.add(review)
@@ -168,6 +173,7 @@ def update_review(
         )
 
     review.body = body
+    review.updated_at = datetime.utcnow()
 
     db.commit()
     db.refresh(review)

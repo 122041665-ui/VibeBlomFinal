@@ -1,7 +1,29 @@
+from datetime import datetime
+
 from flask import Blueprint, render_template, request, session, redirect, url_for, flash
 from app.services.api_client import api_delete, api_get, api_put
 
 reviews_bp = Blueprint("reviews", __name__, url_prefix="/reviews")
+
+
+def _format_review_datetime(value):
+    if not value:
+        return "—"
+
+    if isinstance(value, datetime):
+        return value.strftime("%d/%m/%Y %H:%M")
+
+    value_str = str(value).strip()
+    if not value_str:
+        return "—"
+
+    normalized = value_str.replace("Z", "+00:00")
+
+    try:
+        parsed = datetime.fromisoformat(normalized)
+        return parsed.strftime("%d/%m/%Y %H:%M")
+    except Exception:
+        return value_str
 
 
 def _handle_auth_errors(response):
@@ -33,10 +55,12 @@ def _normalize_reviews(raw_reviews):
                 "body": item.get("body"),
                 "comment": item.get("comment"),
                 "rating": item.get("rating"),
-                "created_at": item.get("created_at"),
-                "updated_at": item.get("updated_at"),
-                "user_name": user.get("name"),
-                "place_name": place.get("name"),
+                "created_at": _format_review_datetime(item.get("created_at")),
+                "updated_at": _format_review_datetime(item.get("updated_at")),
+                "created_at_raw": item.get("created_at"),
+                "updated_at_raw": item.get("updated_at"),
+                "user_name": user.get("name") or "Sin usuario",
+                "place_name": place.get("name") or "Sin lugar",
                 "edit_url": url_for("reviews.edit_review_view", review_id=review_id) if review_id else "",
                 "delete_url": url_for("reviews.delete_review", review_id=review_id) if review_id else "",
             }
