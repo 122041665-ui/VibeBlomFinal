@@ -2,7 +2,7 @@ import os
 import requests
 from flask import session
 
-FASTAPI_URL = os.getenv("FASTAPI_URL", "http://127.0.0.1:8010")
+FASTAPI_URL = os.getenv("FASTAPI_URL", "http://host.docker.internal:8010").rstrip("/")
 
 
 def get_auth_headers():

@@ -41,6 +41,7 @@ PLACE_CANDIDATE_COLUMNS = [
     "city",
     "address",
     "description",
+    "price",
     "price_range",
     "latitude",
     "longitude",
@@ -302,13 +303,16 @@ def approve_approval(
 
     place_cols = get_existing_columns(db, PLACES_TABLE, PLACE_CANDIDATE_COLUMNS)
 
+    approval_price = approval.get("price")
+
     field_map = {
         "name": approval.get("name"),
         "type": approval.get("type"),
         "city": approval.get("city"),
         "address": approval.get("address"),
         "description": approval.get("description"),
-        "price_range": approval.get("price"),
+        "price": approval_price,
+        "price_range": approval_price,
         "latitude": approval.get("lat"),
         "longitude": approval.get("lng"),
         "user_id": approval.get("user_id"),
@@ -324,9 +328,12 @@ def approve_approval(
             columns_to_insert.append(col)
             values_to_insert.append("NOW()")
         elif col in field_map:
+            value = field_map[col]
+            if value is None and col in ["price", "price_range"]:
+                continue
             columns_to_insert.append(col)
             values_to_insert.append(f":{col}")
-            insert_data[col] = field_map[col]
+            insert_data[col] = value
 
     if not columns_to_insert:
         raise HTTPException(

@@ -30,26 +30,38 @@
         $defaultPhoto = asset('images/default.jpg');
         $defaultUserPhoto = asset('images/default-user.png');
 
-        $resolveUserPhoto = function ($user) use ($defaultUserPhoto) {
+        $resolveUserField = function ($user, array $keys, $fallback = null) {
+            if (!$user) return $fallback;
+
+            foreach ($keys as $key) {
+                $value = is_array($user)
+                    ? ($user[$key] ?? null)
+                    : ($user->{$key} ?? null);
+
+                if (is_string($value) && trim($value) !== '') {
+                    return trim($value);
+                }
+
+                if ($value !== null && !is_string($value)) {
+                    return $value;
+                }
+            }
+
+            return $fallback;
+        };
+
+        $resolveUserPhoto = function ($user) use ($defaultUserPhoto, $resolveUserField) {
             if (!$user) return $defaultUserPhoto;
 
-            $photo = null;
-
-            if (is_array($user)) {
-                $photo = $user['profile_photo_url']
-                    ?? $user['photo_url']
-                    ?? $user['profile_photo']
-                    ?? $user['avatar']
-                    ?? $user['photo']
-                    ?? null;
-            } else {
-                $photo = $user->profile_photo_url
-                    ?? $user->photo_url
-                    ?? $user->profile_photo
-                    ?? $user->avatar
-                    ?? $user->photo
-                    ?? null;
-            }
+            $photo = $resolveUserField($user, [
+                'profile_photo_url',
+                'photo_url',
+                'avatar_url',
+                'profile_photo_path',
+                'profile_photo',
+                'avatar',
+                'photo',
+            ]);
 
             if (!$photo || trim((string) $photo) === '') {
                 return $defaultUserPhoto;
@@ -57,21 +69,25 @@
 
             $photo = trim((string) $photo);
 
-            if (str_starts_with($photo, 'http://') || str_starts_with($photo, 'https://') || str_starts_with($photo, '/')) {
+            if (
+                str_starts_with($photo, 'http://') ||
+                str_starts_with($photo, 'https://') ||
+                str_starts_with($photo, '//') ||
+                str_starts_with($photo, 'data:') ||
+                str_starts_with($photo, '/')
+            ) {
                 return $photo;
+            }
+
+            if (str_starts_with($photo, 'storage/')) {
+                return asset($photo);
             }
 
             return asset('storage/' . ltrim($photo, '/'));
         };
 
-        $resolveUserName = function ($user, $fallback = 'Usuario no disponible') {
-            if (!$user) return $fallback;
-
-            if (is_array($user)) {
-                return $user['name'] ?? $fallback;
-            }
-
-            return $user->name ?? $fallback;
+        $resolveUserName = function ($user, $fallback = 'Usuario no disponible') use ($resolveUserField) {
+            return $resolveUserField($user, ['name'], $fallback) ?: $fallback;
         };
 
         $resolveHumanDate = function ($value) {
@@ -96,6 +112,23 @@
             } catch (\Throwable $e) {
                 return 'Sin fecha';
             }
+        };
+
+        $resolveDisplayDate = function ($primary, $secondary = null) use ($resolveHumanDate) {
+            if ($primary) return $resolveHumanDate($primary);
+            if ($secondary) return $resolveHumanDate($secondary);
+            return 'Sin fecha';
+        };
+
+        $resolveShortAddress = function ($value) {
+            $value = trim((string) ($value ?? ''));
+            if ($value === '') return null;
+
+            if (mb_strlen($value) <= 52) {
+                return $value;
+            }
+
+            return mb_substr($value, 0, 49) . '...';
         };
 
         $placeId = is_array($place) ? ($place['id'] ?? null) : ($place->id ?? null);
@@ -149,6 +182,7 @@
 
         $address = trim((string)($placeAddress ?? ''));
         $address = $address !== '' ? $address : null;
+        $addressBadge = $resolveShortAddress($address);
 
         $hasCoords = is_numeric($placeLat) && is_numeric($placeLng) && $placeLat !== null && $placeLng !== null;
 
@@ -256,13 +290,13 @@
                                     <span class="text-xs font-semibold text-amber-700 dark:text-amber-300 ml-1">{{ $rating }}/5</span>
                                 </div>
 
-                                @if($address)
-                                    <span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300">
+                                @if($addressBadge)
+                                    <span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300 max-w-full">
                                         <svg class="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                                             <path d="M12 21s7-4.6 7-11a7 7 0 1 0-14 0c0 6.4 7 11 7 11Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
                                             <circle cx="12" cy="10" r="2.2" stroke="currentColor" stroke-width="1.8"/>
                                         </svg>
-                                        {{ $placeCity }}
+                                        <span class="truncate">{{ $addressBadge }}</span>
                                     </span>
                                 @endif
                             </div>
@@ -445,13 +479,14 @@
                                     $reviewUserId = is_array($review) ? ($review['user_id'] ?? null) : ($review->user_id ?? null);
                                     $reviewBody = is_array($review) ? ($review['body'] ?? 'Sin contenido') : ($review->body ?? 'Sin contenido');
                                     $reviewCreatedAt = is_array($review) ? ($review['created_at'] ?? null) : ($review->created_at ?? null);
+                                    $reviewUpdatedAt = is_array($review) ? ($review['updated_at'] ?? null) : ($review->updated_at ?? null);
 
                                     $reviewUser = is_array($review) ? ($review['user'] ?? null) : ($review->user ?? null);
                                     $reviewReplies = is_array($review) ? ($review['replies'] ?? []) : ($review->replies ?? collect());
 
                                     $reviewUserName = $resolveUserName($reviewUser, $reviewUserId ? 'Usuario #'.$reviewUserId : 'Usuario no disponible');
                                     $reviewUserPhoto = $resolveUserPhoto($reviewUser);
-                                    $reviewTimeText = $resolveHumanDate($reviewCreatedAt);
+                                    $reviewTimeText = $resolveDisplayDate($reviewCreatedAt, $reviewUpdatedAt);
 
                                     $repliesList = is_array($reviewReplies) ? $reviewReplies : collect($reviewReplies)->toArray();
                                 @endphp
@@ -463,6 +498,7 @@
                                                 src="{{ $reviewUserPhoto }}"
                                                 class="w-11 h-11 rounded-full object-cover border border-gray-200 dark:border-slate-700 shrink-0 bg-slate-100 dark:bg-slate-800"
                                                 alt="Foto de {{ $reviewUserName }}"
+                                                loading="lazy"
                                                 onerror="this.onerror=null;this.src='{{ $defaultUserPhoto }}';"
                                             >
 
@@ -543,11 +579,12 @@
                                                     $replyUserId = is_array($reply) ? ($reply['user_id'] ?? null) : ($reply->user_id ?? null);
                                                     $replyBody = is_array($reply) ? ($reply['body'] ?? 'Sin contenido') : ($reply->body ?? 'Sin contenido');
                                                     $replyCreatedAt = is_array($reply) ? ($reply['created_at'] ?? null) : ($reply->created_at ?? null);
+                                                    $replyUpdatedAt = is_array($reply) ? ($reply['updated_at'] ?? null) : ($reply->updated_at ?? null);
                                                     $replyUser = is_array($reply) ? ($reply['user'] ?? null) : ($reply->user ?? null);
 
                                                     $replyUserName = $resolveUserName($replyUser, $replyUserId ? 'Usuario #'.$replyUserId : 'Usuario no disponible');
                                                     $replyUserPhoto = $resolveUserPhoto($replyUser);
-                                                    $replyTimeText = $resolveHumanDate($replyCreatedAt);
+                                                    $replyTimeText = $resolveDisplayDate($replyCreatedAt, $replyUpdatedAt);
                                                 @endphp
 
                                                 <div class="rounded-2xl border border-gray-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/70 p-4 space-y-3 overflow-hidden">
@@ -557,6 +594,7 @@
                                                                 src="{{ $replyUserPhoto }}"
                                                                 class="w-9 h-9 rounded-full object-cover border border-gray-200 dark:border-slate-700 shrink-0 bg-slate-100 dark:bg-slate-800"
                                                                 alt="Foto de {{ $replyUserName }}"
+                                                                loading="lazy"
                                                                 onerror="this.onerror=null;this.src='{{ $defaultUserPhoto }}';"
                                                             >
 
@@ -662,12 +700,18 @@
                     </div>
 
                     <div class="{{ $card }} flex items-center gap-4">
-                        <img src="{{ $publisherPhoto }}"
-                             class="w-14 h-14 rounded-full object-cover shadow-sm border border-gray-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800"
-                             alt="Foto de {{ $publisherName }}"
-                             onerror="this.onerror=null;this.src='{{ $defaultUserPhoto }}';">
+                        <div class="relative shrink-0">
+                            <img src="{{ $publisherPhoto }}"
+                                 class="w-14 h-14 rounded-full object-cover shadow-sm border border-gray-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800"
+                                 alt="Foto de {{ $publisherName }}"
+                                 loading="lazy"
+                                 onerror="this.onerror=null;this.src='{{ $defaultUserPhoto }}';">
+                            <span class="absolute -bottom-1 -right-1 inline-flex items-center rounded-full bg-blue-600 px-2 py-0.5 text-[10px] font-bold text-white shadow-sm">
+                                Autor
+                            </span>
+                        </div>
 
-                        <div class="min-w-0">
+                        <div class="min-w-0 flex-1">
                             <p class="text-sm text-gray-500 dark:text-slate-400">Publicado por</p>
                             <p class="text-lg font-semibold text-gray-900 dark:text-slate-100 break-words">
                                 {{ $publisherName }}
