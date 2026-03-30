@@ -1,0 +1,31 @@
+[phases.install]
+cmds = [
+  "composer install --no-dev --optimize-autoloader",
+  "npm install"
+]
+
+[phases.build]
+cmds = [
+  "npm run build",
+  "php artisan config:cache",
+  "php artisan route:cache",
+  "php artisan view:cache"
+]
+
+[start]
+cmd = "php artisan serve --host=0.0.0.0 --port=$PORT"
+```
+
+3. Guarda con **`Cmd + S`**
+
+---
+
+## PASO 6.4 — Subir los cambios a GitHub Desktop
+
+1. Abre **GitHub Desktop**
+2. Verás los 2 archivos nuevos:
+   - `VibeBloom/Procfile`
+   - `VibeBloom/nixpacks.toml`
+3. En **"Summary"** escribe:
+```
+Add Procfile and nixpacks config for Laravel deployment
