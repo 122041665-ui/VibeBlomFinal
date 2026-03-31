@@ -24,7 +24,7 @@ RUN mkdir -p bootstrap/cache storage/logs storage/framework/cache \
 
 RUN composer install --no-dev --optimize-autoloader
 
-RUN npm install && npm run build
+RUN npm install && APP_URL=https://vibebloom-production.up.railway.app npm run build
 
 EXPOSE 8080
 
