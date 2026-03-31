@@ -6,173 +6,219 @@
 
 {% block page_header %}
 <h1>Aprobaciones</h1>
-<p>Revisión de solicitudes enviadas desde Laravel</p>
+<p>Solicitudes de nuevos lugares enviadas desde Laravel</p>
 {% endblock %}
 
 {% block content %}
-<div class="users-container approvals-page">
+<div class="ap-container">
 
-    <section class="users-hero-card">
-        <div class="users-title-row">
-            <div>
-                <div class="users-title">Lista de aprobaciones</div>
-                <div class="users-subtitle">
-                    Consulta los detalles completos de cada solicitud y decide si se aprueba o se rechaza desde el panel administrativo.
-                </div>
-            </div>
+  {# ── Stats ── #}
+  <div class="ap-stats">
+    <div class="ap-stat">
+      <span class="ap-stat-label">Total</span>
+      <strong class="ap-stat-val">{{ (approvals|length) if approvals else 0 }}</strong>
+    </div>
+    <div class="ap-stat ap-stat--pending">
+      <span class="ap-stat-label">Pendientes</span>
+      <strong class="ap-stat-val">{{ total_pending or 0 }}</strong>
+    </div>
+    <div class="ap-stat ap-stat--approved">
+      <span class="ap-stat-label">Aprobadas</span>
+      <strong class="ap-stat-val">{{ approved_today or 0 }}</strong>
+    </div>
+    <div class="ap-stat ap-stat--rejected">
+      <span class="ap-stat-label">Rechazadas</span>
+      <strong class="ap-stat-val">{{ rejected_today or 0 }}</strong>
+    </div>
+  </div>
+
+  {# ── Search + filter ── #}
+  {% if approvals %}
+  <div class="ap-toolbar">
+    <label class="ap-search-wrap" for="apSearch">
+      <svg class="ap-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      <input type="search" id="apSearch" class="ap-search" placeholder="Buscar nombre, ciudad o tipo…" autocomplete="off">
+    </label>
+
+    <div class="ap-filters" id="apFilters">
+      <button type="button" class="ap-filter-btn active" data-filter="all">Todas</button>
+      <button type="button" class="ap-filter-btn" data-filter="pending">Pendientes</button>
+      <button type="button" class="ap-filter-btn" data-filter="approved">Aprobadas</button>
+      <button type="button" class="ap-filter-btn" data-filter="rejected">Rechazadas</button>
+    </div>
+  </div>
+  {% endif %}
+
+  {# ── Cards grid ── #}
+  {% if approvals %}
+  <div class="ap-grid" id="apGrid">
+    {% for a in approvals %}
+    {% set status     = (a.status or 'pending')|lower %}
+    {% set aname      = a.name        or 'Solicitud sin nombre' %}
+    {% set acity      = a.city        or 'Sin ciudad' %}
+    {% set atype      = a.type        or 'Sin tipo' %}
+    {% set adesc      = a.description or 'Sin descripción registrada.' %}
+    {% set auser      = a.user.name   if a.user and a.user.name else ('Usuario #' ~ a.user_id if a.user_id else 'Sin usuario') %}
+    {% set aemail     = a.user.email  if a.user and a.user.email else none %}
+    {% set aprice     = a.price       if a.price is not none else none %}
+    {% set arating    = a.rating      if a.rating is not none else none %}
+    {% set acreated   = a.created_at  if a.created_at else none %}
+    {% set aphoto     = a.photo_url   if a.photo_url else none %}
+
+    <article class="ap-card"
+             data-status="{{ status }}"
+             data-q="{{ (aname ~ ' ' ~ acity ~ ' ' ~ atype)|lower }}">
+
+      {# Image / header ─── #}
+      <div class="ap-card-media">
+        {% if aphoto %}
+        <img src="{{ aphoto }}" alt="{{ aname }}" class="ap-card-img" loading="lazy">
+        {% else %}
+        <div class="ap-card-img-placeholder">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4">
+            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+            <circle cx="12" cy="10" r="3"/>
+          </svg>
+        </div>
+        {% endif %}
+
+        <span class="ap-status-badge ap-status-{{ status }}">
+          {% if status == 'approved' %}Aprobada
+          {% elif status == 'rejected' %}Rechazada
+          {% else %}Pendiente{% endif %}
+        </span>
+      </div>
+
+      {# Body ── #}
+      <div class="ap-card-body">
+        <div class="ap-card-header">
+          <div>
+            <h3 class="ap-card-title">{{ aname }}</h3>
+            <p class="ap-card-meta">{{ acity }} · {{ atype|replace('_', ' ')|title }}</p>
+          </div>
+          <span class="ap-card-id">#{{ a.id }}</span>
         </div>
 
-        <div class="users-kpis">
-            <article class="users-kpi">
-                <span class="users-kpi-label">Pendientes</span>
-                <strong class="users-kpi-value">{{ total_pending if total_pending is defined else 0 }}</strong>
-            </article>
-
-            <article class="users-kpi">
-                <span class="users-kpi-label">Aprobadas hoy</span>
-                <strong class="users-kpi-value">{{ approved_today if approved_today is defined else 0 }}</strong>
-            </article>
-
-            <article class="users-kpi">
-                <span class="users-kpi-label">Rechazadas hoy</span>
-                <strong class="users-kpi-value">{{ rejected_today if rejected_today is defined else 0 }}</strong>
-            </article>
+        <div class="ap-card-tags">
+          {% if aprice is not none %}
+          <span class="ap-tag">${{ aprice }}</span>
+          {% endif %}
+          {% if arating is not none %}
+          <span class="ap-tag">★ {{ arating }}</span>
+          {% endif %}
+          {% if acreated %}
+          <span class="ap-tag ap-tag--date">{{ acreated[:10] if acreated|length > 10 else acreated }}</span>
+          {% endif %}
         </div>
-    </section>
 
-    {% if approvals %}
-        <div class="approvals-grid">
-            {% for a in approvals %}
-                {% set approval_status = (a.status or 'pending')|lower %}
-                {% set approval_name = a.name or 'Solicitud sin nombre' %}
-                {% set approval_city = a.city or 'Sin ciudad' %}
-                {% set approval_type = a.type or 'Sin tipo' %}
-                {% set approval_image = a.photo_url if a.photo_url else url_for('static', filename='img/no-image.jpg') %}
-                {% set approval_description = a.description or 'Sin descripción registrada.' %}
-                {% set approval_user_name = a.user.name if a.user is defined and a.user and a.user.name is defined and a.user.name else None %}
-                {% set approval_user_email = a.user.email if a.user is defined and a.user and a.user.email is defined and a.user.email else None %}
-                {% set approval_user_id = a.user_id if a.user_id is defined and a.user_id else None %}
-                {% set approval_price = a.price if a.price is defined and a.price is not none else None %}
-                {% set approval_rating = a.rating if a.rating is defined and a.rating is not none else None %}
-                {% set approval_created_at = a.created_at if a.created_at is defined and a.created_at else None %}
+        <p class="ap-card-desc">{{ adesc }}</p>
 
-                <article class="approval-card">
-                    <div class="approval-card-media">
-                        <img
-                            class="approval-image"
-                            src="{{ approval_image }}"
-                            alt="{{ approval_name }}"
-                        >
-
-                        <span class="status-badge status-{{ approval_status }} approval-status-floating">
-                            {% if approval_status == 'approved' %}
-                                Aprobada
-                            {% elif approval_status == 'rejected' %}
-                                Rechazada
-                            {% else %}
-                                Pendiente
-                            {% endif %}
-                        </span>
-                    </div>
-
-                    <div class="approval-card-body">
-                        <div class="approval-card-top">
-                            <div>
-                                <h3 class="approval-card-title">{{ approval_name }}</h3>
-                                <p class="approval-card-id">Solicitud ID: {{ a.id }}</p>
-                            </div>
-                        </div>
-
-                        <div class="approval-meta-grid">
-                            <div class="approval-meta-item">
-                                <span class="approval-meta-label">Ciudad</span>
-                                <span class="approval-meta-value">{{ approval_city }}</span>
-                            </div>
-
-                            <div class="approval-meta-item">
-                                <span class="approval-meta-label">Tipo</span>
-                                <span class="approval-meta-value">{{ approval_type }}</span>
-                            </div>
-
-                            {% if approval_user_name or approval_user_email or approval_user_id %}
-                            <div class="approval-meta-item">
-                                <span class="approval-meta-label">Usuario</span>
-                                <span class="approval-meta-value">
-                                    {% if approval_user_name %}
-                                        {{ approval_user_name }}
-                                    {% elif approval_user_id %}
-                                        #{{ approval_user_id }}
-                                    {% else %}
-                                        Sin usuario
-                                    {% endif %}
-                                </span>
-                            </div>
-                            {% endif %}
-
-                            {% if approval_user_email %}
-                            <div class="approval-meta-item">
-                                <span class="approval-meta-label">Correo</span>
-                                <span class="approval-meta-value">{{ approval_user_email }}</span>
-                            </div>
-                            {% endif %}
-
-                            {% if approval_price is not none %}
-                            <div class="approval-meta-item">
-                                <span class="approval-meta-label">Precio</span>
-                                <span class="approval-meta-value">${{ approval_price }}</span>
-                            </div>
-                            {% endif %}
-
-                            {% if approval_rating is not none %}
-                            <div class="approval-meta-item">
-                                <span class="approval-meta-label">Calificación</span>
-                                <span class="approval-meta-value">{{ approval_rating }}</span>
-                            </div>
-                            {% endif %}
-
-                            {% if approval_created_at %}
-                            <div class="approval-meta-item">
-                                <span class="approval-meta-label">Fecha</span>
-                                <span class="approval-meta-value">{{ approval_created_at }}</span>
-                            </div>
-                            {% endif %}
-                        </div>
-
-                        <div class="approval-description">
-                            {{ approval_description }}
-                        </div>
-
-                        <div class="approval-actions">
-                            <a class="btn-action btn-detail" href="{{ url_for('approvals.approval_detail', place_id=a.id) }}">
-                                Ver detalle
-                            </a>
-
-                            {% if approval_status == 'pending' %}
-                                <form action="{{ url_for('approvals.approve_place', place_id=a.id) }}" method="POST">
-                                    <button class="btn-action btn-approve" type="submit">Aprobar</button>
-                                </form>
-
-                                <form action="{{ url_for('approvals.reject_place', place_id=a.id) }}" method="POST">
-                                    <button class="btn-action btn-reject" type="submit">Rechazar</button>
-                                </form>
-                            {% elif approval_status == 'approved' %}
-                                <span class="btn-action btn-disabled">Ya aprobada</span>
-                            {% else %}
-                                <span class="btn-action btn-disabled">Ya rechazada</span>
-                            {% endif %}
-                        </div>
-                    </div>
-                </article>
-            {% endfor %}
+        <div class="ap-card-user">
+          <div class="ap-user-avatar">{{ auser[:1]|upper }}</div>
+          <div class="ap-user-info">
+            <span class="ap-user-name">{{ auser }}</span>
+            {% if aemail %}<span class="ap-user-email">{{ aemail }}</span>{% endif %}
+          </div>
         </div>
-    {% else %}
-        <div class="users-table-wrapper approvals-empty-state">
-            <div class="empty-state-box" style="text-align: center; padding: 28px 16px;">
-                <strong>No hay solicitudes pendientes por revisar.</strong>
-                <span>No se encontraron aprobaciones disponibles en este momento.</span>
-            </div>
+
+        {# Actions ── #}
+        <div class="ap-card-actions">
+          <a href="{{ url_for('approvals.approval_detail', place_id=a.id) }}"
+             class="ap-btn ap-btn-detail">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="12" y1="8" x2="12" y2="12"/>
+              <line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            Ver detalle
+          </a>
+
+          {% if status == 'pending' %}
+          <form action="{{ url_for('approvals.approve_place', place_id=a.id) }}" method="POST" style="margin:0">
+            <button type="submit" class="ap-btn ap-btn-approve"
+              onclick="return confirm('¿Aprobar esta solicitud? El lugar quedará visible en la plataforma.')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+              Aprobar
+            </button>
+          </form>
+
+          <button type="button" class="ap-btn ap-btn-reject"
+            data-id="{{ a.id }}"
+            data-url="{{ url_for('approvals.reject_place', place_id=a.id) }}"
+            data-name="{{ aname }}"
+            onclick="apOpenRejectModal(this)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+            Rechazar
+          </button>
+
+          {% elif status == 'approved' %}
+          <span class="ap-btn ap-btn-done ap-btn-done--ok">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+            Ya aprobada
+          </span>
+          {% else %}
+          <span class="ap-btn ap-btn-done ap-btn-done--no">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+            Ya rechazada
+          </span>
+          {% endif %}
         </div>
-    {% endif %}
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+
+  <div class="ap-noresults" id="apNoResults" hidden>
+    No se encontraron solicitudes con ese criterio de búsqueda.
+  </div>
+
+  {% else %}
+  <div class="ap-empty">
+    <div class="ap-empty-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M9 11l3 3L22 4"/>
+        <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+      </svg>
+    </div>
+    <strong>Sin solicitudes pendientes</strong>
+    <span>Cuando los usuarios envíen solicitudes desde Laravel aparecerán aquí.</span>
+  </div>
+  {% endif %}
 
 </div>
+
+{# ── Reject modal ── #}
+<div class="ap-overlay" id="apOverlay" aria-hidden="true" onclick="apCloseModal()">
+  <div class="ap-modal" role="dialog" aria-modal="true" onclick="event.stopPropagation()">
+    <div class="ap-modal-ico">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+      </svg>
+    </div>
+    <h4 class="ap-modal-title">Rechazar solicitud</h4>
+    <p class="ap-modal-desc">¿Rechazar la solicitud <strong id="apModalName"></strong>? Puedes agregar un motivo opcional.</p>
+    <form id="apRejectForm" method="POST" action="">
+      <textarea name="reason" class="ap-modal-textarea" placeholder="Motivo del rechazo (opcional)…"></textarea>
+      <div class="ap-modal-actions">
+        <button type="button" class="ap-modal-cancel" onclick="apCloseModal()">Cancelar</button>
+        <button type="submit" class="ap-modal-confirm">Sí, rechazar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block page_js %}
+<script src="{{ url_for('static', filename='js/approvals.js') }}"></script>
 {% endblock %}

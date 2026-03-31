@@ -3,7 +3,7 @@
     <link href="https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.css" rel="stylesheet" />
 
     @php
-        $container  = "max-w-7xl mx-auto px-6 py-6 pb-36";
+        $container  = "max-w-7xl mx-auto px-4 sm:px-6 py-5 sm:py-6 pb-32 sm:pb-36";
         $card       = "bg-white dark:bg-slate-900 shadow-sm rounded-2xl p-6 border border-gray-100 dark:border-slate-800";
         $cardSoft   = "bg-slate-50/80 dark:bg-slate-800/60 rounded-2xl border border-gray-200 dark:border-slate-700";
         $label      = "font-semibold text-gray-800 dark:text-slate-100";
@@ -14,13 +14,13 @@
                        text-gray-900 dark:text-slate-100 placeholder:text-gray-400 dark:placeholder:text-slate-500
                        focus:outline-none focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-500/30 focus:border-gray-300 dark:focus:border-slate-600 transition";
 
-        $btnPrimary = "inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl shadow-sm transition
+        $btnPrimary = "inline-flex w-full sm:w-auto items-center justify-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl shadow-sm transition
                        active:scale-[0.99] focus:outline-none focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-500/30";
 
-        $btnGhost   = "inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-blue-50 dark:bg-slate-800 hover:bg-blue-100 dark:hover:bg-slate-700 text-blue-700 dark:text-blue-400 font-semibold rounded-xl shadow-sm transition
+        $btnGhost   = "inline-flex w-full sm:w-auto items-center justify-center gap-2 px-5 py-2.5 bg-blue-50 dark:bg-slate-800 hover:bg-blue-100 dark:hover:bg-slate-700 text-blue-700 dark:text-blue-400 font-semibold rounded-xl shadow-sm transition
                        active:scale-[0.99] border border-blue-100 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-500/30";
 
-        $btnDanger  = "inline-flex items-center justify-center gap-2 px-4 py-2 bg-red-50 dark:bg-red-500/10 hover:bg-red-100 dark:hover:bg-red-500/20
+        $btnDanger  = "inline-flex w-full sm:w-auto items-center justify-center gap-2 px-4 py-2 bg-red-50 dark:bg-red-500/10 hover:bg-red-100 dark:hover:bg-red-500/20
                        text-red-700 dark:text-red-300 font-semibold rounded-xl border border-red-100 dark:border-red-500/20 transition
                        active:scale-[0.99] focus:outline-none focus:ring-2 focus:ring-red-200 dark:focus:ring-red-500/30";
 
@@ -118,6 +118,20 @@
             if ($primary) return $resolveHumanDate($primary);
             if ($secondary) return $resolveHumanDate($secondary);
             return 'Sin fecha';
+        };
+
+        $resolveAbsoluteDate = function ($value) {
+            if (!$value) return null;
+
+            try {
+                return \Illuminate\Support\Carbon::parse($value)->locale('es')->translatedFormat('d M Y, h:i A');
+            } catch (\Throwable $e) {
+                try {
+                    return \Illuminate\Support\Carbon::createFromFormat('Y-m-d H:i:s', (string) $value)->locale('es')->translatedFormat('d M Y, h:i A');
+                } catch (\Throwable $e) {
+                    return null;
+                }
+            }
         };
 
         $resolveShortAddress = function ($value) {
@@ -318,13 +332,13 @@
                             </p>
                         </div>
 
-                        <div class="flex flex-wrap items-center gap-3 xl:justify-end">
+                        <div class="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-3 xl:justify-end w-full xl:w-auto">
                             @auth
                                 @if($placeId)
-                                    <form action="{{ route('favorite.toggle', ['place' => $placeId]) }}" method="POST">
+                                    <form action="{{ route('favorite.toggle', ['place' => $placeId]) }}" method="POST" class="w-full sm:w-auto">
                                         @csrf
                                         <button type="submit"
-                                            class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-blue-50 dark:hover:bg-slate-800 shadow-sm transition focus:outline-none focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-500/30"
+                                            class="inline-flex w-full sm:w-auto items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-blue-50 dark:hover:bg-slate-800 shadow-sm transition focus:outline-none focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-500/30"
                                             title="{{ $isFavorite ? 'Quitar de favoritos' : 'Agregar a favoritos' }}"
                                             aria-label="{{ $isFavorite ? 'Quitar de favoritos' : 'Agregar a favoritos' }}">
                                             @if ($isFavorite)
@@ -404,7 +418,7 @@
                         <button type="button" class="block w-full" id="openPhotoModal" aria-label="Abrir foto en grande">
                             <img
                                 src="{{ $initialPhoto }}"
-                                class="w-full h-[19rem] sm:h-[24rem] lg:h-[30rem] object-cover"
+                                class="w-full h-[16.5rem] sm:h-[24rem] lg:h-[30rem] object-cover"
                                 alt="Imagen del lugar"
                                 id="mainPhoto"
                                 onerror="this.onerror=null;this.src='{{ $defaultPhoto }}';"
@@ -413,7 +427,7 @@
                     </div>
 
                     <div class="{{ $card }}">
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
                             <div class="{{ $cardSoft }} p-5">
                                 <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">Precio aproximado</p>
                                 <p class="mt-2 text-3xl font-extrabold text-gray-900 dark:text-slate-100">
@@ -432,7 +446,7 @@
                     </div>
 
                     <div class="{{ $card }} space-y-6">
-                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                             <div>
                                 <h2 class="text-xl font-bold text-gray-900 dark:text-slate-100">Reseñas</h2>
                                 <p class="mt-1 text-sm text-gray-500 dark:text-slate-400">
@@ -487,6 +501,8 @@
                                     $reviewUserName = $resolveUserName($reviewUser, $reviewUserId ? 'Usuario #'.$reviewUserId : 'Usuario no disponible');
                                     $reviewUserPhoto = $resolveUserPhoto($reviewUser);
                                     $reviewTimeText = $resolveDisplayDate($reviewCreatedAt, $reviewUpdatedAt);
+                                    $reviewAbsoluteDate = $resolveAbsoluteDate($reviewCreatedAt ?: $reviewUpdatedAt);
+                                    $reviewWasEdited = $reviewCreatedAt && $reviewUpdatedAt && $reviewCreatedAt !== $reviewUpdatedAt;
 
                                     $repliesList = is_array($reviewReplies) ? $reviewReplies : collect($reviewReplies)->toArray();
                                 @endphp
@@ -506,9 +522,16 @@
                                                 <p class="font-semibold text-gray-900 dark:text-slate-100 break-words leading-5">
                                                     {{ $reviewUserName }}
                                                 </p>
-                                                <p class="text-sm text-gray-500 dark:text-slate-400 mt-1 break-words">
-                                                    {{ $reviewTimeText }}
-                                                </p>
+                                                <div class="mt-1 space-y-1">
+                                                    <p class="text-sm text-gray-500 dark:text-slate-400 break-words" @if($reviewAbsoluteDate) title="{{ $reviewAbsoluteDate }}" @endif>
+                                                        {{ $reviewTimeText }}
+                                                    </p>
+                                                    @if($reviewAbsoluteDate)
+                                                        <p class="text-xs text-gray-400 dark:text-slate-500 break-words">
+                                                            {{ $reviewAbsoluteDate }}@if($reviewWasEdited) · Editada @endif
+                                                        </p>
+                                                    @endif
+                                                </div>
                                             </div>
                                         </div>
 
@@ -517,7 +540,7 @@
                                                 <form
                                                     action="{{ route('places.reviews.destroy', ['place' => $placeId, 'review' => $reviewId]) }}"
                                                     method="POST"
-                                                    class="shrink-0"
+                                                    class="shrink-0 w-full sm:w-auto"
                                                 >
                                                     @csrf
                                                     @method('DELETE')
@@ -535,7 +558,7 @@
                                         @endauth
                                     </div>
 
-                                    <div class="pl-0 sm:pl-14">
+                                    <div class="pl-0 sm:pl-14 min-w-0">
                                         <p class="text-[15px] leading-7 text-gray-800 dark:text-slate-300 break-words whitespace-pre-line">
                                             {{ $reviewBody }}
                                         </p>
@@ -543,7 +566,7 @@
 
                                     @auth
                                         @if ($reviewId && $placeId)
-                                            <div class="pl-0 sm:pl-14">
+                                            <div class="pl-0 sm:pl-14 min-w-0">
                                                 <div class="{{ $cardSoft }} p-4">
                                                     <form action="{{ route('places.reviews.replies.store', ['place' => $placeId, 'review' => $reviewId]) }}" method="POST" class="space-y-3">
                                                         @csrf
@@ -585,6 +608,8 @@
                                                     $replyUserName = $resolveUserName($replyUser, $replyUserId ? 'Usuario #'.$replyUserId : 'Usuario no disponible');
                                                     $replyUserPhoto = $resolveUserPhoto($replyUser);
                                                     $replyTimeText = $resolveDisplayDate($replyCreatedAt, $replyUpdatedAt);
+                                                    $replyAbsoluteDate = $resolveAbsoluteDate($replyCreatedAt ?: $replyUpdatedAt);
+                                                    $replyWasEdited = $replyCreatedAt && $replyUpdatedAt && $replyCreatedAt !== $replyUpdatedAt;
                                                 @endphp
 
                                                 <div class="rounded-2xl border border-gray-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/70 p-4 space-y-3 overflow-hidden">
@@ -602,9 +627,16 @@
                                                                 <p class="font-semibold text-sm text-gray-900 dark:text-slate-100 break-words leading-5">
                                                                     {{ $replyUserName }}
                                                                 </p>
-                                                                <p class="text-xs text-gray-500 dark:text-slate-400 mt-1 break-words">
-                                                                    {{ $replyTimeText }}
-                                                                </p>
+                                                                <div class="mt-1 space-y-1">
+                                                                    <p class="text-xs text-gray-500 dark:text-slate-400 break-words" @if($replyAbsoluteDate) title="{{ $replyAbsoluteDate }}" @endif>
+                                                                        {{ $replyTimeText }}
+                                                                    </p>
+                                                                    @if($replyAbsoluteDate)
+                                                                        <p class="text-[11px] text-gray-400 dark:text-slate-500 break-words">
+                                                                            {{ $replyAbsoluteDate }}@if($replyWasEdited) · Editada @endif
+                                                                        </p>
+                                                                    @endif
+                                                                </div>
                                                             </div>
                                                         </div>
 
@@ -613,7 +645,7 @@
                                                                 <form
                                                                     action="{{ route('places.reviews.replies.destroy', ['place' => $placeId, 'review' => $reviewId, 'reply' => $replyId]) }}"
                                                                     method="POST"
-                                                                    class="shrink-0"
+                                                                    class="shrink-0 w-full sm:w-auto"
                                                                 >
                                                                     @csrf
                                                                     @method('DELETE')
@@ -690,7 +722,7 @@
                             </div>
                         </div>
 
-                        <div id="map" class="w-full h-80 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm overflow-hidden"></div>
+                        <div id="map" class="w-full h-72 sm:h-80 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm overflow-hidden"></div>
 
                         @if (!$hasCoords)
                             <p class="text-sm text-gray-500 dark:text-slate-400">
@@ -699,7 +731,7 @@
                         @endif
                     </div>
 
-                    <div class="{{ $card }} flex items-center gap-4">
+                    <div class="{{ $card }} flex flex-col sm:flex-row sm:items-center gap-4">
                         <div class="relative shrink-0">
                             <img src="{{ $publisherPhoto }}"
                                  class="w-14 h-14 rounded-full object-cover shadow-sm border border-gray-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800"
@@ -759,8 +791,8 @@
     </div>
 
     <div id="routeModal" class="fixed inset-0 bg-black/60 hidden items-center justify-center z-[60] p-3 sm:p-4">
-        <div class="w-full max-w-7xl h-[92vh] bg-white dark:bg-slate-900 rounded-[28px] shadow-2xl border border-gray-100 dark:border-slate-700 overflow-hidden flex flex-col">
-            <div class="px-4 sm:px-5 py-4 border-b border-gray-200 dark:border-slate-700 flex items-center justify-between gap-4">
+        <div class="w-full max-w-7xl h-[92vh] sm:h-[90vh] bg-white dark:bg-slate-900 rounded-[24px] sm:rounded-[28px] shadow-2xl border border-gray-100 dark:border-slate-700 overflow-hidden flex flex-col">
+            <div class="px-4 sm:px-5 py-4 border-b border-gray-200 dark:border-slate-700 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div class="min-w-0">
                     <h3 class="text-lg sm:text-xl font-extrabold text-gray-900 dark:text-slate-100 break-words">Ruta hacia {{ $placeName }}</h3>
                     <p id="routeSummary" class="text-sm text-gray-500 dark:text-slate-400">Calculando ruta…</p>
@@ -800,7 +832,7 @@
                             </div>
                         </div>
 
-                        <div class="grid grid-cols-2 gap-3">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div class="rounded-2xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 shadow-sm">
                                 <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">Distancia</p>
                                 <p id="routeDistance" class="text-lg font-bold text-gray-900 dark:text-slate-100 mt-1">—</p>
@@ -1593,6 +1625,6 @@
         })();
     </script>
 
-    <div class="h-20 sm:h-24"></div>
+    <div class="h-24 sm:h-28"></div>
 
 </x-app-layout>

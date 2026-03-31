@@ -1,99 +1,78 @@
-
-
 (function () {
-    function bindPlacesPage() {
-        initPlaceSelection();
-        initDeleteConfirmation();
-    }
+  "use strict";
 
-    function initPlaceSelection() {
-        const rows = document.querySelectorAll('.place-row');
-        const selectedPlaceText = document.getElementById('selectedPlaceText');
-        const editButton = document.getElementById('editPlaceButton');
-        const deleteForm = document.getElementById('deletePlaceForm');
-        const deleteButton = document.getElementById('deletePlaceButton');
+  function initSearch() {
+    var input = document.getElementById("plSearch");
+    if (!input) return;
+    input.addEventListener("input", function () {
+      var q = input.value.trim().toLowerCase();
+      filterRows(q);
+      filterCards(q);
+    });
+  }
 
-        if (!rows.length || !selectedPlaceText || !editButton || !deleteForm || !deleteButton) {
-            return;
-        }
+  function filterRows(q) {
+    var rows = document.querySelectorAll("#plTBody .pl-row");
+    var noRes = document.getElementById("plNoResults");
+    var visible = 0;
+    rows.forEach(function (row) {
+      var match = !q || (row.dataset.q || "").indexOf(q) !== -1;
+      row.style.display = match ? "" : "none";
+      if (match) visible++;
+    });
+    if (noRes) noRes.hidden = visible > 0 || rows.length === 0;
+  }
 
-        rows.forEach(function (row) {
-            row.addEventListener('click', function (event) {
-                const ignoreClick = event.target.closest('form, button, select, option, a, input, textarea, label');
-                if (ignoreClick) return;
+  function filterCards(q) {
+    var cards = document.querySelectorAll("#plMobileCards .pl-mcard");
+    var noRes = document.getElementById("plNoResultsMobile");
+    var visible = 0;
+    cards.forEach(function (card) {
+      var match = !q || (card.dataset.q || "").indexOf(q) !== -1;
+      card.style.display = match ? "" : "none";
+      if (match) visible++;
+    });
+    if (noRes) noRes.hidden = visible > 0 || cards.length === 0;
+  }
 
-                selectPlaceRow(row, rows, selectedPlaceText, editButton, deleteForm, deleteButton);
-            });
+  var overlay = null;
+  var deleteForm = null;
+  var modalName = null;
 
-            row.addEventListener('keydown', function (event) {
-                if (event.key !== 'Enter' && event.key !== ' ') return;
-                event.preventDefault();
-                selectPlaceRow(row, rows, selectedPlaceText, editButton, deleteForm, deleteButton);
-            });
-        });
-    }
+  function initModal() {
+    overlay    = document.getElementById("plOverlay");
+    deleteForm = document.getElementById("plDeleteForm");
+    modalName  = document.getElementById("plModalName");
+    if (!overlay) return;
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape") plCloseModal();
+    });
+  }
 
-    function selectPlaceRow(row, rows, selectedPlaceText, editButton, deleteForm, deleteButton) {
-        rows.forEach(function (item) {
-            item.classList.remove('is-selected');
-        });
+  window.plOpenModal = function (btn) {
+    if (!overlay || !deleteForm || !modalName) return;
+    modalName.textContent = btn.dataset.name || "este lugar";
+    deleteForm.action = btn.dataset.url || "";
+    overlay.setAttribute("aria-hidden", "false");
+    overlay.classList.add("open");
+    document.body.style.overflow = "hidden";
+  };
 
-        row.classList.add('is-selected');
+  window.plCloseModal = function () {
+    if (!overlay) return;
+    overlay.classList.remove("open");
+    overlay.setAttribute("aria-hidden", "true");
+    document.body.style.overflow = "";
+  };
 
-        const placeId = row.dataset.placeId || '';
-        const placeName = row.dataset.placeName || 'Lugar';
-        const placeCity = row.dataset.placeCity || 'Sin ciudad';
-        const editUrl = row.dataset.editUrl || '';
-        const deleteUrl = row.dataset.deleteUrl || '';
+  function init() {
+    initSearch();
+    initModal();
+  }
 
-        selectedPlaceText.textContent = '#' + placeId + ' · ' + placeName + ' · ' + placeCity;
-
-        if (editUrl.trim() !== '') {
-            editButton.setAttribute('href', editUrl);
-            editButton.classList.remove('is-disabled');
-            editButton.setAttribute('aria-disabled', 'false');
-        } else {
-            editButton.setAttribute('href', '#');
-            editButton.classList.add('is-disabled');
-            editButton.setAttribute('aria-disabled', 'true');
-        }
-
-        if (deleteUrl.trim() !== '') {
-            deleteForm.setAttribute('action', deleteUrl);
-            deleteButton.disabled = false;
-        } else {
-            deleteForm.setAttribute('action', '');
-            deleteButton.disabled = true;
-        }
-    }
-
-    function initDeleteConfirmation() {
-        const deleteForm = document.getElementById('deletePlaceForm');
-        const deleteButton = document.getElementById('deletePlaceButton');
-
-        if (!deleteForm || !deleteButton) return;
-        if (deleteForm.dataset.bound === 'true') return;
-
-        deleteForm.addEventListener('submit', function (event) {
-            const action = deleteForm.getAttribute('action');
-
-            if (!action || deleteButton.disabled) {
-                event.preventDefault();
-                return;
-            }
-
-            const ok = window.confirm('¿Deseas eliminar este lugar?');
-            if (!ok) {
-                event.preventDefault();
-            }
-        });
-
-        deleteForm.dataset.bound = 'true';
-    }
-
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', bindPlacesPage);
-    } else {
-        bindPlacesPage();
-    }
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", init);
+  } else {
+    init();
+  }
 })();

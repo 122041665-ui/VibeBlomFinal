@@ -1,118 +1,93 @@
-
-
 (function () {
-    function bindUsersPage() {
-        initUserSelection();
-        initDeleteConfirmation();
-        initRoleFormProtection();
-    }
+  "use strict";
 
-    function initUserSelection() {
-        const rows = document.querySelectorAll('.user-row');
-        const selectedUserText = document.getElementById('selectedUserText');
-        const editButton = document.getElementById('editUserButton');
-        const deleteForm = document.getElementById('deleteUserForm');
-        const deleteButton = document.getElementById('deleteUserButton');
+  /* ── Search ── */
+  function initSearch() {
+    var input = document.getElementById("usSearch");
+    if (!input) return;
 
-        if (!rows.length || !selectedUserText || !editButton || !deleteForm || !deleteButton) {
-            return;
-        }
+    input.addEventListener("input", function () {
+      var q = input.value.trim().toLowerCase();
+      filterRows(q);
+      filterCards(q);
+    });
+  }
 
-        rows.forEach(function (row) {
-            row.addEventListener('click', function (event) {
-                const ignoreClick = event.target.closest('form, button, select, option, a, input, textarea, label');
-                if (ignoreClick) return;
+  function filterRows(q) {
+    var rows = document.querySelectorAll("#usTBody .us-row");
+    var noResults = document.getElementById("usNoResults");
+    var visible = 0;
 
-                selectUserRow(row, rows, selectedUserText, editButton, deleteForm, deleteButton);
-            });
+    rows.forEach(function (row) {
+      var match = !q || (row.dataset.q || "").indexOf(q) !== -1;
+      row.style.display = match ? "" : "none";
+      if (match) visible++;
+    });
 
-            row.addEventListener('keydown', function (event) {
-                if (event.key !== 'Enter' && event.key !== ' ') return;
-                event.preventDefault();
-                selectUserRow(row, rows, selectedUserText, editButton, deleteForm, deleteButton);
-            });
-        });
-    }
+    if (noResults) noResults.hidden = visible > 0 || rows.length === 0;
+  }
 
-    function selectUserRow(row, rows, selectedUserText, editButton, deleteForm, deleteButton) {
-        rows.forEach(function (item) {
-            item.classList.remove('is-selected');
-        });
+  function filterCards(q) {
+    var cards = document.querySelectorAll("#usMobileCards .us-mcard");
+    var noResults = document.getElementById("usNoResultsMobile");
+    var visible = 0;
 
-        row.classList.add('is-selected');
+    cards.forEach(function (card) {
+      var match = !q || (card.dataset.q || "").indexOf(q) !== -1;
+      card.style.display = match ? "" : "none";
+      if (match) visible++;
+    });
 
-        const userId = row.dataset.userId || '';
-        const userName = row.dataset.userName || 'Usuario';
-        const userEmail = row.dataset.userEmail || 'Sin correo';
-        const editUrl = row.dataset.editUrl || '';
-        const deleteUrl = row.dataset.deleteUrl || '';
+    if (noResults) noResults.hidden = visible > 0 || cards.length === 0;
+  }
 
-        selectedUserText.textContent = '#' + userId + ' · ' + userName + ' · ' + userEmail;
+  /* ── Delete modal ── */
+  var overlay    = null;
+  var deleteForm = null;
+  var modalUser  = null;
 
-        if (editUrl.trim() !== '') {
-            editButton.setAttribute('href', editUrl);
-            editButton.classList.remove('is-disabled');
-            editButton.setAttribute('aria-disabled', 'false');
-        } else {
-            editButton.setAttribute('href', '#');
-            editButton.classList.add('is-disabled');
-            editButton.setAttribute('aria-disabled', 'true');
-        }
+  function initModal() {
+    overlay    = document.getElementById("usOverlay");
+    deleteForm = document.getElementById("usDeleteForm");
+    modalUser  = document.getElementById("usModalUser");
 
-        if (deleteUrl.trim() !== '') {
-            deleteForm.setAttribute('action', deleteUrl);
-            deleteButton.disabled = false;
-        } else {
-            deleteForm.setAttribute('action', '');
-            deleteButton.disabled = true;
-        }
-    }
+    if (!overlay) return;
 
-    function initDeleteConfirmation() {
-        const deleteForm = document.getElementById('deleteUserForm');
-        const deleteButton = document.getElementById('deleteUserButton');
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape") usCloseModal();
+    });
+  }
 
-        if (!deleteForm || !deleteButton) return;
-        if (deleteForm.dataset.bound === 'true') return;
+  window.usOpenModal = function (btn) {
+    if (!overlay || !deleteForm || !modalUser) return;
 
-        deleteForm.addEventListener('submit', function (event) {
-            const action = deleteForm.getAttribute('action');
+    var url      = btn.dataset.url  || "";
+    var userName = btn.dataset.user || "este usuario";
 
-            if (!action || deleteButton.disabled) {
-                event.preventDefault();
-                return;
-            }
+    modalUser.textContent = userName;
+    deleteForm.action = url;
 
-            const ok = window.confirm('¿Deseas eliminar este usuario?');
-            if (!ok) {
-                event.preventDefault();
-            }
-        });
+    overlay.setAttribute("aria-hidden", "false");
+    overlay.classList.add("open");
+    document.body.style.overflow = "hidden";
+  };
 
-        deleteForm.dataset.bound = 'true';
-    }
+  window.usCloseModal = function () {
+    if (!overlay) return;
+    overlay.classList.remove("open");
+    overlay.setAttribute("aria-hidden", "true");
+    document.body.style.overflow = "";
+  };
 
-    function initRoleFormProtection() {
-        const roleForms = document.querySelectorAll('.role-form');
+  /* ── Init ── */
+  function init() {
+    initSearch();
+    initModal();
+  }
 
-        roleForms.forEach(function (form) {
-            if (form.dataset.bound === 'true') return;
-
-            form.addEventListener('click', function (event) {
-                event.stopPropagation();
-            });
-
-            form.addEventListener('keydown', function (event) {
-                event.stopPropagation();
-            });
-
-            form.dataset.bound = 'true';
-        });
-    }
-
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', bindUsersPage);
-    } else {
-        bindUsersPage();
-    }
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", init);
+  } else {
+    init();
+  }
 })();
