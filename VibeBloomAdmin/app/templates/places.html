@@ -6,278 +6,168 @@
 
 {% block page_header %}
 <h1>Lugares</h1>
-<p>Gestión de lugares aprobados disponibles en la plataforma</p>
+<p>Administración de lugares registrados en la plataforma</p>
 {% endblock %}
 
 {% block content %}
-<div class="pl-container">
+<div class="places-container">
 
-  {# ── Stats ── #}
-  <div class="pl-stats">
-    <div class="pl-stat">
-      <span class="pl-stat-label">Total</span>
-      <strong class="pl-stat-val">{{ places|length }}</strong>
-    </div>
-    <div class="pl-stat">
-      <span class="pl-stat-label">Con precio</span>
-      <strong class="pl-stat-val">
-        {{ places|selectattr('price_range')|list|length }}
-      </strong>
-    </div>
-    <div class="pl-stat">
-      <span class="pl-stat-label">Con calificación</span>
-      <strong class="pl-stat-val">
-        {{ places|selectattr('rating')|list|length }}
-      </strong>
-    </div>
-    <div class="pl-stat pl-stat--link">
-      <span class="pl-stat-label">Pendientes</span>
-      <a href="{{ url_for('approvals.list_approvals') }}" class="pl-stat-link">Ver aprobaciones →</a>
-    </div>
-  </div>
-
-  {# ── Main card ── #}
-  <div class="pl-card">
-
-    <div class="pl-card-head">
-      <div class="pl-card-titles">
-        <h3 class="pl-card-title">Lista de lugares aprobados</h3>
-        <p class="pl-card-sub">Estos lugares son visibles en Laravel. Edítalos o elimínalos si es necesario.</p>
-      </div>
-      {% if places %}
-      <label class="pl-search-wrap" for="plSearch">
-        <svg class="pl-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-        </svg>
-        <input type="search" id="plSearch" class="pl-search" placeholder="Buscar nombre, ciudad o tipo…" autocomplete="off">
-      </label>
-      {% endif %}
-    </div>
-
-    {% if places %}
-
-    {# ── Desktop table ── #}
-    <div class="pl-table-wrap">
-      <table class="pl-table">
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>Lugar</th>
-            <th>Ciudad</th>
-            <th>Tipo</th>
-            <th>Rating</th>
-            <th>Precio</th>
-            <th>Descripción</th>
-            <th class="pl-th-right">Acciones</th>
-          </tr>
-        </thead>
-        <tbody id="plTBody">
-          {% for p in places %}
-          {% set pname  = p.name        or 'Sin nombre' %}
-          {% set pcity  = p.city        or 'Sin ciudad' %}
-          {% set ptype  = p.type        or 'OTRO' %}
-          {% set pdesc  = p.description or 'Sin descripción' %}
-          {% set pprice = p.price_range %}
-          <tr class="pl-row" data-q="{{ (pname ~ ' ' ~ pcity ~ ' ' ~ ptype)|lower }}">
-
-            <td><span class="pl-id">#{{ p.id }}</span></td>
-
-            <td>
-              <div class="pl-name-cell">
-                <div class="pl-place-icon">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-                    <circle cx="12" cy="10" r="3"/>
-                  </svg>
-                </div>
-                <div>
-                  <div class="pl-name">{{ pname }}</div>
-                  {% if p.user_name %}
-                  <div class="pl-owner">por {{ p.user_name }}</div>
-                  {% endif %}
-                </div>
-              </div>
-            </td>
-
-            <td><span class="pl-city">{{ pcity }}</span></td>
-
-            <td>
-              <span class="pl-type-badge">{{ ptype|replace('_', ' ')|title }}</span>
-            </td>
-
-            <td>
-              {% if p.rating is not none %}
-              <div class="pl-stars">
-                {% for i in range(1, 6) %}
-                <span class="pl-star{% if i <= p.rating|int %} on{% endif %}">★</span>
-                {% endfor %}
-              </div>
-              {% else %}
-              <span class="pl-muted">—</span>
-              {% endif %}
-            </td>
-
-            <td>
-              <span class="pl-price">
-                {% if pprice is not none %}
-                  ${{ '%.0f'|format(pprice|float) }}
-                {% else %}
-                  <span class="pl-muted">—</span>
-                {% endif %}
-              </span>
-            </td>
-
-            <td>
-              <div class="pl-desc">{{ pdesc }}</div>
-            </td>
-
-            <td>
-              <div class="pl-row-actions">
-                <a href="{{ p.edit_url }}" class="pl-action-btn pl-action-edit" title="Editar lugar">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                  </svg>
-                  Editar
-                </a>
-                <button type="button" class="pl-action-btn pl-action-del"
-                  data-id="{{ p.id }}"
-                  data-url="{{ p.delete_url }}"
-                  data-name="{{ pname }}"
-                  onclick="plOpenModal(this)">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="3 6 5 6 21 6"/>
-                    <path d="M19 6l-1 14H6L5 6"/>
-                    <path d="M10 11v6"/><path d="M14 11v6"/>
-                    <path d="M9 6V4h6v2"/>
-                  </svg>
-                  Eliminar
-                </button>
-              </div>
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-      <div class="pl-noresults" id="plNoResults" hidden>No se encontraron lugares con ese criterio.</div>
-    </div>
-
-    {# ── Mobile cards ── #}
-    <div class="pl-mobile-cards" id="plMobileCards">
-      {% for p in places %}
-      {% set pname  = p.name        or 'Sin nombre' %}
-      {% set pcity  = p.city        or 'Sin ciudad' %}
-      {% set ptype  = p.type        or 'OTRO' %}
-      {% set pdesc  = p.description or 'Sin descripción' %}
-      {% set pprice = p.price_range %}
-      <article class="pl-mcard" data-q="{{ (pname ~ ' ' ~ pcity ~ ' ' ~ ptype)|lower }}">
-
-        <div class="pl-mcard-top">
-          <div class="pl-name-cell">
-            <div class="pl-place-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-                <circle cx="12" cy="10" r="3"/>
-              </svg>
-            </div>
+    <section class="places-hero-card">
+        <div class="places-title-row">
             <div>
-              <div class="pl-name">{{ pname }}</div>
-              {% if p.user_name %}
-              <div class="pl-owner">por {{ p.user_name }}</div>
-              {% endif %}
+                <div class="places-title">Administración de lugares</div>
+                <div class="places-subtitle">
+                    Consulta, edita y elimina los lugares disponibles dentro de la plataforma desde el panel administrativo.
+                </div>
             </div>
-          </div>
-          <span class="pl-id">#{{ p.id }}</span>
         </div>
 
-        <div class="pl-mcard-tags">
-          <span class="pl-type-badge">{{ ptype|replace('_', ' ')|title }}</span>
-          <span class="pl-city-pill">{{ pcity }}</span>
-          {% if pprice is not none %}
-          <span class="pl-price-pill">${{ '%.0f'|format(pprice|float) }}</span>
-          {% endif %}
-          {% if p.rating is not none %}
-          <div class="pl-stars pl-stars--sm">
-            {% for i in range(1, 6) %}
-            <span class="pl-star{% if i <= p.rating|int %} on{% endif %}">★</span>
-            {% endfor %}
-          </div>
-          {% endif %}
+        <div class="places-kpis">
+            <article class="places-kpi">
+                <span class="places-kpi-label">Registros visibles</span>
+                <strong class="places-kpi-value">{{ places|length if places else 0 }}</strong>
+            </article>
+
+            <article class="places-kpi">
+                <span class="places-kpi-label">Módulo</span>
+                <strong class="places-kpi-value">Lugares</strong>
+            </article>
+
+            <article class="places-kpi">
+                <span class="places-kpi-label">Acceso</span>
+                <strong class="places-kpi-value">Staff</strong>
+            </article>
+        </div>
+    </section>
+
+    <section class="places-table-card">
+        <div class="places-table-head">
+            <div>
+                <h3>Lista de lugares</h3>
+                <p>Selecciona un lugar para habilitar las acciones de edición y eliminación.</p>
+            </div>
         </div>
 
-        <p class="pl-mcard-desc">{{ pdesc }}</p>
+        <div class="places-table-wrapper">
+            <table class="places-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Lugar</th>
+                        <th>Ciudad</th>
+                        <th>Tipo</th>
+                        <th>Rating</th>
+                        <th>Precio</th>
+                        <th>Descripción</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if places %}
+                        {% for p in places %}
+                        {% set place_name = p.name or 'Sin nombre' %}
+                        {% set place_city = p.city or 'Sin ciudad' %}
+                        {% set place_type = p.type or 'OTRO' %}
+                        {% set place_rating = p.rating if p.rating is not none else 0 %}
+                        {% set place_price = p.price_range if p.price_range is not none else (p.price if p.price is not none else None) %}
+                        {% set place_description = p.description or 'Sin descripción' %}
+                        {% set edit_url = p.edit_url if p.edit_url else '' %}
+                        {% set delete_url = p.delete_url if p.delete_url else '' %}
 
-        <div class="pl-mcard-foot">
-          <div class="pl-row-actions">
-            <a href="{{ p.edit_url }}" class="pl-action-btn pl-action-edit">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-              </svg>
-              Editar
-            </a>
-            <button type="button" class="pl-action-btn pl-action-del"
-              data-id="{{ p.id }}"
-              data-url="{{ p.delete_url }}"
-              data-name="{{ pname }}"
-              onclick="plOpenModal(this)">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="3 6 5 6 21 6"/>
-                <path d="M19 6l-1 14H6L5 6"/>
-                <path d="M10 11v6"/><path d="M14 11v6"/>
-                <path d="M9 6V4h6v2"/>
-              </svg>
-              Eliminar
-            </button>
-          </div>
+                        <tr
+                            class="place-row"
+                            tabindex="0"
+                            role="button"
+                            aria-label="Seleccionar lugar #{{ p.id }}"
+                            data-place-id="{{ p.id }}"
+                            data-place-name="{{ place_name }}"
+                            data-place-city="{{ place_city }}"
+                            data-edit-url="{{ edit_url }}"
+                            data-delete-url="{{ delete_url }}"
+                        >
+                            <td>
+                                <span class="place-id">#{{ p.id }}</span>
+                            </td>
+
+                            <td>
+                                <div class="place-name">{{ place_name }}</div>
+                            </td>
+
+                            <td>
+                                <div class="place-city">{{ place_city }}</div>
+                            </td>
+
+                            <td>
+                                <span class="type-badge">{{ place_type|replace('_', ' ')|title }}</span>
+                            </td>
+
+                            <td>
+                                <span>{{ place_rating }}</span>
+                            </td>
+
+                            <td>
+                                <span class="place-price">
+                                    {% if place_price is not none and place_price != '' %}
+                                        ${{ '%.2f'|format(place_price|float) }} MXN
+                                    {% else %}
+                                        Sin precio
+                                    {% endif %}
+                                </span>
+                            </td>
+
+                            <td>
+                                <div class="place-description">
+                                    {{ place_description }}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="7" class="empty-state-cell">
+                                <div class="empty-state-box">
+                                    <strong>No hay lugares registrados por mostrar.</strong>
+                                    <span>No se encontraron resultados disponibles en este momento.</span>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
         </div>
-      </article>
-      {% endfor %}
-      <div class="pl-noresults" id="plNoResultsMobile" hidden>No se encontraron lugares con ese criterio.</div>
-    </div>
 
-    {% else %}
-    <div class="pl-empty">
-      <div class="pl-empty-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-          <circle cx="12" cy="10" r="3"/>
-        </svg>
-      </div>
-      <strong>Sin lugares aprobados</strong>
-      <span>Aún no hay lugares disponibles. Aprueba solicitudes desde el módulo de aprobaciones.</span>
-      <a href="{{ url_for('approvals.list_approvals') }}" class="pl-empty-link">Ver aprobaciones →</a>
-    </div>
-    {% endif %}
+        {% if places %}
+        <div class="places-actions-panel" id="placesActionsPanel">
+            <div class="places-actions-info">
+                <span class="places-actions-label">Lugar seleccionado</span>
+                <strong id="selectedPlaceText">Ningún lugar seleccionado</strong>
+            </div>
 
-  </div>
+            <div class="places-actions-buttons">
+                <a
+                    href="#"
+                    id="editPlaceButton"
+                    class="places-panel-btn places-panel-btn-edit is-disabled"
+                    aria-disabled="true"
+                >
+                    Editar
+                </a>
+
+                <form id="deletePlaceForm" method="POST" action="">
+                    <button
+                        type="submit"
+                        id="deletePlaceButton"
+                        class="places-panel-btn places-panel-btn-delete"
+                        disabled
+                    >
+                        Eliminar
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+    </section>
+
 </div>
-
-{# ── Delete modal ── #}
-<div class="pl-overlay" id="plOverlay" aria-hidden="true" onclick="plCloseModal()">
-  <div class="pl-modal" role="dialog" aria-modal="true" onclick="event.stopPropagation()">
-    <div class="pl-modal-ico">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <polyline points="3 6 5 6 21 6"/>
-        <path d="M19 6l-1 14H6L5 6"/>
-        <path d="M10 11v6"/><path d="M14 11v6"/>
-        <path d="M9 6V4h6v2"/>
-      </svg>
-    </div>
-    <h4 class="pl-modal-title">Eliminar lugar</h4>
-    <p class="pl-modal-desc">
-      ¿Seguro que deseas eliminar <strong id="plModalName"></strong>?
-      El lugar dejará de ser visible en la plataforma.
-    </p>
-    <div class="pl-modal-actions">
-      <button type="button" class="pl-modal-cancel" onclick="plCloseModal()">Cancelar</button>
-      <form id="plDeleteForm" method="POST" action="" style="margin:0">
-        <button type="submit" class="pl-modal-confirm">Sí, eliminar</button>
-      </form>
-    </div>
-  </div>
-</div>
-
 {% endblock %}
 
 {% block page_js %}

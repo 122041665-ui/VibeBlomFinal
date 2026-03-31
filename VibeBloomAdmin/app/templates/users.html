@@ -10,268 +10,176 @@
 {% endblock %}
 
 {% block content %}
-<div class="us-container">
+<div class="users-container">
 
-  {# ── Stats ── #}
-  <div class="us-stats">
-    <div class="us-stat">
-      <span class="us-stat-label">Total</span>
-      <strong class="us-stat-val">{{ users|length }}</strong>
-    </div>
-    <div class="us-stat">
-      <span class="us-stat-label">Administradores</span>
-      <strong class="us-stat-val">
-        {{ users|selectattr('role','equalto','admin')|list|length }}
-      </strong>
-    </div>
-    <div class="us-stat">
-      <span class="us-stat-label">Moderadores</span>
-      <strong class="us-stat-val">
-        {{ users|selectattr('role','equalto','moderator')|list|length }}
-      </strong>
-    </div>
-    <div class="us-stat">
-      <span class="us-stat-label">Usuarios</span>
-      <strong class="us-stat-val">
-        {{ users|selectattr('role','equalto','user')|list|length }}
-      </strong>
-    </div>
-  </div>
-
-  {# ── Main card ── #}
-  <div class="us-card">
-
-    {# Header + search #}
-    <div class="us-card-head">
-      <div class="us-card-titles">
-        <h3 class="us-card-title">Lista de usuarios</h3>
-        <p class="us-card-sub">Busca, edita, cambia el rol o elimina usuarios de la plataforma.</p>
-      </div>
-      {% if users %}
-      <label class="us-search-wrap" for="usSearch">
-        <svg class="us-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-        </svg>
-        <input type="search" id="usSearch" class="us-search" placeholder="Buscar nombre, correo o rol…" autocomplete="off">
-      </label>
-      {% endif %}
-    </div>
-
-    {% if users %}
-
-    {# ── Desktop table ── #}
-    <div class="us-table-wrap">
-      <table class="us-table">
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>Usuario</th>
-            <th>Correo</th>
-            <th>Rol</th>
-            <th>Cambiar rol</th>
-            <th class="us-th-right">Acciones</th>
-          </tr>
-        </thead>
-        <tbody id="usTBody">
-          {% for u in users %}
-          {% set uname  = u.name  or 'Sin nombre' %}
-          {% set uemail = u.email or 'Sin correo' %}
-          {% set urole  = u.role  or 'user' %}
-          <tr class="us-row" data-q="{{ (uname ~ ' ' ~ uemail ~ ' ' ~ urole)|lower }}">
-
-            <td><span class="us-id">#{{ u.id }}</span></td>
-
-            <td>
-              <div class="us-user">
-                <div class="us-avatar">{{ uname[:1]|upper }}</div>
-                <span class="us-uname">{{ uname }}</span>
-              </div>
-            </td>
-
-            <td>
-              <span class="us-email">{{ uemail }}</span>
-            </td>
-
-            <td>
-              {% if urole == 'admin' %}
-                <span class="us-role-badge us-role-admin">Administrador</span>
-              {% elif urole == 'moderator' %}
-                <span class="us-role-badge us-role-mod">Moderador</span>
-              {% else %}
-                <span class="us-role-badge us-role-user">Usuario</span>
-              {% endif %}
-            </td>
-
-            <td>
-              <form method="POST"
-                    action="{{ url_for('users.update_user_role', user_id=u.id) }}"
-                    class="us-role-form"
-                    onclick="event.stopPropagation()">
-                <div class="us-role-wrap">
-                  <select name="role" class="us-role-select">
-                    <option value="user"      {% if urole == 'user'      %}selected{% endif %}>Usuario</option>
-                    <option value="moderator" {% if urole == 'moderator' %}selected{% endif %}>Moderador</option>
-                    <option value="admin"     {% if urole == 'admin'     %}selected{% endif %}>Admin</option>
-                  </select>
-                  <button type="submit" class="us-role-btn">Guardar</button>
+    <section class="users-hero-card">
+        <div class="users-title-row">
+            <div>
+                <div class="users-title">Administración de usuarios</div>
+                <div class="users-subtitle">
+                    Consulta, actualiza roles, edita información y elimina usuarios registrados desde el panel administrativo.
                 </div>
-              </form>
-            </td>
-
-            <td>
-              <div class="us-row-actions">
-                <a href="{{ u.edit_url }}" class="us-action-btn us-action-edit" title="Editar usuario">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                  </svg>
-                  Editar
-                </a>
-                <button type="button" class="us-action-btn us-action-del" title="Eliminar usuario"
-                  data-id="{{ u.id }}"
-                  data-url="{{ u.delete_url }}"
-                  data-user="{{ uname }}"
-                  onclick="usOpenModal(this)">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="3 6 5 6 21 6"/>
-                    <path d="M19 6l-1 14H6L5 6"/>
-                    <path d="M10 11v6"/><path d="M14 11v6"/>
-                    <path d="M9 6V4h6v2"/>
-                  </svg>
-                  Eliminar
-                </button>
-              </div>
-            </td>
-
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-
-      <div class="us-noresults" id="usNoResults" hidden>
-        No se encontraron usuarios con ese criterio.
-      </div>
-    </div>
-
-    {# ── Mobile cards ── #}
-    <div class="us-mobile-cards" id="usMobileCards">
-      {% for u in users %}
-      {% set uname  = u.name  or 'Sin nombre' %}
-      {% set uemail = u.email or 'Sin correo' %}
-      {% set urole  = u.role  or 'user' %}
-      <article class="us-mcard" data-q="{{ (uname ~ ' ' ~ uemail ~ ' ' ~ urole)|lower }}">
-
-        <div class="us-mcard-top">
-          <div class="us-user">
-            <div class="us-avatar">{{ uname[:1]|upper }}</div>
-            <div class="us-mcard-meta">
-              <span class="us-uname">{{ uname }}</span>
-              <span class="us-email">{{ uemail }}</span>
             </div>
-          </div>
-          <span class="us-id">#{{ u.id }}</span>
         </div>
 
-        <div class="us-mcard-role-row">
-          {% if urole == 'admin' %}
-            <span class="us-role-badge us-role-admin">Administrador</span>
-          {% elif urole == 'moderator' %}
-            <span class="us-role-badge us-role-mod">Moderador</span>
-          {% else %}
-            <span class="us-role-badge us-role-user">Usuario</span>
-          {% endif %}
+        <div class="users-kpis">
+            <article class="users-kpi">
+                <span class="users-kpi-label">Registros visibles</span>
+                <strong class="users-kpi-value">{{ users|length if users else 0 }}</strong>
+            </article>
+
+            <article class="users-kpi">
+                <span class="users-kpi-label">Acceso permitido</span>
+                <strong class="users-kpi-value">Administrador</strong>
+            </article>
+
+            <article class="users-kpi">
+                <span class="users-kpi-label">Módulo</span>
+                <strong class="users-kpi-value">Usuarios</strong>
+            </article>
+        </div>
+    </section>
+
+    <section class="users-table-card">
+        <div class="users-table-head">
+            <div>
+                <h3>Lista de usuarios</h3>
+                <p>Selecciona un usuario para habilitar las acciones de edición y eliminación. La actualización de rol se mantiene dentro de la tabla.</p>
+            </div>
         </div>
 
-        <form method="POST"
-              action="{{ url_for('users.update_user_role', user_id=u.id) }}"
-              class="us-role-form us-mcard-role-form">
-          <div class="us-role-wrap">
-            <select name="role" class="us-role-select">
-              <option value="user"      {% if urole == 'user'      %}selected{% endif %}>Usuario</option>
-              <option value="moderator" {% if urole == 'moderator' %}selected{% endif %}>Moderador</option>
-              <option value="admin"     {% if urole == 'admin'     %}selected{% endif %}>Admin</option>
-            </select>
-            <button type="submit" class="us-role-btn">Guardar rol</button>
-          </div>
-        </form>
+        <div class="users-table-wrapper">
+            <table class="users-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Usuario</th>
+                        <th>Correo</th>
+                        <th>Rol actual</th>
+                        <th>Actualizar rol</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if users %}
+                        {% for user in users %}
+                        {% set user_name = user.name or 'Sin nombre' %}
+                        {% set user_email = user.email or 'Sin correo' %}
+                        {% set user_role = user.role or 'user' %}
+                        {% set edit_url = user.edit_url if user.edit_url else '' %}
+                        {% set delete_url = user.delete_url if user.delete_url else '' %}
 
-        <div class="us-mcard-foot">
-          <div class="us-row-actions">
-            <a href="{{ u.edit_url }}" class="us-action-btn us-action-edit">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-              </svg>
-              Editar
-            </a>
-            <button type="button" class="us-action-btn us-action-del"
-              data-id="{{ u.id }}"
-              data-url="{{ u.delete_url }}"
-              data-user="{{ uname }}"
-              onclick="usOpenModal(this)">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="3 6 5 6 21 6"/>
-                <path d="M19 6l-1 14H6L5 6"/>
-                <path d="M10 11v6"/><path d="M14 11v6"/>
-                <path d="M9 6V4h6v2"/>
-              </svg>
-              Eliminar
-            </button>
-          </div>
+                        <tr
+                            class="user-row"
+                            tabindex="0"
+                            role="button"
+                            aria-label="Seleccionar usuario #{{ user.id }}"
+                            data-user-id="{{ user.id }}"
+                            data-user-name="{{ user_name }}"
+                            data-user-email="{{ user_email }}"
+                            data-user-role="{{ user_role }}"
+                            data-edit-url="{{ edit_url }}"
+                            data-delete-url="{{ delete_url }}"
+                        >
+                            <td>
+                                <span class="user-id">#{{ user.id }}</span>
+                            </td>
+
+                            <td>
+                                <div class="user-cell">
+                                    <div class="user-avatar">
+                                        {{ user_name[:1]|upper }}
+                                    </div>
+
+                                    <div class="user-info">
+                                        <div class="user-name">{{ user_name }}</div>
+                                    </div>
+                                </div>
+                            </td>
+
+                            <td>
+                                <div class="user-mail-block">
+                                    <span class="user-mail-main">{{ user_email }}</span>
+                                </div>
+                            </td>
+
+                            <td>
+                                <div class="role-stack">
+                                    {% if user_role == 'admin' %}
+                                        <span class="role-badge role-badge-admin">Administrador</span>
+                                    {% elif user_role == 'moderator' %}
+                                        <span class="role-badge role-badge-moderator">Moderador</span>
+                                    {% else %}
+                                        <span class="role-badge role-badge-user">Usuario</span>
+                                    {% endif %}
+                                </div>
+                            </td>
+
+                            <td>
+                                <form method="POST"
+                                      action="{{ url_for('users.update_user_role', user_id=user.id) }}"
+                                      class="role-form">
+                                    <div class="actions actions-role">
+                                        <select name="role" class="role-select">
+                                            <option value="user" {% if user_role == 'user' %}selected{% endif %}>Usuario</option>
+                                            <option value="moderator" {% if user_role == 'moderator' %}selected{% endif %}>Moderador</option>
+                                            <option value="admin" {% if user_role == 'admin' %}selected{% endif %}>Administrador</option>
+                                        </select>
+
+                                        <button class="btn-action btn-edit" type="submit">
+                                            Guardar
+                                        </button>
+                                    </div>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="5" class="empty-state-cell">
+                                <div class="empty-state-box">
+                                    <strong>No hay usuarios registrados por mostrar.</strong>
+                                    <span>No se encontraron resultados disponibles en este momento.</span>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
         </div>
 
-      </article>
-      {% endfor %}
+        {% if users %}
+        <div class="users-actions-panel" id="usersActionsPanel">
+            <div class="users-actions-info">
+                <span class="users-actions-label">Usuario seleccionado</span>
+                <strong id="selectedUserText">Ningún usuario seleccionado</strong>
+            </div>
 
-      <div class="us-noresults" id="usNoResultsMobile" hidden>
-        No se encontraron usuarios con ese criterio.
-      </div>
-    </div>
+            <div class="users-actions-buttons">
+                <a
+                    href="#"
+                    id="editUserButton"
+                    class="users-panel-btn users-panel-btn-edit is-disabled"
+                    aria-disabled="true"
+                >
+                    Editar
+                </a>
 
-    {% else %}
-    <div class="us-empty">
-      <div class="us-empty-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-          <circle cx="9" cy="7" r="4"/>
-          <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-          <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-        </svg>
-      </div>
-      <strong>Sin usuarios registrados</strong>
-      <span>No hay usuarios disponibles en este momento.</span>
-    </div>
-    {% endif %}
+                <form id="deleteUserForm" method="POST" action="">
+                    <button
+                        type="submit"
+                        id="deleteUserButton"
+                        class="users-panel-btn users-panel-btn-delete"
+                        disabled
+                    >
+                        Eliminar
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+    </section>
 
-  </div>{# /us-card #}
-</div>{# /us-container #}
-
-{# ── Delete modal ── #}
-<div class="us-overlay" id="usOverlay" aria-hidden="true" onclick="usCloseModal()">
-  <div class="us-modal" role="dialog" aria-modal="true" aria-labelledby="usModalTitle" onclick="event.stopPropagation()">
-    <div class="us-modal-ico">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <polyline points="3 6 5 6 21 6"/>
-        <path d="M19 6l-1 14H6L5 6"/>
-        <path d="M10 11v6"/><path d="M14 11v6"/>
-        <path d="M9 6V4h6v2"/>
-      </svg>
-    </div>
-    <h4 id="usModalTitle" class="us-modal-title">Eliminar usuario</h4>
-    <p class="us-modal-desc">
-      ¿Seguro que deseas eliminar a
-      <strong id="usModalUser"></strong>?
-      Esta acción no se puede deshacer.
-    </p>
-    <div class="us-modal-actions">
-      <button type="button" class="us-modal-cancel" onclick="usCloseModal()">Cancelar</button>
-      <form id="usDeleteForm" method="POST" action="" style="margin:0">
-        <button type="submit" class="us-modal-confirm">Sí, eliminar</button>
-      </form>
-    </div>
-  </div>
 </div>
-
 {% endblock %}
 
 {% block page_js %}
