@@ -10,46 +10,57 @@
 {% endblock %}
 
 {% block content %}
-<div class="reviews-container">
+<div class="rv-container">
 
-    <section class="reviews-hero-card">
-        <div class="reviews-title-row">
-            <div>
-                <div class="reviews-title">Administración de reseñas</div>
-                <div class="reviews-subtitle">
-                    Consulta, edita y elimina las reseñas registradas por los usuarios dentro de la plataforma.
-                </div>
+    <section class="rv-hero">
+        <div class="rv-hero-inner">
+            <div class="rv-hero-text">
+                <div class="rv-hero-title">Administración de reseñas</div>
+                <div class="rv-hero-subtitle">Consulta, edita y elimina las reseñas registradas por los usuarios dentro de la plataforma.</div>
             </div>
         </div>
-
-        <div class="reviews-kpis">
-            <article class="reviews-kpi">
-                <span class="reviews-kpi-label">Registros visibles</span>
-                <strong class="reviews-kpi-value">{{ reviews|length if reviews else 0 }}</strong>
+        <div class="rv-stats">
+            <article class="rv-stat">
+                <span class="rv-stat-label">Total</span>
+                <strong class="rv-stat-value">{{ reviews|length if reviews else 0 }}</strong>
             </article>
-
-            <article class="reviews-kpi">
-                <span class="reviews-kpi-label">Acceso</span>
-                <strong class="reviews-kpi-value">Staff</strong>
+            <article class="rv-stat">
+                <span class="rv-stat-label">Con calificación</span>
+                <strong class="rv-stat-value">{{ reviews|selectattr('rating')|list|length if reviews else 0 }}</strong>
             </article>
-
-            <article class="reviews-kpi">
-                <span class="reviews-kpi-label">Módulo</span>
-                <strong class="reviews-kpi-value">Reseñas</strong>
+            <article class="rv-stat">
+                <span class="rv-stat-label">Acceso</span>
+                <strong class="rv-stat-value">Staff</strong>
+            </article>
+            <article class="rv-stat">
+                <span class="rv-stat-label">Módulo</span>
+                <strong class="rv-stat-value">Reseñas</strong>
             </article>
         </div>
     </section>
 
-    <section class="reviews-table-card">
-        <div class="reviews-table-head">
-            <div>
+    <section class="rv-card">
+        <div class="rv-card-head">
+            <div class="rv-card-head-left">
                 <h3>Lista de reseñas</h3>
-                <p>Selecciona una reseña para habilitar las acciones.</p>
+                <p>Selecciona una reseña de la tabla o tarjeta para editar o eliminar.</p>
+            </div>
+            <div class="rv-search-wrap">
+                <input
+                    type="search"
+                    id="rvSearch"
+                    class="rv-search"
+                    placeholder="Buscar reseña..."
+                    autocomplete="off"
+                >
             </div>
         </div>
 
-        <div class="reviews-table-wrapper">
-            <table class="reviews-table">
+        {% if reviews %}
+
+        <!-- Desktop table -->
+        <div class="rv-table-wrap">
+            <table class="rv-table">
                 <thead>
                     <tr>
                         <th>ID</th>
@@ -58,115 +69,159 @@
                         <th>Calificación</th>
                         <th>Contenido</th>
                         <th>Fecha</th>
+                        <th>Acciones</th>
                     </tr>
                 </thead>
-                <tbody>
-                    {% if reviews %}
-                        {% for r in reviews %}
-                            {% set review_body = r.body if r.body else (r.comment if r.comment else 'Sin contenido') %}
-                            {% set review_user_name = r.user_name if r.user_name else ('Usuario #' ~ (r.user_id if r.user_id else 'N/D')) %}
-                            {% set review_place_name = r.place_name if r.place_name else ('Lugar #' ~ (r.place_id if r.place_id else 'N/D')) %}
-                            {% set review_rating = r.rating if r.rating is not none else 'N/D' %}
-                            {% set review_date = r.created_at if r.created_at else 'Sin fecha' %}
-                            {% set edit_url = r.edit_url if r.edit_url else '' %}
-                            {% set delete_url = r.delete_url if r.delete_url else '' %}
+                <tbody id="rvTBody">
+                    {% for r in reviews %}
+                    {% set review_body = r.body if r.body else (r.comment if r.comment else 'Sin contenido') %}
+                    {% set review_user_name = r.user_name if r.user_name else ('Usuario #' ~ (r.user_id if r.user_id else 'N/D')) %}
+                    {% set review_place_name = r.place_name if r.place_name else ('Lugar #' ~ (r.place_id if r.place_id else 'N/D')) %}
+                    {% set review_rating = r.rating if r.rating is not none else 0 %}
+                    {% set review_date = r.created_at if r.created_at else 'Sin fecha' %}
+                    {% set edit_url = r.edit_url if r.edit_url else '' %}
+                    {% set delete_url = r.delete_url if r.delete_url else '' %}
 
-                            <tr
-                                class="review-row"
-                                tabindex="0"
-                                role="button"
-                                aria-label="Seleccionar reseña #{{ r.id }}"
-                                data-review-id="{{ r.id }}"
-                                data-edit-url="{{ edit_url }}"
-                                data-delete-url="{{ delete_url }}"
-                                data-user-name="{{ review_user_name }}"
-                                data-place-name="{{ review_place_name }}"
-                            >
-                                <td>
-                                    <span class="review-id">#{{ r.id }}</span>
-                                </td>
+                    <tr
+                        class="rv-row"
+                        data-q="{{ (review_user_name ~ ' ' ~ review_place_name ~ ' ' ~ review_body)|lower }}"
+                    >
+                        <td><span class="rv-id">#{{ r.id }}</span></td>
 
-                                <td>
-                                    <div class="review-user">
-                                        <div class="review-user-avatar">
-                                            {{ review_user_name[:1]|upper if review_user_name else 'U' }}
-                                        </div>
-                                        <div class="review-user-info">
-                                            <div class="review-user-name">{{ review_user_name }}</div>
-                                        </div>
-                                    </div>
-                                </td>
+                        <td>
+                            <div class="rv-user">
+                                <div class="rv-avatar">{{ review_user_name[:1]|upper }}</div>
+                                <div class="rv-user-name">{{ review_user_name }}</div>
+                            </div>
+                        </td>
 
-                                <td>
-                                    <span class="review-place">{{ review_place_name }}</span>
-                                </td>
+                        <td><span class="rv-place">{{ review_place_name }}</span></td>
 
-                                <td>
-                                    <div class="review-rating">
-                                        {% if review_rating != 'N/D' %}
-                                            <span class="review-rating-badge">{{ review_rating }}/5</span>
-                                        {% else %}
-                                            <span class="review-rating-badge is-muted">N/D</span>
-                                        {% endif %}
-                                    </div>
-                                </td>
+                        <td>
+                            <div class="rv-stars">
+                                {% for i in range(1, 6) %}
+                                <span class="rv-star{% if i <= review_rating|int %} on{% endif %}">★</span>
+                                {% endfor %}
+                                <span class="rv-rating-num">{{ review_rating }}/5</span>
+                            </div>
+                        </td>
 
-                                <td>
-                                    <div class="review-body review-body--clamp">{{ review_body }}</div>
-                                </td>
+                        <td>
+                            <div class="rv-body rv-clamp">{{ review_body }}</div>
+                        </td>
 
-                                <td>
-                                    <span class="review-date">{{ review_date }}</span>
-                                </td>
-                            </tr>
-                        {% endfor %}
-                    {% else %}
-                        <tr>
-                            <td colspan="6" class="empty-state-cell">
-                                <div class="empty-state-box">
-                                    <strong>No hay reseñas registradas por mostrar.</strong>
-                                    <span>No se encontraron resultados disponibles en este momento.</span>
-                                </div>
-                            </td>
-                        </tr>
-                    {% endif %}
+                        <td><span class="rv-date">{{ review_date }}</span></td>
+
+                        <td>
+                            <div class="rv-row-actions">
+                                {% if edit_url %}
+                                <a href="{{ edit_url }}" class="rv-btn rv-btn-edit">Editar</a>
+                                {% endif %}
+                                {% if delete_url %}
+                                <button
+                                    type="button"
+                                    class="rv-btn rv-btn-del"
+                                    onclick="rvOpenModal(this)"
+                                    data-url="{{ delete_url }}"
+                                    data-name="Reseña #{{ r.id }} · {{ review_user_name }}"
+                                >Eliminar</button>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
                 </tbody>
             </table>
         </div>
 
-        {% if reviews %}
-        <div class="reviews-actions-panel" id="reviewsActionsPanel">
-            <div class="reviews-actions-info">
-                <span class="reviews-actions-label">Reseña seleccionada</span>
-                <strong id="selectedReviewText">Ninguna reseña seleccionada</strong>
-            </div>
+        <!-- Mobile cards -->
+        <div class="rv-mobile-cards" id="rvMobileCards">
+            {% for r in reviews %}
+            {% set review_body = r.body if r.body else (r.comment if r.comment else 'Sin contenido') %}
+            {% set review_user_name = r.user_name if r.user_name else ('Usuario #' ~ (r.user_id if r.user_id else 'N/D')) %}
+            {% set review_place_name = r.place_name if r.place_name else ('Lugar #' ~ (r.place_id if r.place_id else 'N/D')) %}
+            {% set review_rating = r.rating if r.rating is not none else 0 %}
+            {% set review_date = r.created_at if r.created_at else 'Sin fecha' %}
+            {% set edit_url = r.edit_url if r.edit_url else '' %}
+            {% set delete_url = r.delete_url if r.delete_url else '' %}
 
-            <div class="reviews-actions-buttons">
-                <a
-                    href="#"
-                    id="editReviewButton"
-                    class="reviews-panel-btn reviews-panel-btn-edit is-disabled"
-                    aria-disabled="true"
-                >
-                    Editar
-                </a>
+            <article
+                class="rv-mcard"
+                data-q="{{ (review_user_name ~ ' ' ~ review_place_name ~ ' ' ~ review_body)|lower }}"
+            >
+                <div class="rv-mcard-head">
+                    <div class="rv-mcard-user">
+                        <div class="rv-avatar">{{ review_user_name[:1]|upper }}</div>
+                        <div>
+                            <div class="rv-user-name">{{ review_user_name }}</div>
+                            <div class="rv-mcard-id">#{{ r.id }}</div>
+                        </div>
+                    </div>
+                    <div class="rv-stars">
+                        {% for i in range(1, 6) %}
+                        <span class="rv-star{% if i <= review_rating|int %} on{% endif %}">★</span>
+                        {% endfor %}
+                    </div>
+                </div>
 
-                <form id="deleteReviewForm" method="POST" action="">
+                <div class="rv-mcard-place">
+                    <span class="rv-place">{{ review_place_name }}</span>
+                    <span class="rv-date">{{ review_date }}</span>
+                </div>
+
+                <div class="rv-mcard-body">{{ review_body }}</div>
+
+                <div class="rv-mcard-actions">
+                    {% if edit_url %}
+                    <a href="{{ edit_url }}" class="rv-btn rv-btn-edit">Editar</a>
+                    {% endif %}
+                    {% if delete_url %}
                     <button
-                        type="submit"
-                        id="deleteReviewButton"
-                        class="reviews-panel-btn reviews-panel-btn-delete"
-                        disabled
-                    >
-                        Eliminar
-                    </button>
-                </form>
-            </div>
+                        type="button"
+                        class="rv-btn rv-btn-del"
+                        onclick="rvOpenModal(this)"
+                        data-url="{{ delete_url }}"
+                        data-name="Reseña #{{ r.id }} · {{ review_user_name }}"
+                    >Eliminar</button>
+                    {% endif %}
+                </div>
+            </article>
+            {% endfor %}
+        </div>
+
+        <!-- Empty search state -->
+        <div class="rv-no-results" id="rvNoResults" style="display:none;">
+            <strong>Sin resultados</strong>
+            <span>No se encontraron reseñas que coincidan con la búsqueda.</span>
+        </div>
+
+        {% else %}
+        <div class="rv-empty">
+            <strong>No hay reseñas registradas por mostrar.</strong>
+            <span>No se encontraron resultados disponibles en este momento.</span>
         </div>
         {% endif %}
     </section>
 
 </div>
+
+<!-- Delete modal -->
+<div class="rv-overlay" id="rvOverlay" role="dialog" aria-modal="true" aria-labelledby="rvModalTitle">
+    <div class="rv-modal">
+        <div class="rv-modal-icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+        </div>
+        <h3 class="rv-modal-title" id="rvModalTitle">Eliminar reseña</h3>
+        <p class="rv-modal-sub">¿Estás seguro de que deseas eliminar <strong id="rvModalName"></strong>? Esta acción no se puede deshacer.</p>
+        <form id="rvDeleteForm" method="POST" action="">
+            <div class="rv-modal-btns">
+                <button type="button" class="rv-modal-cancel" onclick="rvCloseModal()">Cancelar</button>
+                <button type="submit" class="rv-modal-confirm">Eliminar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 {% endblock %}
 
 {% block page_js %}
