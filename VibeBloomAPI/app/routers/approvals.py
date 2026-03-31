@@ -43,8 +43,8 @@ PLACE_CANDIDATE_COLUMNS = [
     "description",
     "price",
     "price_range",
-    "latitude",
-    "longitude",
+    "lat",
+    "lng",
     "photo",
     "user_id",
     "status",
@@ -193,8 +193,11 @@ def get_approval_photos(db: Session, approval_id: int) -> list[str]:
     if not column_exists(db, APPROVAL_PHOTOS_TABLE, "place_submission_id"):
         return []
 
-    photo_col = "photo_path" if column_exists(db, APPROVAL_PHOTOS_TABLE, "photo_path") else None
-    if not photo_col:
+    if column_exists(db, APPROVAL_PHOTOS_TABLE, "photo_path"):
+        photo_col = "photo_path"
+    elif column_exists(db, APPROVAL_PHOTOS_TABLE, "path"):
+        photo_col = "path"
+    else:
         return []
 
     photos_query = text(f"""
@@ -319,8 +322,8 @@ def approve_approval(
         "description": approval.get("description"),
         "price": approval_price,
         "price_range": approval_price,
-        "latitude": approval.get("lat"),
-        "longitude": approval.get("lng"),
+        "lat": approval.get("latitude"),
+        "lng": approval.get("longitude"),
         "photo": first_photo,
         "user_id": approval.get("user_id"),
         "status": "approved",

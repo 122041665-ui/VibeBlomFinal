@@ -103,6 +103,7 @@ class PlaceUpdate(BaseModel):
 class PlaceMineResponse(PlaceBase):
     id: int
     user_id: Optional[int] = None
+    photo_url: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -111,6 +112,7 @@ class PlaceMineResponse(PlaceBase):
 class PlaceResponse(PlaceBase):
     id: int
     user_id: Optional[int] = None
+    photo_url: Optional[str] = None
     user: Optional[UserMiniResponse] = None
     reviews: list[ReviewDetailResponse] = Field(default_factory=list)
 
