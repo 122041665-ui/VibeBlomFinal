@@ -165,11 +165,10 @@
         $placeUser = is_array($place) ? ($place['user'] ?? null) : ($place->user ?? null);
         $placeReviews = is_array($place) ? ($place['reviews'] ?? []) : ($place->reviews ?? collect());
 
-        $fastapiBase = rtrim(env('FASTAPI_URL', 'http://127.0.0.1:8010'), '/');
         $allPhotos = [];
         $main = !empty($placePhotoUrl)
             ? $placePhotoUrl
-            : (!empty($placePhoto) ? $fastapiBase . '/storage/' . ltrim($placePhoto, '/') : null);
+            : (!empty($placePhoto) ? asset('storage/' . ltrim($placePhoto, '/')) : null);
 
         if ($main) $allPhotos[] = $main;
 
@@ -177,7 +176,7 @@
         if (!empty($placePhotosUrls) && is_array($placePhotosUrls)) {
             $extras = $placePhotosUrls;
         } elseif (is_array($placePhotos)) {
-            $extras = array_map(fn ($p) => $fastapiBase . '/storage/' . ltrim($p, '/'), $placePhotos);
+            $extras = array_map(fn ($p) => asset('storage/' . ltrim($p, '/')), $placePhotos);
         }
 
         if (is_array($extras)) {

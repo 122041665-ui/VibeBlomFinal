@@ -305,6 +305,12 @@ def approve_approval(
 
     approval_price = approval.get("price")
 
+    # Get first photo from submission photos
+    first_photo = None
+    submission_photos = get_approval_photos(db, approval_id)
+    if submission_photos:
+        first_photo = submission_photos[0]
+
     field_map = {
         "name": approval.get("name"),
         "type": approval.get("type"),
@@ -315,6 +321,7 @@ def approve_approval(
         "price_range": approval_price,
         "latitude": approval.get("lat"),
         "longitude": approval.get("lng"),
+        "photo": first_photo,
         "user_id": approval.get("user_id"),
         "status": "approved",
     }
