@@ -251,7 +251,30 @@
     </div>
 
     <div id="vbSearchBarWrap"
+         x-data="{ searchOpen: false }"
          class="border-t border-gray-100 dark:border-slate-800 bg-white/75 dark:bg-slate-950/75 backdrop-blur supports-[backdrop-filter]:bg-white/70 dark:supports-[backdrop-filter]:bg-slate-950/70 transition-colors duration-300">
+
+        {{-- Mobile toggle button --}}
+        <button type="button"
+                @click="searchOpen = !searchOpen"
+                class="lg:hidden w-full flex items-center justify-between px-4 py-2.5
+                       text-sm font-semibold text-gray-700 dark:text-slate-300
+                       hover:bg-gray-50 dark:hover:bg-slate-900/50 transition-colors">
+            <span class="flex items-center gap-2">
+                <svg class="w-4 h-4 text-blue-600 dark:text-blue-400" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <circle cx="11" cy="11" r="6.75" stroke="currentColor" stroke-width="2"/>
+                    <path d="M16 16l3.75 3.75" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+                Buscar y filtrar
+            </span>
+            <svg class="w-4 h-4 text-gray-400 transition-transform duration-200"
+                 :class="{ 'rotate-180': searchOpen }"
+                 viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 10.94l3.71-3.71a.75.75 0 1 1 1.06 1.06l-4.24 4.24a.75.75 0 0 1-1.06 0L5.21 8.29a.75.75 0 0 1 .02-1.08Z" clip-rule="evenodd"/>
+            </svg>
+        </button>
+
+        <div class="hidden lg:block" :class="{ '!block': searchOpen }">
         <div id="vbSearchBarInner"
              class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
             <form action="{{ route('dashboard') }}" method="GET" class="space-y-2 md:space-y-0">
@@ -420,6 +443,7 @@
                 @endif
             </form>
         </div>
+        </div>{{-- /hidden lg:block --}}
     </div>
 
     <div :class="{ 'block': open, 'hidden': !open }"

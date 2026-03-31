@@ -6,353 +6,397 @@
 
 {% block page_header %}
 <h1>Dashboard</h1>
-<p>Vista general del sistema, actividad reciente, métricas visuales y reportes por categoría</p>
+<p>Métricas del sistema, actividad reciente y reportes exportables</p>
 {% endblock %}
 
 {% block content %}
-<div class="dashboard-shell">
+<div class="db-shell">
 
-    <section class="dashboard-stats-card">
-        <div class="dashboard-stats-grid">
-            <article class="stat-box">
-                <div class="stat-label">Usuarios</div>
-                <div class="stat-value">{{ data.stats.users if data and data.stats else 0 }}</div>
-                <div class="stat-text">Total registrados</div>
-            </article>
+  {# ── Stats ── #}
+  <section class="db-stats-wrap">
+    <article class="db-stat db-stat--blue">
+      <div class="db-stat-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+          <circle cx="9" cy="7" r="4"/>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+        </svg>
+      </div>
+      <div class="db-stat-body">
+        <span class="db-stat-label">Usuarios</span>
+        <strong class="db-stat-value">{{ data.stats.users if data and data.stats else 0 }}</strong>
+        <span class="db-stat-sub">Total registrados</span>
+      </div>
+    </article>
 
-            <article class="stat-box">
-                <div class="stat-label">Lugares</div>
-                <div class="stat-value">{{ data.stats.places if data and data.stats else 0 }}</div>
-                <div class="stat-text">Total registrados</div>
-            </article>
+    <article class="db-stat db-stat--indigo">
+      <div class="db-stat-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 20.25s5-3.72 5-8.63a5 5 0 1 0-10 0c0 4.91 5 8.63 5 8.63Z"/>
+          <circle cx="12" cy="11.25" r="1.9"/>
+        </svg>
+      </div>
+      <div class="db-stat-body">
+        <span class="db-stat-label">Lugares</span>
+        <strong class="db-stat-value">{{ data.stats.places if data and data.stats else 0 }}</strong>
+        <span class="db-stat-sub">Total registrados</span>
+      </div>
+    </article>
 
-            <article class="stat-box">
-                <div class="stat-label">Reseñas</div>
-                <div class="stat-value">{{ data.stats.reviews if data and data.stats else 0 }}</div>
-                <div class="stat-text">Total registradas</div>
-            </article>
+    <article class="db-stat db-stat--violet">
+      <div class="db-stat-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+        </svg>
+      </div>
+      <div class="db-stat-body">
+        <span class="db-stat-label">Reseñas</span>
+        <strong class="db-stat-value">{{ data.stats.reviews if data and data.stats else 0 }}</strong>
+        <span class="db-stat-sub">Total registradas</span>
+      </div>
+    </article>
 
-            <article class="stat-box">
-                <div class="stat-label">Favoritos</div>
-                <div class="stat-value">{{ data.stats.favorites if data and data.stats else 0 }}</div>
-                <div class="stat-text">Total marcados</div>
-            </article>
+    <article class="db-stat db-stat--rose">
+      <div class="db-stat-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+        </svg>
+      </div>
+      <div class="db-stat-body">
+        <span class="db-stat-label">Favoritos</span>
+        <strong class="db-stat-value">{{ data.stats.favorites if data and data.stats else 0 }}</strong>
+        <span class="db-stat-sub">Total marcados</span>
+      </div>
+    </article>
 
-            <article class="stat-box stat-box-highlight">
-                <div class="stat-label">Aprobaciones</div>
-                <div class="stat-value">{{ data.stats.approvals if data and data.stats and data.stats.approvals is not none else 0 }}</div>
-                <div class="stat-text">Pendientes, aprobadas o rechazadas</div>
-            </article>
+    <article class="db-stat db-stat--amber">
+      <div class="db-stat-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="9 11 12 14 22 4"/>
+          <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+        </svg>
+      </div>
+      <div class="db-stat-body">
+        <span class="db-stat-label">Aprobaciones</span>
+        <strong class="db-stat-value">{{ data.stats.approvals if data and data.stats and data.stats.approvals is not none else 0 }}</strong>
+        <span class="db-stat-sub">Pendientes / resueltas</span>
+      </div>
+    </article>
+  </section>
+
+  {# ── Charts ── #}
+  <section class="db-chart-grid">
+    <article class="db-card db-chart-card">
+      <div class="db-card-head">
+        <div>
+          <h3 class="db-card-title">Lugares por tipo</h3>
+          <p class="db-card-sub">Distribución de lugares registrados</p>
         </div>
-    </section>
+      </div>
+      <div class="db-chart-shell">
+        <canvas id="placesTypeChart"></canvas>
+        <div class="db-chart-empty" id="placesTypeEmpty">Sin datos disponibles</div>
+      </div>
+    </article>
 
-    <section class="dashboard-card dashboard-hero-card">
-        <div class="card-head">
-            <div>
-                <h3>Sesión actual</h3>
-                <p>Usuario autenticado en el panel administrativo</p>
-            </div>
+    <article class="db-card db-chart-card">
+      <div class="db-card-head">
+        <div>
+          <h3 class="db-card-title">Usuarios por mes</h3>
+          <p class="db-card-sub">Crecimiento mensual de registros</p>
         </div>
+      </div>
+      <div class="db-chart-shell">
+        <canvas id="usersMonthlyChart"></canvas>
+        <div class="db-chart-empty" id="usersMonthlyEmpty">Sin datos disponibles</div>
+      </div>
+    </article>
 
-        <div class="recent-list recent-list-vertical">
-            {% if data and data.current_user %}
-                <article class="recent-item">
-                    <div class="recent-badge">{{ data.current_user.role or 'staff' }}</div>
-                    <div class="recent-content">
-                        <strong>{{ data.current_user.name or 'Usuario' }}</strong>
-                        <span>{{ data.current_user.email or 'Sin correo' }}</span>
-
-                        <div class="recent-meta">
-                            <span class="recent-meta-pill">ID: {{ data.current_user.id }}</span>
-                            <span class="recent-meta-pill">Rol: {{ data.current_user.role }}</span>
-                        </div>
-                    </div>
-                </article>
-            {% else %}
-                <div class="empty-state">No se pudo cargar la información del usuario actual.</div>
-            {% endif %}
+    <article class="db-card db-chart-card">
+      <div class="db-card-head">
+        <div>
+          <h3 class="db-card-title">Lugares por mes</h3>
+          <p class="db-card-sub">Tendencia mensual de nuevos lugares</p>
         </div>
-    </section>
+      </div>
+      <div class="db-chart-shell">
+        <canvas id="placesMonthlyChart"></canvas>
+        <div class="db-chart-empty" id="placesMonthlyEmpty">Sin datos disponibles</div>
+      </div>
+    </article>
+  </section>
 
-    <section class="dashboard-card dashboard-report-card">
-        <div class="card-head">
-            <div>
-                <h3>Reportes por categoría</h3>
-                <p>Filtra por módulo, acción y rango de fechas para consultar e imprimir resultados</p>
-            </div>
+  {# ── Recent rows ── #}
+  <section class="db-grid-two">
+    <article class="db-card">
+      <div class="db-card-head">
+        <div>
+          <h3 class="db-card-title">Últimos usuarios</h3>
+          <p class="db-card-sub">Registros más recientes del sistema</p>
         </div>
-
-        <div class="report-toolbar">
-            <div class="field-group">
-                <label for="reportModule">Categoría</label>
-                <select id="reportModule" class="field-control">
-                    <option value="places">Lugares</option>
-                    <option value="reviews">Reseñas</option>
-                    <option value="users">Usuarios</option>
-                    <option value="approvals">Aprobaciones</option>
-                </select>
+      </div>
+      <div class="db-recent-list">
+        {% if data and data.recent and data.recent.users %}
+          {% for user in data.recent.users %}
+          <div class="db-recent-item">
+            <div class="db-recent-avatar">{{ (user.name or 'U')[:1]|upper }}</div>
+            <div class="db-recent-body">
+              <strong>{{ user.name or 'Sin nombre' }}</strong>
+              <span>{{ user.email or 'Sin correo' }}</span>
+              <div class="db-pill-row">
+                <span class="db-pill">ID: {{ user.id }}</span>
+                <span class="db-pill db-pill--role">{{ user.role or 'user' }}</span>
+              </div>
             </div>
+          </div>
+          {% endfor %}
+        {% else %}
+          <div class="db-empty">No hay usuarios recientes.</div>
+        {% endif %}
+      </div>
+    </article>
 
-            <div class="field-group">
-                <label for="reportScope">Acción</label>
-                <select id="reportScope" class="field-control"></select>
-            </div>
-
-            <div class="field-group">
-                <label for="reportStartDate">Desde</label>
-                <input id="reportStartDate" type="date" class="field-control">
-            </div>
-
-            <div class="field-group">
-                <label for="reportEndDate">Hasta</label>
-                <input id="reportEndDate" type="date" class="field-control">
-            </div>
-
-            <div class="toolbar-actions">
-                <button type="button" id="generateReportBtn" class="btn-ui btn-ui-primary">
-                    Generar reporte
-                </button>
-
-                <div class="export-dropdown">
-                    <button type="button" id="toggleExportMenu" class="btn-ui btn-ui-soft">
-                        Exportar
-                    </button>
-
-                    <div id="exportMenu" class="export-menu">
-                        <a id="exportPdfBtn" href="#" class="export-item">Exportar PDF</a>
-                        <a id="exportXlsBtn" href="#" class="export-item">Exportar XLS</a>
-                    </div>
-                </div>
-            </div>
+    <article class="db-card">
+      <div class="db-card-head">
+        <div>
+          <h3 class="db-card-title">Últimos lugares</h3>
+          <p class="db-card-sub">Lugares agregados recientemente</p>
         </div>
+      </div>
+      <div class="db-recent-list">
+        {% if data and data.recent and data.recent.places %}
+          {% for place in data.recent.places %}
+          <div class="db-recent-item">
+            <div class="db-recent-avatar db-recent-avatar--place">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 20.25s5-3.72 5-8.63a5 5 0 1 0-10 0c0 4.91 5 8.63 5 8.63Z"/>
+                <circle cx="12" cy="11.25" r="1.9"/>
+              </svg>
+            </div>
+            <div class="db-recent-body">
+              <strong>{{ place.name or 'Sin nombre' }}</strong>
+              <span>{{ place.city or 'Sin ciudad' }}</span>
+              <div class="db-pill-row">
+                <span class="db-pill">ID: {{ place.id }}</span>
+                {% if place.type %}<span class="db-pill db-pill--type">{{ place.type }}</span>{% endif %}
+                {% if place.price is not none %}<span class="db-pill">${{ place.price }}</span>{% endif %}
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        {% else %}
+          <div class="db-empty">No hay lugares recientes.</div>
+        {% endif %}
+      </div>
+    </article>
+  </section>
 
-        <div class="report-summary-wrap">
-            <p id="reportSummary" class="report-summary-text">
-                Selecciona una categoría, una acción y un rango de fechas para generar el reporte.
-            </p>
+  <section class="db-grid-two">
+    <article class="db-card">
+      <div class="db-card-head">
+        <div>
+          <h3 class="db-card-title">Últimas reseñas</h3>
+          <p class="db-card-sub">Opiniones registradas recientemente</p>
         </div>
+      </div>
+      <div class="db-recent-list">
+        {% if data and data.recent and data.recent.reviews %}
+          {% for review in data.recent.reviews %}
+          <div class="db-recent-item">
+            <div class="db-recent-avatar db-recent-avatar--review">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+              </svg>
+            </div>
+            <div class="db-recent-body">
+              <strong>Reseña #{{ review.id }}</strong>
+              <span class="db-recent-clamp">{{ review.body or 'Sin contenido' }}</span>
+              <div class="db-pill-row">
+                <span class="db-pill">Usuario: {{ review.user_id }}</span>
+                <span class="db-pill">Lugar: {{ review.place_id }}</span>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        {% else %}
+          <div class="db-empty">No hay reseñas recientes.</div>
+        {% endif %}
+      </div>
+    </article>
 
-        <div class="report-table-wrap">
-            <table class="report-table">
-                <thead id="reportThead">
-                    <tr>
-                        <th>id</th>
-                        <th>nombre</th>
-                        <th>accion</th>
-                        <th>realizado_por</th>
-                        <th>puesto</th>
-                        <th>fecha</th>
-                        <th>estado</th>
-                    </tr>
-                </thead>
-                <tbody id="reportTbody">
-                    <tr>
-                        <td colspan="7" class="empty-cell">Aún no se ha generado ningún reporte.</td>
-                    </tr>
-                </tbody>
-            </table>
+    <article class="db-card">
+      <div class="db-card-head">
+        <div>
+          <h3 class="db-card-title">Actividad reciente</h3>
+          <p class="db-card-sub">Movimientos detectados en el sistema</p>
         </div>
-    </section>
+      </div>
+      <div class="db-recent-list">
+        {% if data and data.recent_activity %}
+          {% for item in data.recent_activity %}
+          <div class="db-recent-item">
+            <div class="db-activity-badge db-activity-badge--{{ item.module|lower if item.module else 'system' }}">
+              {{ (item.module or 'SYS')[:3]|upper }}
+            </div>
+            <div class="db-recent-body">
+              <strong>{{ item.title or 'Movimiento registrado' }}</strong>
+              <span>{{ item.detail or 'Sin detalle adicional' }}</span>
+              <div class="db-pill-row">
+                {% if item.action %}<span class="db-pill">{{ item.action }}</span>{% endif %}
+                {% if item.created_at %}<span class="db-pill">{{ item.created_at }}</span>{% endif %}
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        {% else %}
+          <div class="db-empty">No hay actividad reciente.</div>
+        {% endif %}
+      </div>
+    </article>
+  </section>
 
-    <section class="dashboard-chart-grid">
-        <article class="dashboard-card chart-card">
-            <div class="card-head">
-                <div>
-                    <h3>Lugares por tipo</h3>
-                    <p>Distribución actual de lugares registrados</p>
-                </div>
-            </div>
-            <div class="chart-shell">
-                <canvas id="placesTypeChart"></canvas>
-            </div>
-        </article>
+  {# ── Sesión actual ── #}
+  <section class="db-card db-session-card">
+    <div class="db-card-head">
+      <div>
+        <h3 class="db-card-title">Sesión actual</h3>
+        <p class="db-card-sub">Usuario autenticado en el panel administrativo</p>
+      </div>
+    </div>
+    {% if data and data.current_user %}
+    <div class="db-session-body">
+      <div class="db-session-avatar">
+        {{ (data.current_user.name or 'A')[:1]|upper }}
+      </div>
+      <div class="db-session-info">
+        <strong>{{ data.current_user.name or 'Usuario' }}</strong>
+        <span>{{ data.current_user.email or 'Sin correo' }}</span>
+        <div class="db-pill-row">
+          <span class="db-pill">ID: {{ data.current_user.id }}</span>
+          <span class="db-pill db-pill--role">{{ data.current_user.role or 'staff' }}</span>
+        </div>
+      </div>
+    </div>
+    {% else %}
+    <div class="db-empty">No se pudo cargar la información del usuario actual.</div>
+    {% endif %}
+  </section>
 
-        <article class="dashboard-card chart-card">
-            <div class="card-head">
-                <div>
-                    <h3>Usuarios por mes</h3>
-                    <p>Crecimiento mensual de registros</p>
-                </div>
-            </div>
-            <div class="chart-shell">
-                <canvas id="usersMonthlyChart"></canvas>
-            </div>
-        </article>
+  {# ── Reportes ── #}
+  <section class="db-card db-report-card" id="reportSection">
+    <div class="db-card-head">
+      <div>
+        <h3 class="db-card-title">Reportes por categoría</h3>
+        <p class="db-card-sub">Filtra por módulo, acción y fechas, luego genera, exporta o imprime</p>
+      </div>
+    </div>
 
-        <article class="dashboard-card chart-card">
-            <div class="card-head">
-                <div>
-                    <h3>Lugares por mes</h3>
-                    <p>Tendencia mensual de nuevos lugares</p>
-                </div>
-            </div>
-            <div class="chart-shell">
-                <canvas id="placesMonthlyChart"></canvas>
-            </div>
-        </article>
-    </section>
+    <div class="db-report-toolbar">
+      <div class="db-field">
+        <label for="reportModule">Categoría</label>
+        <select id="reportModule" class="db-control">
+          <option value="places">Lugares</option>
+          <option value="reviews">Reseñas</option>
+          <option value="users">Usuarios</option>
+          <option value="approvals">Aprobaciones</option>
+        </select>
+      </div>
 
-    <section class="dashboard-grid-two">
-        <article class="dashboard-card">
-            <div class="card-head">
-                <div>
-                    <h3>Últimos usuarios</h3>
-                    <p>Registros más recientes del sistema</p>
-                </div>
-            </div>
+      <div class="db-field">
+        <label for="reportScope">Acción</label>
+        <select id="reportScope" class="db-control"></select>
+      </div>
 
-            <div class="recent-list recent-list-vertical">
-                {% if data and data.recent and data.recent.users %}
-                    {% for user in data.recent.users %}
-                    <article class="recent-item">
-                        <div class="recent-badge">{{ user.role or 'user' }}</div>
-                        <div class="recent-content">
-                            <strong>{{ user.name or 'Sin nombre' }}</strong>
-                            <span>{{ user.email or 'Sin correo' }}</span>
-                            <div class="recent-meta">
-                                <span class="recent-meta-pill">ID: {{ user.id }}</span>
-                                <span class="recent-meta-pill">Rol: {{ user.role }}</span>
-                            </div>
-                        </div>
-                    </article>
-                    {% endfor %}
-                {% else %}
-                    <div class="empty-state">No hay usuarios recientes.</div>
-                {% endif %}
-            </div>
-        </article>
+      <div class="db-field">
+        <label for="reportStartDate">Desde</label>
+        <input id="reportStartDate" type="date" class="db-control">
+      </div>
 
-        <article class="dashboard-card">
-            <div class="card-head">
-                <div>
-                    <h3>Últimos lugares</h3>
-                    <p>Lugares agregados recientemente</p>
-                </div>
-            </div>
+      <div class="db-field">
+        <label for="reportEndDate">Hasta</label>
+        <input id="reportEndDate" type="date" class="db-control">
+      </div>
 
-            <div class="recent-list recent-list-vertical">
-                {% if data and data.recent and data.recent.places %}
-                    {% for place in data.recent.places %}
-                    <article class="recent-item">
-                        <div class="recent-badge">{{ place.type or 'Lugar' }}</div>
-                        <div class="recent-content">
-                            <strong>{{ place.name or 'Sin nombre' }}</strong>
-                            <span>{{ place.city or 'Sin ciudad' }}</span>
-                            <div class="recent-meta">
-                                <span class="recent-meta-pill">ID: {{ place.id }}</span>
-                                {% if place.price is not none %}
-                                    <span class="recent-meta-pill">${{ place.price }}</span>
-                                {% endif %}
-                                {% if place.type %}
-                                    <span class="recent-meta-pill">{{ place.type }}</span>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </article>
-                    {% endfor %}
-                {% else %}
-                    <div class="empty-state">No hay lugares recientes.</div>
-                {% endif %}
-            </div>
-        </article>
-    </section>
+      <div class="db-toolbar-actions">
+        <button type="button" id="generateReportBtn" class="db-btn db-btn-primary">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="7"/><path d="M16 16l4 4"/>
+          </svg>
+          Generar
+        </button>
 
-    <section class="dashboard-grid-two">
-        <article class="dashboard-card">
-            <div class="card-head">
-                <div>
-                    <h3>Últimas reseñas</h3>
-                    <p>Opiniones registradas recientemente</p>
-                </div>
-            </div>
+        <button type="button" id="printReportBtn" class="db-btn db-btn-soft" disabled>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="6 9 6 2 18 2 18 9"/>
+            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
+            <rect x="6" y="14" width="12" height="8"/>
+          </svg>
+          Imprimir
+        </button>
 
-            <div class="recent-list recent-list-vertical">
-                {% if data and data.recent and data.recent.reviews %}
-                    {% for review in data.recent.reviews %}
-                    <article class="recent-item">
-                        <div class="recent-badge">Review</div>
-                        <div class="recent-content">
-                            <strong>Reseña #{{ review.id }}</strong>
-                            <span>{{ review.body or 'Sin contenido' }}</span>
-                            <div class="recent-meta">
-                                <span class="recent-meta-pill">Usuario: {{ review.user_id }}</span>
-                                <span class="recent-meta-pill">Lugar: {{ review.place_id }}</span>
-                            </div>
-                        </div>
-                    </article>
-                    {% endfor %}
-                {% else %}
-                    <div class="empty-state">No hay reseñas recientes.</div>
-                {% endif %}
-            </div>
-        </article>
+        <div class="db-export-wrap">
+          <button type="button" id="toggleExportMenu" class="db-btn db-btn-soft">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            Exportar
+          </button>
+          <div id="exportMenu" class="db-export-menu">
+            <a id="exportPdfBtn" href="#" class="db-export-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+              </svg>
+              Exportar PDF
+            </a>
+            <a id="exportXlsBtn" href="#" class="db-export-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                <path d="M3 9h18M3 15h18M9 3v18M15 3v18"/>
+              </svg>
+              Exportar XLS
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
 
-        <article class="dashboard-card">
-            <div class="card-head">
-                <div>
-                    <h3>Actividad reciente</h3>
-                    <p>Movimientos detectados recientemente en el sistema</p>
-                </div>
-            </div>
+    <div class="db-report-summary-wrap">
+      <p id="reportSummary" class="db-report-summary">
+        Selecciona categoría, acción y rango de fechas para generar el reporte.
+      </p>
+    </div>
 
-            <div class="recent-list recent-list-vertical">
-                {% if data and data.recent_activity %}
-                    {% for item in data.recent_activity %}
-                    <article class="recent-item">
-                        <div class="recent-badge">{{ item.module or 'Sistema' }}</div>
-                        <div class="recent-content">
-                            <strong>{{ item.title or 'Movimiento registrado' }}</strong>
-                            <span>{{ item.detail or 'Sin detalle adicional' }}</span>
-                            <div class="recent-meta">
-                                {% if item.action %}
-                                    <span class="recent-meta-pill">{{ item.action }}</span>
-                                {% endif %}
-                                {% if item.created_at %}
-                                    <span class="recent-meta-pill">{{ item.created_at }}</span>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </article>
-                    {% endfor %}
-                {% else %}
-                    <div class="empty-state">No hay actividad reciente.</div>
-                {% endif %}
-            </div>
-        </article>
-    </section>
+    <div class="db-report-table-wrap" id="reportTableWrap">
+      <table class="db-report-table" id="reportTable">
+        <thead id="reportThead">
+          <tr>
+            <th>id</th><th>nombre</th><th>accion</th>
+            <th>realizado_por</th><th>puesto</th><th>fecha</th><th>estado</th>
+          </tr>
+        </thead>
+        <tbody id="reportTbody">
+          <tr><td colspan="7" class="db-empty-cell">Aún no se ha generado ningún reporte.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
 
 </div>
 
+{# ── Data for JS ── #}
 <script id="dashboard-data" type="application/json">
 {
   "places_by_type": {{ (data.places_by_type if data and data.places_by_type else []) | tojson }},
-  "users_monthly": {{ (data.users_monthly if data and data.users_monthly else []) | tojson }},
+  "users_monthly":  {{ (data.users_monthly  if data and data.users_monthly  else []) | tojson }},
   "places_monthly": {{ (data.places_monthly if data and data.places_monthly else []) | tojson }},
   "report_options": {{ (data.report_options if data and data.report_options else {
-    "places": [
-      {"value": "all", "label": "Todas las acciones"},
-      {"value": "created", "label": "Agregados"},
-      {"value": "updated", "label": "Modificaciones"},
-      {"value": "deleted", "label": "Eliminados"},
-      {"value": "current", "label": "Solo lugares actuales"}
-    ],
-    "reviews": [
-      {"value": "all", "label": "Todas las acciones"},
-      {"value": "created", "label": "Agregados"},
-      {"value": "updated", "label": "Modificaciones"},
-      {"value": "deleted", "label": "Eliminados"}
-    ],
-    "users": [
-      {"value": "all", "label": "Todas las acciones"},
-      {"value": "created", "label": "Agregados"},
-      {"value": "updated", "label": "Modificaciones"},
-      {"value": "deleted", "label": "Eliminados"}
-    ],
-    "approvals": [
-      {"value": "all", "label": "Todas las acciones"},
-      {"value": "approved", "label": "Aprobadas"},
-      {"value": "rejected", "label": "Rechazadas"}
-    ]
+    "places":    [{"value":"all","label":"Todas las acciones"},{"value":"created","label":"Agregados"},{"value":"updated","label":"Modificaciones"},{"value":"deleted","label":"Eliminados"},{"value":"current","label":"Solo lugares actuales"}],
+    "reviews":   [{"value":"all","label":"Todas las acciones"},{"value":"created","label":"Agregados"},{"value":"updated","label":"Modificaciones"},{"value":"deleted","label":"Eliminados"}],
+    "users":     [{"value":"all","label":"Todas las acciones"},{"value":"created","label":"Agregados"},{"value":"updated","label":"Modificaciones"},{"value":"deleted","label":"Eliminados"}],
+    "approvals": [{"value":"all","label":"Todas las acciones"},{"value":"approved","label":"Aprobadas"},{"value":"rejected","label":"Rechazadas"}]
   }) | tojson }}
 }
 </script>

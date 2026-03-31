@@ -190,15 +190,16 @@
                                 $placePhotosUrls = is_array($place) ? ($place['photos_urls'] ?? null) : ($place->photos_urls ?? null);
                                 $placePhotos = is_array($place) ? ($place['photos'] ?? null) : ($place->photos ?? null);
 
+                                $fastapiBase = rtrim(env('FASTAPI_URL', 'http://127.0.0.1:8010'), '/');
                                 $allPhotos = [];
-                                $main = $placePhotoUrl ?: ($placePhoto ? asset('storage/' . ltrim($placePhoto, '/')) : null);
+                                $main = $placePhotoUrl ?: ($placePhoto ? $fastapiBase . '/storage/' . ltrim($placePhoto, '/') : null);
                                 if ($main) $allPhotos[] = $main;
 
                                 $extras = [];
                                 if (!empty($placePhotosUrls) && is_array($placePhotosUrls)) {
                                     $extras = $placePhotosUrls;
                                 } elseif (is_array($placePhotos)) {
-                                    $extras = array_map(fn($p) => asset('storage/' . ltrim($p, '/')), $placePhotos);
+                                    $extras = array_map(fn($p) => $fastapiBase . '/storage/' . ltrim($p, '/'), $placePhotos);
                                 }
 
                                 if (is_array($extras)) {

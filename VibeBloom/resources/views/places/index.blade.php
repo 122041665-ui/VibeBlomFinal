@@ -187,9 +187,10 @@
                             $rating = (int) $placeRating;
                             $rating = max(0, min(5, $rating));
 
+                            $fastapiBase = rtrim(env('FASTAPI_URL', 'http://127.0.0.1:8010'), '/');
                             $initialPhoto = !empty($placePhotoUrl)
                                 ? $placePhotoUrl
-                                : (!empty($placePhoto) ? asset('storage/' . ltrim($placePhoto, '/')) : $defaultPhoto);
+                                : (!empty($placePhoto) ? $fastapiBase . '/storage/' . ltrim($placePhoto, '/') : $defaultPhoto);
 
                             $typeRaw = trim((string) $placeType);
                             if ($typeRaw === '') {
