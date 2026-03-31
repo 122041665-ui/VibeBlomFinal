@@ -1,223 +1,331 @@
-
-
 {% extends "base.html" %}
 
 {% block page_css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/reviews.css') }}">
 <style>
-    .review-edit-card {
-        width: 100%;
-        min-width: 0;
-        background: #ffffff;
-        border: 1px solid #e2e8f0;
-        border-radius: 24px;
-        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.06);
-        padding: 24px;
-        box-sizing: border-box;
-        overflow: hidden;
-    }
+/* ── Edit page extra styles ── */
+.rv-edit-wrap {
+  max-width: 720px;
+  margin: 0 auto;
+  display: grid;
+  gap: 20px;
+  padding-bottom: 40px;
+}
 
-    .review-edit-grid {
-        display: grid;
-        gap: 18px;
-    }
+.rv-edit-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 24px;
+  box-shadow: 0 8px 32px rgba(15, 23, 42, .06);
+  overflow: hidden;
+}
 
-    .review-edit-meta {
-        display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 14px;
-    }
+.rv-edit-head {
+  padding: 24px 28px 20px;
+  border-bottom: 1px solid #f1f5f9;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
 
-    .review-edit-meta-item {
-        border: 1px solid #e2e8f0;
-        background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
-        border-radius: 16px;
-        padding: 14px;
-        min-width: 0;
-    }
+.rv-edit-head-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
 
-    .review-edit-meta-label {
-        font-size: 12px;
-        font-weight: 800;
-        letter-spacing: .04em;
-        text-transform: uppercase;
-        color: #64748b;
-        display: block;
-        margin-bottom: 6px;
-    }
+.rv-edit-head-icon svg {
+  width: 20px;
+  height: 20px;
+  color: #1d4ed8;
+}
 
-    .review-edit-meta-value {
-        font-size: 14px;
-        font-weight: 700;
-        color: #0f172a;
-        line-height: 1.45;
-        word-break: break-word;
-    }
+.rv-edit-head-info h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 800;
+  color: #0f172a;
+}
 
-    .review-edit-field {
-        display: grid;
-        gap: 8px;
-    }
+.rv-edit-head-info p {
+  margin: 3px 0 0;
+  font-size: 13px;
+  color: #64748b;
+}
 
-    .review-edit-label {
-        font-size: 13px;
-        font-weight: 800;
-        color: #0f172a;
-    }
+/* Meta grid */
+.rv-edit-meta {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  background: #f1f5f9;
+  border-bottom: 1px solid #f1f5f9;
+}
 
-    .review-edit-textarea {
-        width: 100%;
-        min-height: 180px;
-        resize: vertical;
-        border: 1px solid #cbd5e1;
-        border-radius: 16px;
-        padding: 14px 16px;
-        font-size: 14px;
-        line-height: 1.6;
-        color: #0f172a;
-        background: #ffffff;
-        box-sizing: border-box;
-        outline: none;
-        transition: border-color 0.2s ease, box-shadow 0.2s ease;
-    }
+.rv-edit-meta-item {
+  background: #fff;
+  padding: 16px 20px;
+}
 
-    .review-edit-textarea:focus {
-        border-color: #93c5fd;
-        box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.12);
-    }
+.rv-edit-meta-label {
+  display: block;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: #94a3b8;
+  margin-bottom: 6px;
+}
 
-    .review-edit-help {
-        font-size: 12px;
-        color: #64748b;
-        line-height: 1.45;
-    }
+.rv-edit-meta-val {
+  font-size: 14px;
+  font-weight: 700;
+  color: #0f172a;
+  word-break: break-word;
+}
 
-    .review-edit-actions {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        flex-wrap: wrap;
-    }
+/* Rating stars in meta */
+.rv-edit-stars {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-top: 2px;
+}
 
-    .review-edit-btn,
-    .review-edit-link {
-        appearance: none;
-        -webkit-appearance: none;
-        min-height: 40px;
-        padding: 0 16px;
-        border-radius: 12px;
-        border: 1px solid transparent;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        text-decoration: none;
-        font-size: 12px;
-        font-weight: 800;
-        line-height: 1;
-        cursor: pointer;
-        box-sizing: border-box;
-        transition: transform 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease;
-    }
+.rv-edit-star {
+  font-size: 18px;
+  color: #e2e8f0;
+}
 
-    .review-edit-btn:hover,
-    .review-edit-link:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 10px 20px rgba(15, 23, 42, 0.08);
-    }
+.rv-edit-star.on { color: #f59e0b; }
 
-    .review-edit-btn:active,
-    .review-edit-link:active {
-        transform: translateY(0);
-    }
+/* Form body */
+.rv-edit-body {
+  padding: 24px 28px;
+  display: grid;
+  gap: 20px;
+}
 
-    .review-edit-btn-primary {
-        background: #2563eb;
-        color: #ffffff;
-        border-color: #2563eb;
-    }
+.rv-edit-field {
+  display: grid;
+  gap: 8px;
+}
 
-    .review-edit-btn-primary:hover {
-        background: #1d4ed8;
-        color: #ffffff;
-        border-color: #1d4ed8;
-    }
+.rv-edit-label {
+  font-size: 13px;
+  font-weight: 800;
+  color: #0f172a;
+}
 
-    .review-edit-link-secondary {
-        background: #f8fafc;
-        color: #0f172a;
-        border-color: #e2e8f0;
-    }
+.rv-edit-textarea {
+  width: 100%;
+  min-height: 200px;
+  resize: vertical;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 14px 16px;
+  font-size: 14px;
+  line-height: 1.65;
+  color: #0f172a;
+  background: #f8fafc;
+  box-sizing: border-box;
+  outline: none;
+  font-family: inherit;
+  transition: border-color .18s, box-shadow .18s, background .18s;
+}
 
-    .review-edit-link-secondary:hover {
-        background: #e2e8f0;
-        color: #020617;
-        border-color: #cbd5e1;
-    }
+.rv-edit-textarea:focus {
+  border-color: #93c5fd;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, .12);
+}
 
-    @media (max-width: 768px) {
-        .review-edit-meta {
-            grid-template-columns: 1fr;
-        }
+.rv-edit-hint {
+  font-size: 12px;
+  color: #94a3b8;
+  line-height: 1.5;
+}
 
-        .review-edit-card {
-            padding: 20px;
-            border-radius: 20px;
-        }
+.rv-edit-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
 
-        .review-edit-actions {
-            flex-direction: column;
-            align-items: stretch;
-        }
+.rv-edit-submit {
+  height: 42px;
+  padding: 0 22px;
+  border-radius: 12px;
+  background: #2563eb;
+  color: #fff;
+  border: 1.5px solid #2563eb;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  transition: transform .15s, box-shadow .15s, background .15s;
+}
 
-        .review-edit-btn,
-        .review-edit-link {
-            width: 100%;
-        }
-    }
+.rv-edit-submit svg {
+  width: 15px;
+  height: 15px;
+}
+
+.rv-edit-submit:hover {
+  background: #1d4ed8;
+  border-color: #1d4ed8;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(37, 99, 235, .28);
+}
+
+.rv-edit-cancel {
+  height: 42px;
+  padding: 0 20px;
+  border-radius: 12px;
+  background: #f1f5f9;
+  color: #475569;
+  border: 1.5px solid #e2e8f0;
+  font-size: 13px;
+  font-weight: 800;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  transition: transform .15s, background .15s;
+}
+
+.rv-edit-cancel:hover {
+  background: #e2e8f0;
+  transform: translateY(-1px);
+}
+
+@media (max-width: 768px) {
+  .rv-edit-meta {
+    grid-template-columns: 1fr;
+  }
+
+  .rv-edit-meta-item {
+    padding: 12px 16px;
+  }
+
+  .rv-edit-head {
+    padding: 18px 16px 16px;
+  }
+
+  .rv-edit-body {
+    padding: 18px 16px;
+  }
+
+  .rv-edit-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .rv-edit-submit,
+  .rv-edit-cancel {
+    width: 100%;
+    justify-content: center;
+  }
+}
 </style>
 {% endblock %}
 
 {% block page_header %}
 <h1>Editar reseña</h1>
-<p>Actualiza el contenido de la reseña seleccionada</p>
+<p>Modifica el contenido de la reseña seleccionada</p>
 {% endblock %}
 
 {% block content %}
-<div class="reviews-container">
-    <section class="review-edit-card">
-        <form method="POST" class="review-edit-grid">
-            <div class="review-edit-meta">
-                <div class="review-edit-meta-item">
-                    <span class="review-edit-meta-label">ID</span>
-                    <div class="review-edit-meta-value">#{{ review.id }}</div>
-                </div>
+{% set user_obj  = review.user  if review.user  else {} %}
+{% set place_obj = review.place if review.place else {} %}
+{% set user_name  = user_obj.name  if user_obj and user_obj.name  else ('Usuario #' ~ (review.user_id  or 'N/D')) %}
+{% set place_name = place_obj.name if place_obj and place_obj.name else ('Lugar #'   ~ (review.place_id or 'N/D')) %}
+{% set rating     = review.rating if review.rating is defined else none %}
+{% set body_val   = review.body if review.body else '' %}
 
-                <div class="review-edit-meta-item">
-                    <span class="review-edit-meta-label">Usuario</span>
-                    <div class="review-edit-meta-value">
-                        {{ review.user.name if review.user and review.user.name else ('Usuario #' ~ (review.user_id if review.user_id else 'N/D')) }}
-                    </div>
-                </div>
+<div class="rv-edit-wrap">
+  <div class="rv-edit-card">
 
-                <div class="review-edit-meta-item">
-                    <span class="review-edit-meta-label">Lugar</span>
-                    <div class="review-edit-meta-value">
-                        {{ review.place.name if review.place and review.place.name else ('Lugar #' ~ (review.place_id if review.place_id else 'N/D')) }}
-                    </div>
-                </div>
-            </div>
+    {# Header #}
+    <div class="rv-edit-head">
+      <div class="rv-edit-head-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+        </svg>
+      </div>
+      <div class="rv-edit-head-info">
+        <h3>Reseña #{{ review.id }}</h3>
+        <p>Edita el contenido y guarda los cambios.</p>
+      </div>
+    </div>
 
-            <div class="review-edit-field">
-                <label for="body" class="review-edit-label">Contenido de la reseña</label>
-                <textarea id="body" name="body" class="review-edit-textarea" required>{{ review.body if review and review.body else '' }}</textarea>
-                <p class="review-edit-help">Modifica el contenido y guarda los cambios para actualizar la reseña.</p>
-            </div>
+    {# Meta: ID · User · Place · Rating #}
+    <div class="rv-edit-meta">
+      <div class="rv-edit-meta-item">
+        <span class="rv-edit-meta-label">ID</span>
+        <div class="rv-edit-meta-val">#{{ review.id }}</div>
+      </div>
 
-            <div class="review-edit-actions">
-                <button type="submit" class="review-edit-btn review-edit-btn-primary">Guardar cambios</button>
-                <a href="{{ url_for('reviews.list_reviews') }}" class="review-edit-link review-edit-link-secondary">Cancelar</a>
-            </div>
-        </form>
-    </section>
+      <div class="rv-edit-meta-item">
+        <span class="rv-edit-meta-label">Usuario</span>
+        <div class="rv-edit-meta-val">{{ user_name }}</div>
+      </div>
+
+      <div class="rv-edit-meta-item">
+        <span class="rv-edit-meta-label">Lugar</span>
+        <div class="rv-edit-meta-val">{{ place_name }}</div>
+      </div>
+
+      {% if rating is not none %}
+      <div class="rv-edit-meta-item">
+        <span class="rv-edit-meta-label">Calificación</span>
+        <div class="rv-edit-stars">
+          {% for i in range(1, 6) %}
+          <span class="rv-edit-star{% if i <= rating|int %} on{% endif %}">★</span>
+          {% endfor %}
+          <span style="margin-left:6px;font-size:13px;font-weight:700;color:#64748b;">{{ rating }}/5</span>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+
+    {# Form #}
+    <form method="POST" class="rv-edit-body">
+      <div class="rv-edit-field">
+        <label for="body" class="rv-edit-label">Contenido de la reseña</label>
+        <textarea id="body" name="body" class="rv-edit-textarea" required
+          placeholder="Escribe el contenido de la reseña…">{{ body_val }}</textarea>
+        <p class="rv-edit-hint">
+          Modifica el texto y presiona <strong>Guardar cambios</strong> para actualizar.
+          Este campo es el único editable por el administrador.
+        </p>
+      </div>
+
+      <div class="rv-edit-actions">
+        <button type="submit" class="rv-edit-submit">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+          Guardar cambios
+        </button>
+        <a href="{{ url_for('reviews.list_reviews') }}" class="rv-edit-cancel">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+          Cancelar
+        </a>
+      </div>
+    </form>
+
+  </div>
 </div>
 {% endblock %}

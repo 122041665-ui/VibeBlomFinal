@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session, joinedload
@@ -11,7 +11,12 @@ from app.models.review_reply import ReviewReply
 from app.models.user import User
 from app.schemas.review import ReviewCreate, ReviewResponse, ReviewUpdate
 
+
 router = APIRouter(prefix="/reviews", tags=["Reviews"])
+
+
+def get_utc_now() -> datetime:
+    return datetime.now(timezone.utc)
 
 
 def get_review_base_query():
@@ -35,6 +40,16 @@ def get_review_with_relations(db: Session, review_id: int):
     )
 
 
+def get_review_or_404(db: Session, review_id: int) -> Review:
+    review = db.get(Review, review_id)
+    if not review:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Reseña no encontrada",
+        )
+    return review
+
+
 def can_manage_review(current_user: User, review: Review) -> bool:
     user_role = getattr(current_user, "role", None)
     return review.user_id == current_user.id or user_role in ["admin", "moderator"]
@@ -48,7 +63,7 @@ def my_reviews(
     result = db.execute(
         get_review_base_query()
         .where(Review.user_id == current_user.id)
-        .order_by(Review.id.desc())
+        .order_by(Review.created_at.desc(), Review.id.desc())
     )
 
     return result.unique().scalars().all()
@@ -59,10 +74,17 @@ def reviews_by_place(
     place_id: int,
     db: Session = Depends(get_db),
 ):
+    place = db.get(Place, place_id)
+    if not place:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Lugar no encontrado",
+        )
+
     result = db.execute(
         get_review_base_query()
         .where(Review.place_id == place_id)
-        .order_by(Review.id.desc())
+        .order_by(Review.created_at.desc(), Review.id.desc())
     )
 
     return result.unique().scalars().all()
@@ -75,7 +97,7 @@ def list_reviews(
 ):
     result = db.execute(
         get_review_base_query()
-        .order_by(Review.id.desc())
+        .order_by(Review.created_at.desc(), Review.id.desc())
     )
 
     return result.unique().scalars().all()
@@ -119,7 +141,7 @@ def create_review(
             detail="El contenido de la reseña no puede estar vacío",
         )
 
-    now = datetime.utcnow()
+    now = get_utc_now()
 
     review = Review(
         user_id=current_user.id,
@@ -151,13 +173,7 @@ def update_review(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    review = db.get(Review, review_id)
-
-    if not review:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Reseña no encontrada",
-        )
+    review = get_review_or_404(db, review_id)
 
     if not can_manage_review(current_user, review):
         raise HTTPException(
@@ -173,7 +189,7 @@ def update_review(
         )
 
     review.body = body
-    review.updated_at = datetime.utcnow()
+    review.updated_at = get_utc_now()
 
     db.commit()
     db.refresh(review)
@@ -195,13 +211,7 @@ def delete_review(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    review = db.get(Review, review_id)
-
-    if not review:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Reseña no encontrada",
-        )
+    review = get_review_or_404(db, review_id)
 
     if not can_manage_review(current_user, review):
         raise HTTPException(
