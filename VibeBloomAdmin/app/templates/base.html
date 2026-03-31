@@ -7,16 +7,227 @@
 
     <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
     {% block page_css %}{% endblock %}
+
+    <style>
+        .mobile-sidebar-toggle,
+        .mobile-sidebar-overlay {
+            display: none;
+        }
+
+        @media (max-width: 1024px) {
+            body.sidebar-open {
+                overflow: hidden;
+            }
+
+            .mobile-sidebar-toggle {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                width: 46px;
+                height: 46px;
+                border-radius: 14px;
+                border: 1px solid #e2e8f0;
+                background: rgba(255, 255, 255, 0.92);
+                color: #0f172a;
+                box-shadow: 0 10px 28px rgba(15, 23, 42, 0.08);
+                cursor: pointer;
+                transition: all 0.2s ease;
+                flex-shrink: 0;
+            }
+
+            .mobile-sidebar-toggle:hover {
+                background: #f8fafc;
+            }
+
+            .mobile-sidebar-toggle svg {
+                width: 22px;
+                height: 22px;
+            }
+
+            .mobile-sidebar-overlay {
+                display: block;
+                position: fixed;
+                inset: 0;
+                background: rgba(2, 6, 23, 0.52);
+                opacity: 0;
+                visibility: hidden;
+                pointer-events: none;
+                transition: all 0.25s ease;
+                z-index: 70;
+                backdrop-filter: blur(2px);
+            }
+
+            .mobile-sidebar-overlay.show {
+                opacity: 1;
+                visibility: visible;
+                pointer-events: auto;
+            }
+
+            .sidebar {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: min(88vw, 320px);
+                height: 100vh;
+                z-index: 80;
+                transform: translateX(-105%);
+                transition: transform 0.28s ease;
+                overflow-y: auto;
+                box-shadow: 0 22px 60px rgba(15, 23, 42, 0.28);
+            }
+
+            .sidebar.show {
+                transform: translateX(0);
+            }
+
+            .main-shell {
+                margin-left: 0 !important;
+                width: 100% !important;
+                min-width: 0;
+            }
+
+            .topbar {
+                position: sticky;
+                top: 0;
+                z-index: 50;
+            }
+
+            .topbar-inner {
+                gap: 14px;
+                align-items: center;
+                padding-left: 18px;
+                padding-right: 18px;
+            }
+
+            .topbar-title {
+                min-width: 0;
+                flex: 1;
+            }
+
+            .topbar-title h1 {
+                font-size: 24px;
+                line-height: 1.1;
+            }
+
+            .topbar-title p {
+                font-size: 13px;
+                line-height: 1.5;
+                margin-top: 6px;
+            }
+
+            .topbar-user {
+                gap: 10px;
+                min-width: 0;
+            }
+
+            .topbar-user-name,
+            .topbar-user-role {
+                max-width: 120px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+
+            .page-content {
+                padding-left: 18px !important;
+                padding-right: 18px !important;
+                padding-bottom: 34px !important;
+            }
+
+            .sidebar-brand {
+                position: sticky;
+                top: 0;
+                z-index: 2;
+                background: inherit;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .topbar-inner {
+                padding-top: 16px;
+                padding-bottom: 16px;
+                align-items: flex-start;
+            }
+
+            .topbar-title h1 {
+                font-size: 21px;
+            }
+
+            .topbar-title p {
+                font-size: 12px;
+                line-height: 1.45;
+            }
+
+            .topbar-user {
+                gap: 8px;
+            }
+
+            .topbar-user > div:not(.topbar-user-avatar):not(.user-dropdown) {
+                display: none;
+            }
+
+            .topbar-user-avatar {
+                width: 42px;
+                height: 42px;
+                font-size: 14px;
+            }
+
+            .user-menu-btn {
+                width: 42px;
+                height: 42px;
+                border-radius: 12px;
+            }
+
+            .user-menu-btn svg {
+                width: 18px;
+                height: 18px;
+            }
+
+            .page-content {
+                padding-left: 14px !important;
+                padding-right: 14px !important;
+                padding-top: 16px !important;
+                padding-bottom: 28px !important;
+            }
+
+            .sidebar {
+                width: min(92vw, 310px);
+            }
+        }
+    </style>
 </head>
 <body>
 
-    <aside class="sidebar">
+    <div class="mobile-sidebar-overlay" id="mobileSidebarOverlay"></div>
+
+    <aside class="sidebar" id="adminSidebar">
         <div class="sidebar-brand">
-            <div class="sidebar-brand-dot"></div>
-            <div>
-                <h2>VibeBloom</h2>
-                <p>Admin Panel</p>
-            </div>
+            <a href="{{ url_for('dashboard.dashboard') }}"
+               style="display:flex; align-items:center; gap:12px; text-decoration:none; color:inherit;">
+                <div style="
+                    flex-shrink:0;
+                    display:flex;
+                    align-items:center;
+                    justify-content:center;
+                    width:52px;
+                    height:52px;
+                    border-radius:16px;
+                    background: rgba(255,255,255,0.82);
+                    border: 1px solid rgba(226,232,240,0.9);
+                    box-shadow: 0 10px 24px rgba(15,23,42,0.08);
+                    padding: 6px;
+                ">
+                    <img src="{{ url_for('static', filename='img/vibebloom.png') }}"
+                         alt="VibeBloom"
+                         style="width:100%; height:100%; object-fit:contain;"
+                         onerror="this.style.display='none'; this.parentElement.innerHTML='<span style=&quot;font-weight:800;font-size:18px;color:#2563eb;&quot;>VB</span>';">
+                </div>
+
+                <div style="min-width:0;">
+                    <h2 style="margin:0; font-size:20px; font-weight:800; line-height:1;">VibeBloom</h2>
+                    <p style="margin:6px 0 0; font-size:12px; color:#64748b;">Admin Panel</p>
+                </div>
+            </a>
         </div>
 
         <nav class="sidebar-nav">
@@ -57,6 +268,19 @@
     <div class="main-shell">
         <header class="topbar">
             <div class="topbar-inner">
+
+                <button type="button"
+                        class="mobile-sidebar-toggle"
+                        id="mobileSidebarToggle"
+                        aria-label="Abrir menú lateral"
+                        aria-expanded="false"
+                        aria-controls="adminSidebar">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round">
+                        <path d="M4 7h16"></path>
+                        <path d="M4 12h16"></path>
+                        <path d="M4 17h16"></path>
+                    </svg>
+                </button>
 
                 <div class="topbar-title">
                     {% block page_header %}
@@ -142,6 +366,62 @@
             document.addEventListener('click', () => {
                 dropdown.classList.remove('show');
                 userMenuButton.setAttribute('aria-expanded', 'false');
+            });
+        }
+
+        const mobileSidebarToggle = document.getElementById('mobileSidebarToggle');
+        const mobileSidebarOverlay = document.getElementById('mobileSidebarOverlay');
+        const adminSidebar = document.getElementById('adminSidebar');
+
+        function openSidebar() {
+            if (!adminSidebar || !mobileSidebarOverlay || !mobileSidebarToggle) return;
+            adminSidebar.classList.add('show');
+            mobileSidebarOverlay.classList.add('show');
+            document.body.classList.add('sidebar-open');
+            mobileSidebarToggle.setAttribute('aria-expanded', 'true');
+        }
+
+        function closeSidebar() {
+            if (!adminSidebar || !mobileSidebarOverlay || !mobileSidebarToggle) return;
+            adminSidebar.classList.remove('show');
+            mobileSidebarOverlay.classList.remove('show');
+            document.body.classList.remove('sidebar-open');
+            mobileSidebarToggle.setAttribute('aria-expanded', 'false');
+        }
+
+        if (mobileSidebarToggle && adminSidebar && mobileSidebarOverlay) {
+            mobileSidebarToggle.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const isOpen = adminSidebar.classList.contains('show');
+                if (isOpen) {
+                    closeSidebar();
+                } else {
+                    openSidebar();
+                }
+            });
+
+            mobileSidebarOverlay.addEventListener('click', closeSidebar);
+
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    closeSidebar();
+                    dropdown?.classList.remove('show');
+                    userMenuButton?.setAttribute('aria-expanded', 'false');
+                }
+            });
+
+            window.addEventListener('resize', () => {
+                if (window.innerWidth > 1024) {
+                    closeSidebar();
+                }
+            });
+
+            adminSidebar.querySelectorAll('a').forEach(link => {
+                link.addEventListener('click', () => {
+                    if (window.innerWidth <= 1024) {
+                        closeSidebar();
+                    }
+                });
             });
         }
     </script>
