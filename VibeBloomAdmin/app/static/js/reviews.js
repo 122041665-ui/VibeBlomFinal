@@ -1,124 +1,142 @@
 (function () {
-  "use strict";
+    function bindReviewPage() {
+        initReviewBodyClamp();
+        initReviewSelection();
+        initDeleteConfirmation();
+    }
 
-  /* ── Search ── */
-  function initSearch() {
-    var input = document.getElementById("rvSearch");
-    if (!input) return;
+    function initReviewBodyClamp() {
+        const reviewBodies = document.querySelectorAll(".review-body");
 
-    input.addEventListener("input", function () {
-      var q = input.value.trim().toLowerCase();
-      filterRows(q);
-      filterCards(q);
-    });
-  }
+        reviewBodies.forEach(function (body) {
+            if (!body) return;
 
-  function filterRows(q) {
-    var rows = document.querySelectorAll("#rvTBody .rv-row");
-    var noResults = document.getElementById("rvNoResults");
-    var visible = 0;
+            const td = body.closest("td");
+            if (!td) return;
 
-    rows.forEach(function (row) {
-      var text = row.dataset.q || "";
-      var match = !q || text.indexOf(q) !== -1;
-      row.style.display = match ? "" : "none";
-      if (match) visible++;
-    });
+            const oldToggle = td.querySelector(".review-body-toggle");
+            if (oldToggle) {
+                oldToggle.remove();
+            }
 
-    if (noResults) noResults.hidden = visible > 0 || rows.length === 0;
-  }
+            body.classList.remove("is-expanded");
+            body.classList.add("review-body--clamp");
 
-  function filterCards(q) {
-    var cards = document.querySelectorAll("#rvMobileCards .rv-mcard");
-    var noResults = document.getElementById("rvNoResultsMobile");
-    var visible = 0;
+            const hasContent = body.textContent && body.textContent.trim().length > 0;
+            if (!hasContent) return;
 
-    cards.forEach(function (card) {
-      var text = card.dataset.q || "";
-      var match = !q || text.indexOf(q) !== -1;
-      card.style.display = match ? "" : "none";
-      if (match) visible++;
-    });
+            requestAnimationFrame(function () {
+                const needsToggle = body.scrollHeight > body.clientHeight + 5;
+                if (!needsToggle) return;
 
-    if (noResults) noResults.hidden = visible > 0 || cards.length === 0;
-  }
+                const toggle = document.createElement("button");
+                toggle.type = "button";
+                toggle.className = "review-body-toggle";
+                toggle.textContent = "Ver más";
+                toggle.setAttribute("aria-expanded", "false");
 
-  /* ── Body expand/collapse ── */
-  function initBodyClamp() {
-    document.querySelectorAll(".rv-body.rv-clamp").forEach(function (el) {
-      requestAnimationFrame(function () {
-        if (el.scrollHeight <= el.clientHeight + 4) return;
+                toggle.addEventListener("click", function (event) {
+                    event.preventDefault();
+                    event.stopPropagation();
 
-        var btn = document.createElement("button");
-        btn.type = "button";
-        btn.className = "rv-more-btn";
-        btn.textContent = "Ver más";
+                    const expanded = body.classList.contains("is-expanded");
 
-        btn.addEventListener("click", function (e) {
-          e.stopPropagation();
-          var expanded = el.classList.contains("expanded");
-          if (expanded) {
-            el.classList.remove("expanded");
-            btn.textContent = "Ver más";
-          } else {
-            el.classList.add("expanded");
-            btn.textContent = "Ver menos";
-          }
+                    if (expanded) {
+                        body.classList.remove("is-expanded");
+                        body.classList.add("review-body--clamp");
+                        toggle.textContent = "Ver más";
+                        toggle.setAttribute("aria-expanded", "false");
+                    } else {
+                        body.classList.add("is-expanded");
+                        body.classList.remove("review-body--clamp");
+                        toggle.textContent = "Ver menos";
+                        toggle.setAttribute("aria-expanded", "true");
+                    }
+                });
+
+                body.insertAdjacentElement("afterend", toggle);
+            });
+        });
+    }
+
+    function initReviewSelection() {
+        const rows = document.querySelectorAll(".review-row");
+        const selectedReviewText = document.getElementById("selectedReviewText");
+        const editButton = document.getElementById("editReviewButton");
+        const deleteForm = document.getElementById("deleteReviewForm");
+        const deleteButton = document.getElementById("deleteReviewButton");
+
+        if (!rows.length || !selectedReviewText || !editButton || !deleteForm || !deleteButton) {
+            return;
+        }
+
+        rows.forEach(function (row) {
+            row.addEventListener("click", function (event) {
+                const clickedToggle = event.target.closest(".review-body-toggle");
+                if (clickedToggle) return;
+
+                rows.forEach(function (item) {
+                    item.classList.remove("is-selected");
+                });
+
+                row.classList.add("is-selected");
+
+                const reviewId = row.dataset.reviewId || "";
+                const userName = row.dataset.userName || "Usuario";
+                const placeName = row.dataset.placeName || "Lugar";
+                const editUrl = row.dataset.editUrl || "";
+                const deleteUrl = row.dataset.deleteUrl || "";
+
+                selectedReviewText.textContent = "#" + reviewId + " · " + userName + " · " + placeName;
+
+                if (editUrl.trim() !== "") {
+                    editButton.setAttribute("href", editUrl);
+                    editButton.classList.remove("is-disabled");
+                    editButton.setAttribute("aria-disabled", "false");
+                } else {
+                    editButton.setAttribute("href", "#");
+                    editButton.classList.add("is-disabled");
+                    editButton.setAttribute("aria-disabled", "true");
+                }
+
+                if (deleteUrl.trim() !== "") {
+                    deleteForm.setAttribute("action", deleteUrl);
+                    deleteButton.disabled = false;
+                } else {
+                    deleteForm.setAttribute("action", "");
+                    deleteButton.disabled = true;
+                }
+            });
+        });
+    }
+
+    function initDeleteConfirmation() {
+        const deleteForm = document.getElementById("deleteReviewForm");
+        const deleteButton = document.getElementById("deleteReviewButton");
+
+        if (!deleteForm || !deleteButton) return;
+        if (deleteForm.dataset.bound === "true") return;
+
+        deleteForm.addEventListener("submit", function (event) {
+            const action = deleteForm.getAttribute("action");
+
+            if (!action || deleteButton.disabled) {
+                event.preventDefault();
+                return;
+            }
+
+            const ok = window.confirm("¿Deseas eliminar esta reseña?");
+            if (!ok) {
+                event.preventDefault();
+            }
         });
 
-        el.insertAdjacentElement("afterend", btn);
-      });
-    });
-  }
+        deleteForm.dataset.bound = "true";
+    }
 
-  /* ── Delete modal ── */
-  var overlay   = null;
-  var deleteForm = null;
-  var modalUser = null;
-
-  function initModal() {
-    overlay    = document.getElementById("rvOverlay");
-    deleteForm = document.getElementById("rvDeleteForm");
-    modalUser  = document.getElementById("rvModalUser");
-
-    if (!overlay) return;
-
-    document.addEventListener("keydown", function (e) {
-      if (e.key === "Escape") rvCloseModal();
-    });
-  }
-
-  window.rvOpenModal = function (btn) {
-    if (!overlay || !deleteForm || !modalUser) return;
-
-    var url      = btn.dataset.url  || "";
-    var userName = btn.dataset.user || "este usuario";
-
-    modalUser.textContent = userName;
-    deleteForm.action = url;
-
-    overlay.setAttribute("aria-hidden", "false");
-    overlay.classList.add("open");
-    document.body.style.overflow = "hidden";
-  };
-
-  window.rvCloseModal = function () {
-    if (!overlay) return;
-    overlay.classList.remove("open");
-    overlay.setAttribute("aria-hidden", "true");
-    document.body.style.overflow = "";
-  };
-
-  /* ── Init ── */
-  function init() {
-    initSearch();
-    initBodyClamp();
-    initModal();
-  }
-
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", init);
-  } else {
-    init();
-  }
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", bindReviewPage);
+    } else {
+        bindReviewPage();
+    }
 })();

@@ -1,264 +1,221 @@
+
+
 {% extends "base.html" %}
 
 {% block page_css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/usuarios.css') }}">
 <style>
-/* ── Edit page ── */
-.us-edit-wrap {
-  max-width: 680px;
-  margin: 0 auto;
-  display: grid;
-  gap: 20px;
-  padding-bottom: 40px;
-}
+    .user-edit-card {
+        width: 100%;
+        min-width: 0;
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 24px;
+        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.06);
+        padding: 24px;
+        box-sizing: border-box;
+        overflow: hidden;
+    }
 
-.us-edit-card {
-  background: #fff;
-  border: 1px solid #e2e8f0;
-  border-radius: 24px;
-  box-shadow: 0 8px 32px rgba(15, 23, 42, .06);
-  overflow: hidden;
-}
+    .user-edit-grid {
+        display: grid;
+        gap: 18px;
+    }
 
-/* Header */
-.us-edit-head {
-  padding: 24px 28px 20px;
-  border-bottom: 1px solid #f1f5f9;
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
+    .user-edit-meta {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 14px;
+    }
 
-.us-edit-head-icon {
-  width: 46px;
-  height: 46px;
-  border-radius: 14px;
-  background: #eff6ff;
-  border: 1px solid #bfdbfe;
-  display: grid;
-  place-items: center;
-  flex-shrink: 0;
-}
+    .user-edit-meta-item {
+        border: 1px solid #e2e8f0;
+        background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+        border-radius: 16px;
+        padding: 14px;
+        min-width: 0;
+    }
 
-.us-edit-head-icon svg {
-  width: 22px;
-  height: 22px;
-  color: #1d4ed8;
-}
+    .user-edit-meta-label {
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: .04em;
+        text-transform: uppercase;
+        color: #64748b;
+        display: block;
+        margin-bottom: 6px;
+    }
 
-.us-edit-head-info h3 {
-  margin: 0;
-  font-size: 16px;
-  font-weight: 800;
-  color: #0f172a;
-}
+    .user-edit-meta-value {
+        font-size: 14px;
+        font-weight: 700;
+        color: #0f172a;
+        line-height: 1.45;
+        word-break: break-word;
+    }
 
-.us-edit-head-info p {
-  margin: 3px 0 0;
-  font-size: 13px;
-  color: #64748b;
-}
+    .user-edit-fields {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 16px;
+    }
 
-/* Meta grid */
-.us-edit-meta {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1px;
-  background: #f1f5f9;
-  border-bottom: 1px solid #f1f5f9;
-}
+    .user-edit-field {
+        display: grid;
+        gap: 8px;
+        min-width: 0;
+    }
 
-.us-edit-meta-item {
-  background: #fff;
-  padding: 16px 20px;
-}
+    .user-edit-field.user-edit-field-full {
+        grid-column: 1 / -1;
+    }
 
-.us-edit-meta-label {
-  display: block;
-  font-size: 10px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: .06em;
-  color: #94a3b8;
-  margin-bottom: 6px;
-}
+    .user-edit-label {
+        font-size: 13px;
+        font-weight: 800;
+        color: #0f172a;
+    }
 
-.us-edit-meta-val {
-  font-size: 14px;
-  font-weight: 700;
-  color: #0f172a;
-  word-break: break-word;
-}
+    .user-edit-input,
+    .user-edit-select {
+        width: 100%;
+        min-height: 44px;
+        border: 1px solid #cbd5e1;
+        border-radius: 14px;
+        padding: 0 14px;
+        font-size: 14px;
+        color: #0f172a;
+        background: #ffffff;
+        box-sizing: border-box;
+        outline: none;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
 
-/* Form */
-.us-edit-body {
-  padding: 24px 28px;
-  display: grid;
-  gap: 20px;
-}
+    .user-edit-input:focus,
+    .user-edit-select:focus {
+        border-color: #93c5fd;
+        box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.12);
+    }
 
-.us-edit-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
-}
+    .user-edit-help {
+        font-size: 12px;
+        color: #64748b;
+        line-height: 1.45;
+    }
 
-.us-edit-field {
-  display: grid;
-  gap: 8px;
-}
+    .user-edit-password-wrap {
+        position: relative;
+        width: 100%;
+    }
 
-.us-edit-field-full {
-  grid-column: 1 / -1;
-}
+    .user-edit-password-input {
+        padding-right: 52px;
+    }
 
-.us-edit-label {
-  font-size: 13px;
-  font-weight: 800;
-  color: #0f172a;
-}
+    .user-edit-password-toggle {
+        position: absolute;
+        top: 50%;
+        right: 12px;
+        transform: translateY(-50%);
+        appearance: none;
+        -webkit-appearance: none;
+        border: none;
+        background: transparent;
+        color: #475569;
+        font-size: 12px;
+        font-weight: 800;
+        cursor: pointer;
+        padding: 0;
+        line-height: 1;
+    }
 
-.us-edit-input,
-.us-edit-select {
-  appearance: none;
-  -webkit-appearance: none;
-  width: 100%;
-  height: 42px;
-  padding: 0 14px;
-  border: 1.5px solid #e2e8f0;
-  border-radius: 12px;
-  font-size: 14px;
-  color: #0f172a;
-  background: #f8fafc;
-  box-sizing: border-box;
-  outline: none;
-  font-family: inherit;
-  transition: border-color .18s, box-shadow .18s, background .18s;
-}
+    .user-edit-password-toggle:hover {
+        color: #1d4ed8;
+    }
 
-.us-edit-input:focus,
-.us-edit-select:focus {
-  border-color: #93c5fd;
-  background: #fff;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, .12);
-}
+    .user-edit-actions {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
 
-/* Password field */
-.us-edit-pwd-wrap {
-  position: relative;
-}
+    .user-edit-btn,
+    .user-edit-link {
+        appearance: none;
+        -webkit-appearance: none;
+        min-height: 40px;
+        padding: 0 16px;
+        border-radius: 12px;
+        border: 1px solid transparent;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        font-size: 12px;
+        font-weight: 800;
+        line-height: 1;
+        cursor: pointer;
+        box-sizing: border-box;
+        transition: transform 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+    }
 
-.us-edit-pwd-input {
-  padding-right: 56px;
-}
+    .user-edit-btn:hover,
+    .user-edit-link:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 10px 20px rgba(15, 23, 42, 0.08);
+    }
 
-.us-edit-pwd-toggle {
-  position: absolute;
-  top: 50%;
-  right: 12px;
-  transform: translateY(-50%);
-  border: none;
-  background: none;
-  color: #64748b;
-  font-size: 12px;
-  font-weight: 800;
-  cursor: pointer;
-  padding: 4px 6px;
-  border-radius: 6px;
-  transition: color .15s, background .15s;
-}
+    .user-edit-btn:active,
+    .user-edit-link:active {
+        transform: translateY(0);
+    }
 
-.us-edit-pwd-toggle:hover {
-  color: #1d4ed8;
-  background: #eff6ff;
-}
+    .user-edit-btn-primary {
+        background: #2563eb;
+        color: #ffffff;
+        border-color: #2563eb;
+    }
 
-.us-edit-hint {
-  font-size: 12px;
-  color: #94a3b8;
-  line-height: 1.5;
-}
+    .user-edit-btn-primary:hover {
+        background: #1d4ed8;
+        color: #ffffff;
+        border-color: #1d4ed8;
+    }
 
-/* Actions */
-.us-edit-actions {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-  padding-top: 4px;
-}
+    .user-edit-link-secondary {
+        background: #f8fafc;
+        color: #0f172a;
+        border-color: #e2e8f0;
+    }
 
-.us-edit-submit {
-  height: 42px;
-  padding: 0 22px;
-  border-radius: 12px;
-  background: #2563eb;
-  color: #fff;
-  border: 1.5px solid #2563eb;
-  font-size: 13px;
-  font-weight: 800;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  font-family: inherit;
-  transition: transform .15s, box-shadow .15s, background .15s;
-}
+    .user-edit-link-secondary:hover {
+        background: #e2e8f0;
+        color: #020617;
+        border-color: #cbd5e1;
+    }
 
-.us-edit-submit svg { width: 15px; height: 15px; }
+    @media (max-width: 768px) {
+        .user-edit-meta,
+        .user-edit-fields {
+            grid-template-columns: 1fr;
+        }
 
-.us-edit-submit:hover {
-  background: #1d4ed8;
-  border-color: #1d4ed8;
-  transform: translateY(-1px);
-  box-shadow: 0 6px 16px rgba(37, 99, 235, .28);
-}
+        .user-edit-card {
+            padding: 20px;
+            border-radius: 20px;
+        }
 
-.us-edit-cancel {
-  height: 42px;
-  padding: 0 20px;
-  border-radius: 12px;
-  background: #f1f5f9;
-  color: #475569;
-  border: 1.5px solid #e2e8f0;
-  font-size: 13px;
-  font-weight: 800;
-  text-decoration: none;
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  transition: transform .15s, background .15s;
-  font-family: inherit;
-}
+        .user-edit-actions {
+            flex-direction: column;
+            align-items: stretch;
+        }
 
-.us-edit-cancel svg { width: 14px; height: 14px; }
-
-.us-edit-cancel:hover {
-  background: #e2e8f0;
-  transform: translateY(-1px);
-}
-
-@media (max-width: 768px) {
-  .us-edit-head { padding: 18px 16px 16px; }
-  .us-edit-body { padding: 18px 16px; }
-
-  .us-edit-meta { grid-template-columns: 1fr; }
-  .us-edit-meta-item { padding: 12px 16px; }
-
-  .us-edit-grid { grid-template-columns: 1fr; }
-  .us-edit-field-full { grid-column: 1; }
-
-  .us-edit-actions {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .us-edit-submit,
-  .us-edit-cancel {
-    width: 100%;
-    justify-content: center;
-  }
-}
+        .user-edit-btn,
+        .user-edit-link {
+            width: 100%;
+        }
+    }
 </style>
 {% endblock %}
 
@@ -268,118 +225,75 @@
 {% endblock %}
 
 {% block content %}
-{% set urole = user.role or 'user' %}
+<div class="users-container">
+    <section class="user-edit-card">
+        <form method="POST" class="user-edit-grid">
+            <div class="user-edit-meta">
+                <div class="user-edit-meta-item">
+                    <span class="user-edit-meta-label">ID</span>
+                    <div class="user-edit-meta-value">#{{ user.id }}</div>
+                </div>
 
-<div class="us-edit-wrap">
-  <div class="us-edit-card">
+                <div class="user-edit-meta-item">
+                    <span class="user-edit-meta-label">Correo actual</span>
+                    <div class="user-edit-meta-value">{{ user.email if user.email else 'Sin correo' }}</div>
+                </div>
 
-    {# Header #}
-    <div class="us-edit-head">
-      <div class="us-edit-head-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-          <circle cx="12" cy="7" r="4"/>
-        </svg>
-      </div>
-      <div class="us-edit-head-info">
-        <h3>{{ user.name or 'Usuario #' ~ user.id }}</h3>
-        <p>Edita nombre, correo, rol o contraseña.</p>
-      </div>
-    </div>
+                <div class="user-edit-meta-item">
+                    <span class="user-edit-meta-label">Rol actual</span>
+                    <div class="user-edit-meta-value">{{ user.role if user.role else 'user' }}</div>
+                </div>
+            </div>
 
-    {# Meta: ID · Email actual · Rol actual #}
-    <div class="us-edit-meta">
-      <div class="us-edit-meta-item">
-        <span class="us-edit-meta-label">ID</span>
-        <div class="us-edit-meta-val">#{{ user.id }}</div>
-      </div>
+            <div class="user-edit-fields">
+                <div class="user-edit-field">
+                    <label for="name" class="user-edit-label">Nombre</label>
+                    <input id="name" name="name" type="text" class="user-edit-input" value="{{ user.name if user and user.name else '' }}" required>
+                </div>
 
-      <div class="us-edit-meta-item">
-        <span class="us-edit-meta-label">Correo actual</span>
-        <div class="us-edit-meta-val">{{ user.email or 'Sin correo' }}</div>
-      </div>
+                <div class="user-edit-field">
+                    <label for="email" class="user-edit-label">Correo electrónico</label>
+                    <input id="email" name="email" type="email" class="user-edit-input" value="{{ user.email if user and user.email else '' }}" required>
+                </div>
 
-      <div class="us-edit-meta-item">
-        <span class="us-edit-meta-label">Rol actual</span>
-        <div class="us-edit-meta-val">
-          {% if urole == 'admin' %}
-            <span class="us-role-badge us-role-admin">Administrador</span>
-          {% elif urole == 'moderator' %}
-            <span class="us-role-badge us-role-mod">Moderador</span>
-          {% else %}
-            <span class="us-role-badge us-role-user">Usuario</span>
-          {% endif %}
-        </div>
-      </div>
-    </div>
+                <div class="user-edit-field">
+                    <label for="role" class="user-edit-label">Rol</label>
+                    <select id="role" name="role" class="user-edit-select">
+                        <option value="user" {% if (user.role or 'user') == 'user' %}selected{% endif %}>Usuario</option>
+                        <option value="moderator" {% if user.role == 'moderator' %}selected{% endif %}>Moderador</option>
+                        <option value="admin" {% if user.role == 'admin' %}selected{% endif %}>Administrador</option>
+                    </select>
+                </div>
 
-    {# Form #}
-    <form method="POST" class="us-edit-body">
-      <div class="us-edit-grid">
+                <div class="user-edit-field user-edit-field-full">
+                    <label for="password" class="user-edit-label">Nueva contraseña</label>
+                    <div class="user-edit-password-wrap">
+                        <input id="password" name="password" type="password" class="user-edit-input user-edit-password-input" value="" placeholder="Dejar vacío para conservar la contraseña actual">
+                        <button type="button" class="user-edit-password-toggle" id="togglePasswordButton">Ver</button>
+                    </div>
+                    <p class="user-edit-help">Solo escribe una contraseña nueva si deseas reemplazar la actual.</p>
+                </div>
+            </div>
 
-        <div class="us-edit-field">
-          <label for="name" class="us-edit-label">Nombre</label>
-          <input id="name" name="name" type="text" class="us-edit-input"
-            value="{{ user.name or '' }}" required placeholder="Nombre del usuario">
-        </div>
-
-        <div class="us-edit-field">
-          <label for="email" class="us-edit-label">Correo electrónico</label>
-          <input id="email" name="email" type="email" class="us-edit-input"
-            value="{{ user.email or '' }}" required placeholder="correo@ejemplo.com">
-        </div>
-
-        <div class="us-edit-field">
-          <label for="role" class="us-edit-label">Rol</label>
-          <select id="role" name="role" class="us-edit-select">
-            <option value="user"      {% if urole == 'user'      %}selected{% endif %}>Usuario</option>
-            <option value="moderator" {% if urole == 'moderator' %}selected{% endif %}>Moderador</option>
-            <option value="admin"     {% if urole == 'admin'     %}selected{% endif %}>Administrador</option>
-          </select>
-        </div>
-
-        <div class="us-edit-field us-edit-field-full">
-          <label for="password" class="us-edit-label">Nueva contraseña</label>
-          <div class="us-edit-pwd-wrap">
-            <input id="password" name="password" type="password"
-              class="us-edit-input us-edit-pwd-input"
-              placeholder="Dejar vacío para conservar la actual">
-            <button type="button" class="us-edit-pwd-toggle" id="pwdToggle">Ver</button>
-          </div>
-          <p class="us-edit-hint">Solo completa este campo si deseas cambiar la contraseña.</p>
-        </div>
-
-      </div>
-
-      <div class="us-edit-actions">
-        <button type="submit" class="us-edit-submit">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="20 6 9 17 4 12"/>
-          </svg>
-          Guardar cambios
-        </button>
-        <a href="{{ url_for('users.list_users') }}" class="us-edit-cancel">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-          </svg>
-          Cancelar
-        </a>
-      </div>
-    </form>
-
-  </div>
+            <div class="user-edit-actions">
+                <button type="submit" class="user-edit-btn user-edit-btn-primary">Guardar cambios</button>
+                <a href="{{ url_for('users.list_users') }}" class="user-edit-link user-edit-link-secondary">Cancelar</a>
+            </div>
+        </form>
+    </section>
 </div>
-
 <script>
 (function () {
-  var input  = document.getElementById("password");
-  var toggle = document.getElementById("pwdToggle");
-  if (!input || !toggle) return;
-  toggle.addEventListener("click", function () {
-    var isPass = input.type === "password";
-    input.type = isPass ? "text" : "password";
-    toggle.textContent = isPass ? "Ocultar" : "Ver";
-  });
+    const passwordInput = document.getElementById('password');
+    const toggleButton = document.getElementById('togglePasswordButton');
+
+    if (!passwordInput || !toggleButton) return;
+
+    toggleButton.addEventListener('click', function () {
+        const isPassword = passwordInput.getAttribute('type') === 'password';
+        passwordInput.setAttribute('type', isPassword ? 'text' : 'password');
+        toggleButton.textContent = isPassword ? 'Ocultar' : 'Ver';
+    });
 })();
 </script>
 {% endblock %}
