@@ -813,6 +813,13 @@
     }
 }
 
+@media (max-width: 600px) {
+    /* Last stat spans full width if it's alone on a row */
+    .db-stats-wrap > .db-stat:last-child:nth-child(odd) {
+        grid-column: 1 / -1;
+    }
+}
+
 @media (max-width: 420px) {
     .db-shell {
         gap: 12px;
@@ -820,6 +827,14 @@
 
     .db-card {
         padding: 14px 12px;
+    }
+
+    .db-card-title {
+        font-size: 14px;
+    }
+
+    .db-card-sub {
+        font-size: 11.5px;
     }
 
     .db-stats-wrap {
@@ -852,7 +867,7 @@
     }
 
     .db-chart-shell {
-        height: 160px;
+        height: 180px;
     }
 
     .db-recent-item {
@@ -863,9 +878,87 @@
         grid-template-columns: 1fr 1fr;
     }
 
+    .db-toolbar-actions .db-export-wrap {
+        grid-column: 1 / -1;
+    }
+
+    .db-btn {
+        height: 42px;
+        font-size: 12px;
+    }
+
+    .db-control {
+        height: 42px;
+        font-size: 13px;
+    }
+
+    .db-recent-body strong {
+        font-size: 12.5px;
+    }
+
+    .db-recent-body span {
+        font-size: 11.5px;
+    }
+
+    .db-activity-badge {
+        min-width: 36px;
+        height: 32px;
+        font-size: 9px;
+    }
+}
+
+@media (max-width: 360px) {
+    .db-card {
+        padding: 12px 10px;
+    }
+
+    .db-stats-wrap {
+        gap: 6px;
+    }
+
+    .db-stat {
+        padding: 9px 8px;
+        gap: 7px;
+    }
+
+    .db-stat-icon {
+        width: 28px;
+        height: 28px;
+        border-radius: 8px;
+    }
+
+    .db-stat-icon svg {
+        width: 13px;
+        height: 13px;
+    }
+
+    .db-stat-value {
+        font-size: 16px;
+    }
+
+    .db-stat-label {
+        font-size: 9px;
+        letter-spacing: 0.04em;
+    }
+
+    .db-chart-shell {
+        height: 160px;
+    }
+
+    .db-report-toolbar {
+        gap: 8px;
+    }
+
     .db-btn {
         height: 40px;
-        font-size: 12px;
+        font-size: 11.5px;
+        padding: 0 8px;
+    }
+
+    .db-control {
+        height: 40px;
+        padding: 0 10px;
+        font-size: 12.5px;
     }
 }
 

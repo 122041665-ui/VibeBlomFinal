@@ -473,7 +473,7 @@
                             {% for photo in approval_photos %}
                                 <div class="approval-photo-card">
                                     <img
-                                        src="{{ photo.url if photo.url is defined else photo.photo_url if photo.photo_url is defined else photo.path if photo.path is defined else photo }}"
+                                        src="{{ laravel_public_url }}/storage/{{ photo }}"
                                         alt="Foto {{ loop.index }} de la solicitud">
                                 </div>
                             {% endfor %}

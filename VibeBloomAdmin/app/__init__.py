@@ -20,6 +20,12 @@ def create_app():
     app.register_blueprint(users_bp)
     app.register_blueprint(reviews_bp)
 
+    @app.context_processor
+    def inject_globals():
+        return {
+            "laravel_public_url": app.config.get("LARAVEL_PUBLIC_URL", "http://localhost:8000"),
+        }
+
     @app.route("/")
     def home():
         return redirect(url_for("auth.login"))
