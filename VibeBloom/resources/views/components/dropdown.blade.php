@@ -1,4 +1,4 @@
-@props(['align' => 'right', 'width' => '48', 'contentClasses' => 'py-1 bg-white', 'dropdownClasses' => ''])
+@props(['align' => 'right', 'width' => '48', 'contentClasses' => 'py-1 bg-white/95 dark:bg-slate-900/95 dark:text-slate-100', 'dropdownClasses' => ''])
 
 @php
 $alignmentClasses = match ($align) {
@@ -11,6 +11,8 @@ $alignmentClasses = match ($align) {
 $width = match ($width) {
     '48' => 'w-48',
     '60' => 'w-60',
+    '80' => 'w-80',
+    '96' => 'w-96',
     default => 'w-48',
 };
 @endphp
@@ -27,10 +29,10 @@ $width = match ($width) {
             x-transition:leave="transition ease-in duration-75"
             x-transition:leave-start="transform opacity-100 scale-100"
             x-transition:leave-end="transform opacity-0 scale-95"
-            class="absolute z-50 mt-2 {{ $width }} rounded-md shadow-lg {{ $alignmentClasses }} {{ $dropdownClasses }}"
+            class="absolute z-50 mt-2 {{ $width }} rounded-2xl shadow-xl border border-gray-100 dark:border-slate-800 overflow-hidden backdrop-blur {{ $alignmentClasses }} {{ $dropdownClasses }}"
             style="display: none;"
             @click="open = false">
-        <div class="rounded-md ring-1 ring-black ring-opacity-5 {{ $contentClasses }}">
+        <div class="{{ $contentClasses }}">
             {{ $content }}
         </div>
     </div>

@@ -1,7 +1,7 @@
 <x-guest-layout>
     @php
         $container  = "max-w-7xl mx-auto px-6 py-10";
-        $card       = "bg-white shadow rounded-2xl p-6 sm:p-8 max-w-md mx-auto border border-gray-100";
+        $card       = "bg-white/92 shadow-[0_22px_70px_rgba(15,23,42,0.10)] rounded-[28px] p-6 sm:p-8 max-w-md mx-auto border border-white/80 backdrop-blur";
 
         $title      = "text-2xl font-extrabold text-gray-900";
         $sub        = "text-sm text-gray-600 mt-1";
@@ -9,10 +9,10 @@
         $label      = "font-semibold text-gray-800";
         $hint       = "text-xs text-gray-500 mt-1";
 
-        $field      = "w-full mt-1 border border-gray-300 rounded-xl px-4 py-2.5 text-sm shadow-sm
+        $field      = "w-full mt-1 border border-gray-200 rounded-xl px-4 py-2.5 text-sm shadow-sm
                        focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-gray-300 transition bg-white";
 
-        $fieldWithIcon = "w-full mt-1 border border-gray-300 rounded-xl pl-4 pr-12 py-2.5 text-sm shadow-sm
+        $fieldWithIcon = "w-full mt-1 border border-gray-200 rounded-xl pl-4 pr-12 py-2.5 text-sm shadow-sm
                           focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-gray-300 transition bg-white";
 
         $btnPrimary = "px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl shadow-sm transition

@@ -11,10 +11,10 @@
             </div>
 
             <div>
-                <h3 class="text-lg font-extrabold text-white">
+                <h3 class="text-lg font-extrabold text-gray-900 dark:text-slate-100">
                     {{ __('Eliminar Cuenta') }}
                 </h3>
-                <p class="text-sm text-slate-400">
+                <p class="text-sm text-gray-500 dark:text-slate-400">
                     {{ __('Elimina tu cuenta de forma permanente.') }}
                 </p>
             </div>
@@ -22,7 +22,7 @@
     </x-slot>
 
     <x-slot name="description">
-        <p class="text-sm text-slate-400 leading-6">
+        <p class="text-sm text-gray-600 dark:text-slate-400 leading-6">
             {{ __('Esta acción es permanente y eliminará toda la información vinculada a tu cuenta.') }}
         </p>
     </x-slot>
@@ -31,7 +31,7 @@
         <div class="rounded-2xl border border-red-500/20 bg-red-500/10 p-6">
             <div class="flex items-start gap-4">
 
-                <div class="h-10 w-10 rounded-xl bg-slate-900 border border-red-500/20 flex items-center justify-center">
+                <div class="h-10 w-10 rounded-xl bg-white dark:bg-slate-900 border border-red-500/20 flex items-center justify-center">
                     <svg viewBox="0 0 24 24" fill="none" class="h-5 w-5 text-red-400">
                         <path d="M12 8v4" stroke="currentColor" stroke-width="1.8"/>
                         <path d="M12 16h.01" stroke="currentColor" stroke-width="2"/>
@@ -40,7 +40,7 @@
                 </div>
 
                 <div class="flex-1">
-                    <p class="text-sm text-slate-300 leading-6">
+                    <p class="text-sm text-gray-700 dark:text-slate-300 leading-6">
                         {{ __('Una vez que elimines tu cuenta, todos tus datos y recursos serán eliminados de forma permanente. Antes de continuar, descarga cualquier información que desees conservar.') }}
                     </p>
 
@@ -59,20 +59,20 @@
 
         <x-dialog-modal wire:model.live="confirmingUserDeletion">
             <x-slot name="title">
-                <h3 class="text-lg font-extrabold text-white">
+                <h3 class="text-lg font-extrabold text-gray-900 dark:text-slate-100">
                     {{ __('Confirmar eliminación') }}
                 </h3>
             </x-slot>
 
             <x-slot name="content">
                 <div class="space-y-4">
-                    <p class="text-sm text-slate-400">
+                    <p class="text-sm text-gray-600 dark:text-slate-400">
                         {{ __('Ingresa tu contraseña para confirmar que deseas eliminar tu cuenta.') }}
                     </p>
 
                     <x-input
                         type="password"
-                        class="w-full rounded-xl border border-slate-700 bg-slate-900 px-4 py-2.5 text-sm text-white placeholder:text-slate-500 focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition"
+                        class="w-full rounded-xl border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-2.5 text-sm text-gray-900 dark:text-slate-100 placeholder:text-gray-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition"
                         wire:model="password"
                         placeholder="{{ __('Contraseña') }}"
                     />
@@ -83,7 +83,7 @@
 
             <x-slot name="footer">
                 <div class="flex justify-end gap-3 w-full">
-                    <x-secondary-button class="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300">
+                    <x-secondary-button class="px-5 py-2.5 rounded-xl">
                         {{ __('Cancelar') }}
                     </x-secondary-button>
 

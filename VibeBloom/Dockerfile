@@ -1,36 +1,23 @@
 FROM php:8.4-cli
 
+WORKDIR /app
+
 RUN apt-get update && apt-get install -y \
+    unzip \
     git \
     curl \
+    libzip-dev \
     zip \
-    unzip \
-    nodejs \
-    npm \
-    libpng-dev \
-    libonig-dev \
-    libxml2-dev \
-    && docker-php-ext-install pdo pdo_mysql mbstring exif pcntl bcmath gd
+    && docker-php-ext-install zip pdo pdo_mysql
 
-COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+RUN printf "upload_max_filesize=8M\npost_max_size=24M\nmax_file_uploads=10\n" > /usr/local/etc/php/conf.d/uploads.ini
 
-WORKDIR /app
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 COPY . .
 
-RUN mkdir -p bootstrap/cache storage/logs storage/framework/cache \
-    storage/framework/sessions storage/framework/views \
-    && chmod -R 775 bootstrap/cache storage
+RUN composer install
 
-RUN composer install --no-dev --optimize-autoloader
+EXPOSE 8000
 
-RUN npm install && APP_URL=https://vibebloom-production.up.railway.app npm run build
-
-EXPOSE 8080
-
-CMD php artisan config:clear && \
-    php artisan config:cache && \
-    php artisan route:cache && \
-    php artisan view:cache && \
-    php artisan storage:link && \
-    php artisan serve --host=0.0.0.0 --port=$PORT
+CMD ["sh", "-c", "if [ -f .env ] && [ -n \"$FASTAPI_URL\" ]; then sed -i \"s#^FASTAPI_URL=.*#FASTAPI_URL=$FASTAPI_URL#\" .env; fi && php artisan config:clear && php artisan cache:clear && php artisan route:clear && php artisan view:clear && php artisan serve --host=0.0.0.0 --port=8000"]

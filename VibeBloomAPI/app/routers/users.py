@@ -1,6 +1,8 @@
+from pathlib import Path
 from typing import Optional
+from uuid import uuid4
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, File, HTTPException, status, UploadFile
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -13,6 +15,8 @@ from app.schemas.user import UserCreate, UserResponse
 router = APIRouter(prefix="/users", tags=["Users"])
 
 ROOT_ADMIN_ID = 1
+BASE_DIR = Path(__file__).resolve().parents[2]
+PROFILE_STORAGE_DIR = BASE_DIR / "storage" / "profile-photos"
 
 
 class RoleUpdate(BaseModel):
@@ -43,6 +47,30 @@ def get_user_or_404(db: Session, user_id: int) -> User:
 
 @router.get("/me/profile", response_model=UserResponse)
 def my_profile(current_user: User = Depends(get_current_user)):
+    return current_user
+
+
+@router.post("/me/profile-photo", response_model=UserResponse)
+def update_my_profile_photo(
+    photo: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    extension = Path(photo.filename or "").suffix.lower()
+    if extension not in [".jpg", ".jpeg", ".png", ".webp"]:
+        extension = ".jpg"
+
+    PROFILE_STORAGE_DIR.mkdir(parents=True, exist_ok=True)
+    filename = f"{uuid4().hex}{extension}"
+    destination = PROFILE_STORAGE_DIR / filename
+
+    with destination.open("wb") as buffer:
+        buffer.write(photo.file.read())
+
+    current_user.profile_photo_path = f"profile-photos/{filename}"
+    db.commit()
+    db.refresh(current_user)
+
     return current_user
 
 

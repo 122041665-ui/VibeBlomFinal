@@ -35,12 +35,15 @@ return [
     ],
 
     'openai' => [
-  'key' => env('OPENAI_API_KEY'),
-],
-
+        'key' => env('OPENAI_API_KEY'),
+    ],
 
     'mapbox' => [
         'token' => env('MAPBOX_TOKEN'),
+    ],
+
+    'fastapi' => [
+        'url' => env('FASTAPI_URL', 'http://127.0.0.1:8010'),
     ],
 
 ];

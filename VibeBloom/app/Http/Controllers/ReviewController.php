@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Services\FastApiService;
+use App\Models\UserNotification;
 
 class ReviewController extends Controller
 {
@@ -35,6 +36,16 @@ class ReviewController extends Controller
                 return back()->with('error', $message);
             }
 
+            UserNotification::sendTo(
+                user: auth()->id(),
+                type: 'review_created',
+                title: 'Reseña publicada',
+                body: 'Tu reseña se publicó correctamente.',
+                url: route('places.show', $place),
+                actor: auth()->user(),
+                data: ['place_id' => (int) $place]
+            );
+
             return back()->with('success', 'Reseña publicada.');
         } catch (\Throwable $e) {
             return back()->with('error', 'No se pudo conectar con la API para publicar la reseña.');
@@ -61,6 +72,16 @@ class ReviewController extends Controller
 
                 return back()->with('error', $message);
             }
+
+            UserNotification::sendTo(
+                user: auth()->id(),
+                type: 'review_deleted',
+                title: 'Reseña eliminada',
+                body: 'Eliminaste una reseña.',
+                url: route('places.show', $place),
+                actor: auth()->user(),
+                data: ['place_id' => (int) $place, 'review_id' => (int) $review]
+            );
 
             return back()->with('success', 'Reseña eliminada correctamente.');
         } catch (\Throwable $e) {

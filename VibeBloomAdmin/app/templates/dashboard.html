@@ -158,6 +158,18 @@
         <article class="dashboard-card chart-card">
             <div class="card-head">
                 <div>
+                    <h3>Resumen general</h3>
+                    <p>Comparativo actual de módulos principales</p>
+                </div>
+            </div>
+            <div class="chart-shell">
+                <canvas id="statsOverviewChart"></canvas>
+            </div>
+        </article>
+
+        <article class="dashboard-card chart-card">
+            <div class="card-head">
+                <div>
                     <h3>Lugares por tipo</h3>
                     <p>Distribución actual de lugares registrados</p>
                 </div>
@@ -167,27 +179,15 @@
             </div>
         </article>
 
-        <article class="dashboard-card chart-card">
+        <article class="dashboard-card chart-card chart-card-wide">
             <div class="card-head">
                 <div>
-                    <h3>Usuarios por mes</h3>
-                    <p>Crecimiento mensual de registros</p>
+                    <h3>Actividad mensual</h3>
+                    <p>Usuarios, lugares, reseñas y favoritos por mes</p>
                 </div>
             </div>
             <div class="chart-shell">
-                <canvas id="usersMonthlyChart"></canvas>
-            </div>
-        </article>
-
-        <article class="dashboard-card chart-card">
-            <div class="card-head">
-                <div>
-                    <h3>Lugares por mes</h3>
-                    <p>Tendencia mensual de nuevos lugares</p>
-                </div>
-            </div>
-            <div class="chart-shell">
-                <canvas id="placesMonthlyChart"></canvas>
+                <canvas id="activityMonthlyChart"></canvas>
             </div>
         </article>
     </section>
@@ -328,6 +328,10 @@
   "places_by_type": {{ (data.places_by_type if data and data.places_by_type else []) | tojson }},
   "users_monthly": {{ (data.users_monthly if data and data.users_monthly else []) | tojson }},
   "places_monthly": {{ (data.places_monthly if data and data.places_monthly else []) | tojson }},
+  "reviews_monthly": {{ (data.reviews_monthly if data and data.reviews_monthly else []) | tojson }},
+  "favorites_monthly": {{ (data.favorites_monthly if data and data.favorites_monthly else []) | tojson }},
+  "approvals_by_status": {{ (data.approvals_by_status if data and data.approvals_by_status else []) | tojson }},
+  "stats": {{ (data.stats if data and data.stats else {}) | tojson }},
   "report_options": {{ (data.report_options if data and data.report_options else {
     "places": [
       {"value": "all", "label": "Todas las acciones"},

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\UserNotification;
 use App\Services\FastApiService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
@@ -49,10 +50,21 @@ class FavoriteController extends Controller
             }
 
             $data = $response->json();
+            $message = $data['message'] ?? 'Favorito actualizado correctamente.';
+
+            UserNotification::sendTo(
+                user: auth()->id(),
+                type: 'favorite_updated',
+                title: 'Favorito actualizado',
+                body: $message,
+                url: route('favorites.mine'),
+                actor: auth()->user(),
+                data: ['place_id' => $place]
+            );
 
             return back()->with(
                 'success',
-                $data['message'] ?? 'Favorito actualizado correctamente.'
+                $message
             );
         } catch (\Throwable $e) {
             return back()->with('error', 'No se pudo conectar con la API de favoritos.');

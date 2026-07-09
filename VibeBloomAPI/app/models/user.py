@@ -1,5 +1,6 @@
 from sqlalchemy import Column, Integer, String, DateTime
 from sqlalchemy.orm import relationship
+from app.core.config import settings
 from app.core.database import Base
 
 
@@ -31,5 +32,5 @@ class User(Base):
     def profile_photo_url(self):
         if self.profile_photo_path and str(self.profile_photo_path).strip() != "":
             path = str(self.profile_photo_path).lstrip("/")
-            return f"/storage/{path}"
+            return f"{settings.API_PUBLIC_URL.rstrip('/')}/storage/{path}"
         return None

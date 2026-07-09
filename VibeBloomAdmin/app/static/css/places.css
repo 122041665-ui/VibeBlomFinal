@@ -596,3 +596,165 @@
 @media (max-width: 480px) {
   .pl-stats { grid-template-columns: 1fr 1fr; }
 }
+
+/* Corporate visual refresh */
+.pl-container {
+  max-width: 1240px;
+  gap: 18px;
+}
+
+.pl-stat,
+.pl-card,
+.pl-empty,
+.pl-modal {
+  border-radius: 8px;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, .07);
+}
+
+.pl-stat {
+  border-color: #dbe3ef;
+  background: #fff;
+}
+
+.pl-card {
+  border-color: #e2e8f0;
+}
+
+.pl-card-head {
+  background: #fff;
+  border-bottom-color: #e2e8f0;
+}
+
+.pl-card-title {
+  font-size: 17px;
+  letter-spacing: 0;
+}
+
+.pl-search,
+.pl-type-badge,
+.pl-id,
+.pl-city-pill,
+.pl-price-pill,
+.pl-action-btn,
+.pl-modal-cancel,
+.pl-modal-confirm,
+.pl-empty-icon {
+  border-radius: 8px;
+}
+
+.pl-table {
+  min-width: 1060px;
+}
+
+.pl-table thead {
+  background: #f8fafc;
+}
+
+.pl-table th {
+  letter-spacing: 0;
+  color: #475569;
+}
+
+.pl-table td {
+  border-bottom-color: #edf2f7;
+}
+
+.pl-table tbody tr:hover td {
+  background: #f8fafc;
+}
+
+.pl-photo-thumb {
+  width: 72px;
+  height: 52px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #dbe3ef;
+  background: #f1f5f9;
+  display: grid;
+  place-items: center;
+  color: #1f5fbf;
+  font-weight: 800;
+  box-shadow: 0 6px 14px rgba(15, 23, 42, .06);
+}
+
+.pl-photo-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.pl-photo-thumb span {
+  font-size: 18px;
+}
+
+.pl-place-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: #eef6f2;
+  border: 1px solid #cde7d8;
+  box-shadow: none;
+}
+
+.pl-place-icon svg {
+  color: #087a4b;
+}
+
+.pl-mcard {
+  border-radius: 8px;
+  padding: 0;
+  overflow: hidden;
+}
+
+.pl-mcard:hover {
+  box-shadow: 0 12px 28px rgba(15, 23, 42, .08);
+}
+
+.pl-mcard-media {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #f1f5f9;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.pl-mcard-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.pl-mcard-media-placeholder {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  color: #64748b;
+  background: #f8fafc;
+}
+
+.pl-mcard-media-placeholder svg {
+  width: 34px;
+  height: 34px;
+}
+
+.pl-mcard-top,
+.pl-mcard-tags,
+.pl-mcard-desc,
+.pl-mcard-foot {
+  margin-left: 16px;
+  margin-right: 16px;
+}
+
+.pl-mcard-top {
+  margin-top: 16px;
+}
+
+.pl-mcard-foot {
+  margin-bottom: 16px;
+}
+
+.pl-overlay {
+  background: rgba(15, 23, 42, .52);
+}

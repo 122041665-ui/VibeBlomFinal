@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\PlaceSubmission;
+use App\Models\UserNotification;
 use App\Services\FastApiService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -19,7 +21,8 @@ class PlaceController extends Controller
         }
 
         $nestedToken = data_get(session('user'), 'access_token')
-            ?? data_get(session('api'), 'access_token');
+            ?? data_get(session('api'), 'access_token')
+            ?? data_get(session('api_user'), 'access_token');
 
         if (is_string($nestedToken) && trim($nestedToken) !== '') {
             return $nestedToken;
@@ -71,6 +74,40 @@ class PlaceController extends Controller
             return $this->extractFavoritePlaceIds($response->json());
         } catch (\Throwable $e) {
             return [];
+        }
+    }
+
+    private function fetchFavoritePlaces(FastApiService $api): Collection
+    {
+        $token = $this->getApiToken();
+
+        if (!$token) {
+            return collect();
+        }
+
+        try {
+            $response = $api->get('/favorites', $token);
+
+            if (!$response->successful()) {
+                return collect();
+            }
+
+            return collect($response->json())
+                ->map(function ($favorite) {
+                    if (is_array($favorite) && !empty($favorite['place']) && is_array($favorite['place'])) {
+                        return $favorite['place'];
+                    }
+
+                    if (is_array($favorite) && !empty($favorite['id']) && !empty($favorite['name'])) {
+                        return $favorite;
+                    }
+
+                    return null;
+                })
+                ->filter()
+                ->values();
+        } catch (\Throwable $e) {
+            return collect();
         }
     }
 
@@ -155,6 +192,109 @@ class PlaceController extends Controller
         }
     }
 
+    private function fetchProfileSubmissions(): Collection
+    {
+        if (!auth()->check()) {
+            return collect();
+        }
+
+        return PlaceSubmission::with('photos')
+            ->where('user_id', auth()->id())
+            ->whereIn('status', ['pending', 'pendiente'])
+            ->latest()
+            ->take(12)
+            ->get();
+    }
+
+    private function fetchProfileCreatedPlaces(): Collection
+    {
+        if (!auth()->check()) {
+            return collect();
+        }
+
+        return PlaceSubmission::with('photos')
+            ->where('user_id', auth()->id())
+            ->latest()
+            ->get();
+    }
+
+    private function normalizeMemory(array $memory): object
+    {
+        $photos = collect($memory['photos'] ?? [])
+            ->map(function ($photo) {
+                return (object) [
+                    'id' => $photo['id'] ?? null,
+                    'path' => $photo['path'] ?? null,
+                    'url' => $photo['url'] ?? ($photo['photo_url'] ?? null),
+                ];
+            })
+            ->values();
+
+        return (object) [
+            'id' => $memory['id'] ?? null,
+            'user_id' => $memory['user_id'] ?? null,
+            'title' => $memory['title'] ?? '',
+            'description' => $memory['description'] ?? null,
+            'memory_date' => $memory['memory_date'] ?? null,
+            'location' => $memory['location'] ?? null,
+            'photos' => $photos,
+        ];
+    }
+
+    private function extractMemoryItems(array $json): array
+    {
+        if (isset($json['data']) && is_array($json['data']) && array_is_list($json['data'])) {
+            return $json['data'];
+        }
+
+        if (isset($json['data']['items']) && is_array($json['data']['items'])) {
+            return $json['data']['items'];
+        }
+
+        if (isset($json['items']) && is_array($json['items'])) {
+            return $json['items'];
+        }
+
+        if (isset($json['results']) && is_array($json['results'])) {
+            return $json['results'];
+        }
+
+        if (array_is_list($json)) {
+            return $json;
+        }
+
+        return [];
+    }
+
+    private function fetchProfileMemories(FastApiService $api): Collection
+    {
+        $token = $this->getApiToken();
+
+        if (!$token) {
+            return collect();
+        }
+
+        try {
+            $response = $api->get('/memories', $token, [
+                'page' => 1,
+                'per_page' => 12,
+            ]);
+
+            if (!$response->successful()) {
+                return collect();
+            }
+
+            $json = $response->json();
+            $items = is_array($json) ? $this->extractMemoryItems($json) : [];
+
+            return collect($items)
+                ->map(fn ($memory) => $this->normalizeMemory((array) $memory))
+                ->values();
+        } catch (\Throwable $e) {
+            return collect();
+        }
+    }
+
     private function normalizeText(?string $value): string
     {
         $value = trim((string) $value);
@@ -192,6 +332,9 @@ class PlaceController extends Controller
             'CAFETERIAS'   => 'CAFETERIA',
             'DISCOTECA'    => 'ANTRO',
             'CLUB'         => 'ANTRO',
+            'CENTRO COMERCIAL' => 'PLAZA',
+            'CENTROS COMERCIALES' => 'PLAZA',
+            'MALL' => 'PLAZA',
             'MUSEOS'       => 'MUSEO',
             'MIRADORES'    => 'MIRADOR',
             'PLAZAS'       => 'PLAZA',
@@ -219,29 +362,38 @@ class PlaceController extends Controller
         $buscar = trim((string) $request->query('buscar', ''));
         $city = trim((string) $request->query('city', ''));
         $type = trim((string) $request->query('type', ''));
-        $maxPrice = $request->query('max_price');
+        $maxPriceRaw = trim((string) $request->query('max_price', ''));
+        $maxPrice = $maxPriceRaw === '' ? null : str_replace([',', '$', 'MXN', 'mxn', ' '], '', $maxPriceRaw);
 
         $buscarNorm = $this->normalizeText($buscar);
         $cityNorm = $this->normalizeText($city);
         $typeNorm = $this->normalizeType($type);
+        $hasValidMaxPrice = $maxPrice !== null && is_numeric($maxPrice) && (float) $maxPrice >= 0;
 
-        return $places->filter(function ($place) use ($buscarNorm, $cityNorm, $typeNorm, $type, $maxPrice) {
+        return $places->filter(function ($place) use ($buscarNorm, $cityNorm, $typeNorm, $type, $maxPrice, $hasValidMaxPrice) {
             $placeName = (string) $this->placeValue($place, 'name', '');
             $placeCity = (string) $this->placeValue($place, 'city', '');
             $placeType = (string) $this->placeValue($place, 'type', 'OTRO');
             $placeDescription = (string) $this->placeValue($place, 'description', '');
+            $placeAddress = (string) $this->placeValue($place, 'address', '');
+            $placeReference = (string) $this->placeValue($place, 'reference', '');
             $placePrice = $this->placeValue($place, 'price', 0);
 
             $placeNameNorm = $this->normalizeText($placeName);
             $placeCityNorm = $this->normalizeText($placeCity);
             $placeTypeNorm = $this->normalizeType($placeType);
             $placeDescriptionNorm = $this->normalizeText($placeDescription);
+            $placeAddressNorm = $this->normalizeText($placeAddress);
+            $placeReferenceNorm = $this->normalizeText($placeReference);
 
             if ($buscarNorm !== '') {
                 $matchesBuscar =
                     str_contains($placeNameNorm, $buscarNorm) ||
                     str_contains($placeCityNorm, $buscarNorm) ||
-                    str_contains($placeDescriptionNorm, $buscarNorm);
+                    str_contains($placeTypeNorm, $buscarNorm) ||
+                    str_contains($placeDescriptionNorm, $buscarNorm) ||
+                    str_contains($placeAddressNorm, $buscarNorm) ||
+                    str_contains($placeReferenceNorm, $buscarNorm);
 
                 if (!$matchesBuscar) {
                     return false;
@@ -256,7 +408,7 @@ class PlaceController extends Controller
                 return false;
             }
 
-            if ($maxPrice !== null && $maxPrice !== '') {
+            if ($hasValidMaxPrice) {
                 $price = is_numeric($placePrice) ? (float) $placePrice : 0;
 
                 if ($price > (float) $maxPrice) {
@@ -304,6 +456,12 @@ class PlaceController extends Controller
         return view('places.mine', [
             'places' => $data['places'],
             'favoritePlaceIds' => $data['favoritePlaceIds'],
+            'profileFavoritePlaces' => $this->fetchFavoritePlaces($api),
+            'profileCreatedPlaces' => $this->fetchProfileCreatedPlaces(),
+            'profileSubmissions' => $this->fetchProfileSubmissions(),
+            'profileMemories' => $this->fetchProfileMemories($api),
+            'profileFollowers' => auth()->user()?->followers()->latest('user_follows.created_at')->take(12)->get() ?? collect(),
+            'profileFollowing' => auth()->user()?->following()->latest('user_follows.created_at')->take(12)->get() ?? collect(),
             'error' => $data['error'],
         ]);
     }
@@ -344,6 +502,15 @@ class PlaceController extends Controller
                     ->withInput()
                     ->with('error', 'No se pudo guardar el lugar.');
             }
+
+            UserNotification::sendTo(
+                user: auth()->id(),
+                type: 'place_created',
+                title: 'Lugar creado',
+                body: "Tu lugar '{$payload['name']}' fue guardado correctamente.",
+                url: route('places.mine'),
+                actor: auth()->user()
+            );
 
             return redirect()
                 ->route('places.mine')
@@ -448,6 +615,16 @@ class PlaceController extends Controller
                     ->route('places.mine')
                     ->with('error', 'No se pudo eliminar el lugar.');
             }
+
+            UserNotification::sendTo(
+                user: auth()->id(),
+                type: 'place_deleted',
+                title: 'Lugar eliminado',
+                body: 'El lugar fue eliminado correctamente.',
+                url: route('places.mine'),
+                actor: auth()->user(),
+                data: ['place_id' => $place]
+            );
 
             return redirect()
                 ->route('places.mine')

@@ -1,13 +1,13 @@
 <x-app-layout>
     @php
-        $container = "max-w-7xl mx-auto px-6 py-6";
-        $card = "bg-white dark:bg-slate-900 shadow rounded-2xl p-6 border border-gray-100 dark:border-slate-800";
+        $container = "max-w-7xl mx-auto px-4 sm:px-6 py-6 pb-36 sm:pb-44";
+        $card = "bg-white/95 dark:bg-slate-900/95 shadow-sm rounded-[28px] p-6 border border-gray-100 dark:border-slate-800";
         $hint = "text-xs text-gray-500 dark:text-slate-400";
 
-        $btnPrimary = "px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl shadow-sm transition active:scale-[0.99] focus:outline-none focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-500/30";
-        $btnGhost = "px-5 py-2.5 bg-blue-50 dark:bg-slate-800 hover:bg-blue-100 dark:hover:bg-slate-700 text-blue-700 dark:text-blue-400 font-semibold rounded-xl shadow-sm transition active:scale-[0.99] border border-blue-100 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-500/30";
+        $btnPrimary = "px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-2xl shadow-sm transition active:scale-[0.99] focus:outline-none focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-500/30";
+        $btnGhost = "px-5 py-2.5 bg-white/90 dark:bg-slate-900 hover:bg-blue-50 dark:hover:bg-slate-800 text-blue-700 dark:text-blue-400 font-semibold rounded-2xl shadow-sm transition active:scale-[0.99] border border-blue-100 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-500/30";
 
-        $pill = "inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-50 dark:bg-blue-500/15 text-blue-800 dark:text-blue-300 text-xs font-semibold border border-blue-100 dark:border-blue-500/20";
+        $pill = "inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-50 dark:bg-blue-500/15 text-blue-800 dark:text-blue-300 text-xs font-semibold border border-blue-100 dark:border-blue-500/20 shadow-sm";
 
         $types = [
             'RESTAURANTE' => 'Restaurante',
@@ -22,7 +22,19 @@
         ];
 
         $isAuth = auth()->check();
-        $defaultPhoto = asset('images/default.jpg');
+        $defaultPhoto = asset('images/vibebloom.png');
+        $resolvePhotoUrl = function ($value) use ($defaultPhoto) {
+            $value = trim((string) $value);
+
+            if ($value === '') return $defaultPhoto;
+            if (str_starts_with($value, 'http://') || str_starts_with($value, 'https://') || str_starts_with($value, '//') || str_starts_with($value, 'data:')) return $value;
+            if (str_starts_with($value, '/storage/')) return asset(ltrim($value, '/'));
+            if (str_starts_with($value, 'storage/')) return asset($value);
+            if (str_starts_with($value, '/')) return $value;
+
+            return asset('storage/' . ltrim($value, '/'));
+        };
+        $hasAnyFilter = request()->filled('buscar') || request()->filled('city') || request()->filled('type') || request()->filled('max_price');
 
         $typeIcons = [
             'RESTAURANTE' => '<svg class="w-4 h-4 text-blue-700 dark:text-blue-400 shrink-0" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 3v9M10 3v9M7 7h3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M14 3v8.5a3 3 0 0 0 6 0V3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
@@ -39,136 +51,75 @@
         $locIcon = '<svg class="w-4 h-4 text-blue-700 dark:text-blue-400 shrink-0" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 21s7-4.6 7-11a7 7 0 1 0-14 0c0 6.4 7 11 7 11Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M12 11a2 2 0 1 0 0-4a2 2 0 0 0 0 4Z" stroke="currentColor" stroke-width="1.8"/></svg>';
     @endphp
 
-    @guest
-        <style>
-            nav {
-                display: none !important;
-            }
-        </style>
-    @endguest
-
-    <div class="min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-100/70 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900">
-        @guest
-            <section class="relative overflow-hidden border-b border-slate-200/70 dark:border-slate-800/70 bg-white/80 dark:bg-slate-950/70 backdrop-blur">
-                <div class="absolute inset-0 pointer-events-none">
-                    <div class="absolute -top-20 left-[-4rem] h-56 w-56 rounded-full bg-blue-100/60 blur-3xl dark:bg-blue-500/10"></div>
-                    <div class="absolute top-10 right-[-3rem] h-64 w-64 rounded-full bg-sky-100/60 blur-3xl dark:bg-sky-500/10"></div>
-                </div>
-
-                <div class="relative max-w-7xl mx-auto px-6 py-6 flex items-center justify-between gap-4">
-                    <a href="{{ route('dashboard') }}" class="inline-flex items-center gap-3">
-                        <img src="{{ asset('images/vibebloom.png') }}"
-                             alt="VibeBloom"
-                             class="h-11 w-auto object-contain"
-                             onerror="this.style.display='none'">
-                        <div>
-                            <p class="text-lg font-extrabold text-slate-900 dark:text-slate-100 leading-none">VibeBloom</p>
-                            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Descubre lugares y experiencias</p>
-                        </div>
-                    </a>
-
-                    <div class="hidden sm:flex items-center gap-3">
-                        <a href="{{ route('login') }}" class="{{ $btnGhost }}">Iniciar sesión</a>
-                        <a href="{{ route('register') }}" class="{{ $btnPrimary }}">Crear cuenta</a>
-                    </div>
-                </div>
-            </section>
-        @endguest
-
+    <div class="min-h-screen bg-[linear-gradient(180deg,#f8fafc_0%,#ffffff_42%,#eef2ff_100%)] dark:bg-[linear-gradient(180deg,#020617_0%,#0f172a_48%,#111827_100%)] relative overflow-hidden">
         <div class="{{ $container }}">
             @guest
-                <section class="relative mb-10 mt-2">
-                    <div class="grid grid-cols-1 xl:grid-cols-12 gap-8 items-center">
-                        <div class="xl:col-span-7">
-                            <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20 text-blue-700 dark:text-blue-300 text-sm font-semibold">
-                                Explora antes de registrarte
+                <section class="relative mb-6 mt-2 rounded-[24px] border border-slate-200/80 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 shadow-sm overflow-hidden">
+                    <div class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-blue-600 via-sky-500 to-blue-600"></div>
+                    <div class="p-4 sm:p-5 lg:p-6 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                        <div class="min-w-0">
+                            <div class="inline-flex items-center gap-2 rounded-full bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20 px-3 py-1.5 text-xs font-semibold text-blue-700 dark:text-blue-300">
+                                <span class="inline-block h-2 w-2 rounded-full bg-blue-500"></span>
+                                Lugares seleccionados
                             </div>
 
-                            <h1 class="mt-5 text-4xl md:text-5xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100 leading-tight">
-                                Explora lugares con
-                                <span class="text-blue-600 dark:text-blue-400">VibeBloom</span>
+                            <h1 class="mt-3 text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100 leading-tight">
+                                Encuentra tu próximo lugar en <span class="text-blue-600 dark:text-blue-400">VibeBloom</span>
                             </h1>
 
-                            <p class="mt-4 text-lg text-slate-600 dark:text-slate-400 max-w-2xl leading-relaxed">
-                                Conoce opciones, revisa lugares destacados y descubre nuevas experiencias.
-                                Al iniciar sesión puedes acceder a más funciones y mantener una experiencia personalizada.
+                            <p class="mt-2 text-sm sm:text-base text-slate-600 dark:text-slate-400 max-w-2xl leading-relaxed">
+                                Explora tarjetas, compara precio, ubicación y calificación. Inicia sesión solo cuando quieras abrir el detalle completo.
                             </p>
-
-                            <div class="mt-6 flex flex-wrap gap-3">
-                                <a href="{{ route('login') }}" class="{{ $btnPrimary }}">Iniciar sesión</a>
-                                <a href="{{ route('register') }}" class="{{ $btnGhost }}">Crear cuenta</a>
-                            </div>
-
-                            <div class="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-3xl">
-                                <div class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 p-4 shadow-sm">
-                                    <p class="text-sm font-bold text-slate-900 dark:text-slate-100">Exploración</p>
-                                    <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Explora lugares de forma única, rápida y ordenada.</p>
-                                </div>
-
-                                <div class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 p-4 shadow-sm">
-                                    <p class="text-sm font-bold text-slate-900 dark:text-slate-100">Más detalle con una cuenta</p>
-                                    <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Accede a información completa y seguimiento personal.</p>
-                                </div>
-
-                                <div class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 p-4 shadow-sm">
-                                    <p class="text-sm font-bold text-slate-900 dark:text-slate-100">Experiencia continua</p>
-                                    <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Guarda lo que más te gusta y regresa cuando quieras.</p>
-                                </div>
-                            </div>
                         </div>
 
-                        <div class="xl:col-span-5">
-                            <div class="relative rounded-[28px] border border-slate-200/70 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 shadow-2xl overflow-hidden">
-                                <div class="px-5 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
-                                    <div>
-                                        <p class="text-sm font-bold text-slate-900 dark:text-slate-100">Acceso completo</p>
-                                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Lo que obtienes al iniciar sesión</p>
-                                    </div>
-                                    <span class="inline-flex items-center px-2.5 py-1 rounded-full bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-300 text-xs font-semibold border border-blue-100 dark:border-blue-500/20">
-                                        Cuenta
-                                    </span>
-                                </div>
-
-                                <div class="p-5 space-y-4">
-                                    <div class="rounded-2xl border border-slate-200 dark:border-slate-700 p-4 bg-slate-50/80 dark:bg-slate-800/60">
-                                        <p class="font-semibold text-slate-900 dark:text-slate-100">Ver detalles completos</p>
-                                        <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Consulta más información de cada lugar y su experiencia.</p>
-                                    </div>
-
-                                    <div class="rounded-2xl border border-slate-200 dark:border-slate-700 p-4 bg-slate-50/80 dark:bg-slate-800/60">
-                                        <p class="font-semibold text-slate-900 dark:text-slate-100">Guardar favoritos</p>
-                                        <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Organiza tus opciones preferidas y vuelve a ellas fácilmente.</p>
-                                    </div>
-
-                                    <div class="rounded-2xl border border-slate-200 dark:border-slate-700 p-4 bg-slate-50/80 dark:bg-slate-800/60">
-                                        <p class="font-semibold text-slate-900 dark:text-slate-100">Experiencia personalizada</p>
-                                        <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Accede a herramientas y recomendaciones dentro de tu cuenta.</p>
-                                    </div>
-                                </div>
-                            </div>
+                        <div class="flex flex-col sm:flex-row lg:flex-col xl:flex-row gap-3 shrink-0">
+                            <a href="{{ route('login') }}" class="{{ $btnPrimary }} text-center">Iniciar sesión</a>
+                            <a href="{{ route('register') }}" class="{{ $btnGhost }} text-center">Crear cuenta</a>
                         </div>
                     </div>
                 </section>
             @else
-                <div class="mb-6 mt-2">
-                    <h1 class="text-4xl font-extrabold text-gray-900 dark:text-slate-100 tracking-tight">
-                        Explora lugares con <span class="text-blue-600 dark:text-blue-400">VibeBloom</span>
-                    </h1>
-                    <p class="text-gray-600 dark:text-slate-400 mt-1 text-lg">
-                        Descubre lugares y experiencias increíbles cerca de ti.
-                    </p>
+                <div class="mb-6 mt-2 rounded-[24px] border border-gray-100 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 shadow-sm p-4 sm:p-5">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        <div>
+                            <div class="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50/80 px-3 py-1.5 text-xs font-semibold text-blue-700 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-300">
+                                <span class="inline-block h-2 w-2 rounded-full bg-blue-500"></span>
+                                Exploración
+                            </div>
+                            <h1 class="mt-3 text-2xl sm:text-3xl font-extrabold text-gray-900 dark:text-slate-100 tracking-tight">
+                                Lugares para descubrir
+                            </h1>
+                        </div>
+
+                        <p class="text-gray-600 dark:text-slate-400 text-sm sm:text-base max-w-xl leading-relaxed">
+                            Compara lugares por foto, ubicación, categoría, precio y calificación.
+                        </p>
+                    </div>
                 </div>
             @endguest
 
             @if ($places->count() > 0)
-                <div class="flex items-center justify-between gap-4 mb-4">
+                <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-5">
                     <div>
                         <h2 class="text-xl md:text-2xl font-bold text-slate-900 dark:text-slate-100">
-                            {{ $isAuth ? 'Lugares disponibles' : 'Explora algunos lugares' }}
+                            {{ $hasAnyFilter ? 'Resultados de búsqueda' : ($isAuth ? 'Lugares disponibles' : 'Explora algunos lugares') }}
                         </h2>
                         <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                            {{ $isAuth ? 'Explora y entra al detalle de cada opción.' : 'Puedes navegar la vista general. Para abrir el detalle de un lugar, inicia sesión.' }}
+                            {{ $hasAnyFilter ? 'Filtros aplicados desde la barra de búsqueda.' : ($isAuth ? 'Explora y entra al detalle de cada opción.' : 'Puedes navegar la vista general. Para abrir el detalle de un lugar, inicia sesión.') }}
                         </p>
+                    </div>
+
+                    <div class="flex flex-wrap items-center gap-2">
+                        <div class="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50/80 px-3 py-1.5 text-xs font-semibold text-blue-700 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-300 w-fit">
+                            <span class="inline-block h-2 w-2 rounded-full bg-blue-500"></span>
+                            {{ $places->count() }} {{ $places->count() === 1 ? 'lugar' : 'lugares' }}
+                        </div>
+
+                        @if ($hasAnyFilter)
+                            <a href="{{ route('places.index') }}" class="inline-flex items-center justify-center rounded-full border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-1.5 text-xs font-bold text-gray-700 dark:text-slate-300 hover:border-blue-200 hover:text-blue-700 dark:hover:border-blue-500/30 dark:hover:text-blue-400 transition">
+                                Limpiar filtros
+                            </a>
+                        @endif
                     </div>
                 </div>
 
@@ -187,9 +138,7 @@
                             $rating = (int) $placeRating;
                             $rating = max(0, min(5, $rating));
 
-                            $initialPhoto = !empty($placePhotoUrl)
-                                ? $placePhotoUrl
-                                : (!empty($placePhoto) ? asset('storage/' . ltrim($placePhoto, '/')) : $defaultPhoto);
+                            $initialPhoto = $resolvePhotoUrl($placePhotoUrl ?: $placePhoto);
 
                             $typeRaw = trim((string) $placeType);
                             if ($typeRaw === '') {
@@ -233,12 +182,12 @@
 
                         @if($isAuth)
                             <a href="{{ $href }}"
-                               class="group relative block bg-white dark:bg-slate-900 rounded-2xl shadow transition-all duration-300 ease-out overflow-hidden border border-gray-100 dark:border-slate-800 hover:-translate-y-1 hover:shadow-xl hover:border-blue-100 dark:hover:border-blue-500/30">
+                               class="group relative block bg-white dark:bg-slate-900 rounded-[28px] shadow-sm transition-all duration-300 ease-out overflow-hidden border border-gray-100 dark:border-slate-800 hover:-translate-y-1 hover:shadow-xl hover:border-blue-100 dark:hover:border-blue-500/30 focus:outline-none focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-500/30">
                         @else
                             <a href="#"
                                data-requires-auth
                                data-href="{{ $href }}"
-                               class="group relative block bg-white dark:bg-slate-900 rounded-2xl shadow transition-all duration-300 ease-out overflow-hidden border border-gray-100 dark:border-slate-800 hover:-translate-y-1 hover:shadow-xl hover:border-blue-100 dark:hover:border-blue-500/30">
+                               class="group relative block bg-white dark:bg-slate-900 rounded-[28px] shadow-sm transition-all duration-300 ease-out overflow-hidden border border-gray-100 dark:border-slate-800 hover:-translate-y-1 hover:shadow-xl hover:border-blue-100 dark:hover:border-blue-500/30 focus:outline-none focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-500/30">
                         @endif
 
                             @guest
@@ -253,28 +202,28 @@
                                 </div>
                             @endguest
 
-                            <div class="relative h-48 w-full overflow-hidden bg-gray-100 dark:bg-slate-800">
+                            <div class="relative h-56 w-full overflow-hidden bg-gray-100 dark:bg-slate-800">
                                 <img src="{{ $initialPhoto }}"
-                                     class="h-48 w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.04]"
+                                     class="h-56 w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.04]"
                                      alt="Foto de {{ $placeName }}"
                                      data-fallback="{{ $defaultPhoto }}"
                                      onerror="this.onerror=null; this.src=this.dataset.fallback;" />
-                                <div class="absolute inset-0 bg-gradient-to-t from-slate-950/30 via-transparent to-transparent"></div>
+                                <div class="absolute inset-0 bg-gradient-to-t from-slate-950/45 via-slate-950/5 to-transparent"></div>
                             </div>
 
-                            <div class="p-5 space-y-3">
+                            <div class="p-5 space-y-4">
                                 <div>
-                                    <h2 class="text-xl font-semibold leading-tight text-gray-900 dark:text-slate-100 transition-colors duration-300 group-hover:text-blue-600 dark:group-hover:text-blue-400">
+                                    <h2 class="text-xl font-bold leading-tight text-gray-900 dark:text-slate-100 transition-colors duration-300 group-hover:text-blue-600 dark:group-hover:text-blue-400">
                                         {{ $placeName }}
                                     </h2>
 
-                                    <div class="mt-1 flex items-center gap-2 text-gray-600 dark:text-slate-400 text-sm">
+                                    <div class="mt-2 flex items-center gap-2 text-gray-600 dark:text-slate-400 text-sm min-w-0">
                                         {!! $locIcon !!}
-                                        <span>{{ $placeCity }}</span>
+                                        <span class="truncate">{{ $placeCity }}</span>
                                     </div>
                                 </div>
 
-                                <div class="flex items-center justify-between gap-3">
+                                <div class="flex flex-wrap items-center justify-between gap-3">
                                     <span class="{{ $pill }}">
                                         {!! $typeIcon !!}
                                         {{ $typeLabelCard }}
@@ -291,11 +240,17 @@
                                     </div>
                                 </div>
 
-                                <div class="pt-1">
-                                    <p class="{{ $hint }}">Precio aprox. por persona</p>
-                                    <p class="text-gray-900 dark:text-slate-100 font-bold text-lg">
-                                        MXN ${{ number_format((float)$placePrice, 2) }}
-                                    </p>
+                                <div class="pt-4 border-t border-gray-100 dark:border-slate-800 flex items-end justify-between gap-3">
+                                    <div>
+                                        <p class="{{ $hint }}">Precio aprox. por persona</p>
+                                        <p class="text-gray-900 dark:text-slate-100 font-extrabold text-lg">
+                                            MXN ${{ number_format((float)$placePrice, 2) }}
+                                        </p>
+                                    </div>
+
+                                    <span class="text-xs font-bold text-blue-700 dark:text-blue-400 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+                                        {{ $isAuth ? 'Ver detalle' : 'Iniciar sesión' }}
+                                    </span>
                                 </div>
                             </div>
                         </a>
@@ -311,12 +266,20 @@
                     </div>
 
                     <h2 class="text-xl font-bold text-gray-900 dark:text-slate-100">
-                        No se encontraron lugares
+                        {{ $hasAnyFilter ? 'No hay coincidencias con esos filtros' : 'No se encontraron lugares' }}
                     </h2>
 
                     <p class="mt-2 text-sm text-gray-600 dark:text-slate-400">
-                        Aún no hay lugares disponibles para mostrar.
+                        {{ $hasAnyFilter ? 'Prueba con otro nombre, ciudad, tipo o precio máximo.' : 'Aún no hay lugares disponibles para mostrar.' }}
                     </p>
+
+                    @if ($hasAnyFilter)
+                        <div class="mt-5">
+                            <a href="{{ route('places.index') }}" class="{{ $btnPrimary }}">
+                                Limpiar filtros
+                            </a>
+                        </div>
+                    @endif
                 </div>
             @endif
 

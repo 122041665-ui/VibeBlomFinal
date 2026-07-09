@@ -31,12 +31,12 @@
                  dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-300";
     @endphp
 
-    <div class="min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-100/70 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900 relative overflow-hidden">
-        <div class="pointer-events-none absolute inset-x-0 top-0 h-72 bg-[radial-gradient(circle_at_top,rgba(37,99,235,0.10),transparent_55%)] dark:bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.10),transparent_55%)]"></div>
+    <div class="min-h-screen bg-[linear-gradient(180deg,#f8fafc_0%,#ffffff_42%,#eef2ff_100%)] dark:bg-[linear-gradient(180deg,#020617_0%,#0f172a_48%,#111827_100%)] relative overflow-hidden">
+        <div class="pointer-events-none absolute inset-x-0 top-0 h-96 bg-[radial-gradient(circle_at_20%_10%,rgba(37,99,235,0.14),transparent_34%),radial-gradient(circle_at_82%_0%,rgba(14,165,233,0.10),transparent_32%)] dark:bg-[radial-gradient(circle_at_20%_10%,rgba(59,130,246,0.16),transparent_34%),radial-gradient(circle_at_82%_0%,rgba(14,165,233,0.12),transparent_32%)]"></div>
 
         <div class="{{ $container }}">
             <div class="mb-6">
-                <div class="rounded-[28px] border border-gray-100 dark:border-slate-800 bg-white/85 dark:bg-slate-900/85 backdrop-blur shadow-sm p-5 sm:p-6 lg:p-7">
+                <div class="rounded-[30px] border border-white/80 dark:border-slate-800 bg-white/88 dark:bg-slate-900/88 backdrop-blur shadow-[0_22px_70px_rgba(15,23,42,0.10)] p-5 sm:p-6 lg:p-7">
                     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                         <div>
                             <div class="{{ $pill }}">
@@ -57,7 +57,7 @@
                                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M15 18l-6-6 6-6" />
                             </svg>
-                            Volver a mis lugares
+                            Volver al perfil
                         </a>
                     </div>
                 </div>
@@ -327,7 +327,11 @@
             console.error('Mapbox token no configurado: config("services.mapbox.token")');
         }
 
-        mapboxgl.accessToken = MAPBOX_TOKEN || '';
+        const canUseMapbox = Boolean(MAPBOX_TOKEN && window.mapboxgl);
+
+        if (canUseMapbox) {
+            mapboxgl.accessToken = MAPBOX_TOKEN;
+        }
 
         const cityInput = document.getElementById('cityInput');
         const cityPlaceId = document.getElementById('cityPlaceId');
@@ -352,12 +356,8 @@
         const placeForm = document.getElementById('placeForm');
         const approvalToast = document.getElementById('approvalToast');
 
-        const map = new mapboxgl.Map({
-            container: 'map',
-            style: 'mapbox://styles/mapbox/streets-v12',
-            center: [-100.3899, 20.5888],
-            zoom: 5
-        });
+        const mapContainer = document.getElementById('map');
+        let map = null;
 
         let marker = null;
         let cityFeature = null;
@@ -370,14 +370,11 @@
             latInput.value = lat;
             lngInput.value = lng;
 
+            if (!map) return;
+
             if (marker) marker.remove();
             marker = new mapboxgl.Marker().setLngLat([lng, lat]).addTo(map);
-
-            map.flyTo({
-                center: [lng, lat],
-                zoom: flyZoom,
-                essential: true
-            });
+            map.flyTo({ center: [lng, lat], zoom: flyZoom, essential: true });
         }
 
         async function reverseGeocode(lng, lat) {
@@ -404,21 +401,9 @@
             return data?.features?.[0]?.place_name || null;
         }
 
-        map.on('load', () => {
-            setTimeout(() => map.resize(), 120);
-        });
-
-        map.on('click', async (e) => {
-            const { lng, lat } = e.lngLat;
-            setMarker(lng, lat, 16);
-
-            const addr = await reverseGeocode(lng, lat);
-            if (addr) {
-                addressInput.value = addr;
-            }
-        });
-
         function syncInputFiles() {
+            if (typeof DataTransfer === 'undefined') return;
+
             const dt = new DataTransfer();
             selectedFiles.forEach(file => dt.items.add(file));
             photosInput.files = dt.files;
@@ -524,6 +509,38 @@
 
         setStars(ratingInput.value);
 
+        if (canUseMapbox) {
+            map = new mapboxgl.Map({
+                container: 'map',
+                style: 'mapbox://styles/mapbox/streets-v12',
+                center: [-100.3899, 20.5888],
+                zoom: 5
+            });
+
+            map.on('load', () => {
+                setTimeout(() => map.resize(), 120);
+            });
+
+            map.on('click', async (e) => {
+                const { lng, lat } = e.lngLat;
+                setMarker(lng, lat, 16);
+
+                const addr = await reverseGeocode(lng, lat);
+                if (addr) {
+                    addressInput.value = addr;
+                }
+            });
+        } else if (mapContainer) {
+            mapContainer.innerHTML = `
+                <div class="h-full w-full flex items-center justify-center p-6 text-center bg-blue-50/60 dark:bg-slate-800/60">
+                    <div>
+                        <p class="text-sm font-semibold text-gray-800 dark:text-slate-100">Mapa no disponible</p>
+                        <p class="mt-1 text-xs text-gray-500 dark:text-slate-400">Configura MAPBOX_TOKEN para seleccionar ubicación.</p>
+                    </div>
+                </div>
+            `;
+        }
+
         function openDD(dropdown) {
             dropdown.classList.remove('hidden');
         }
@@ -607,7 +624,12 @@
                 closeDD(cityDropdown);
 
                 const [lng, lat] = feature.center;
-                map.flyTo({ center: [lng, lat], zoom: 12, essential: true });
+                latInput.value = lat;
+                lngInput.value = lng;
+
+                if (map) {
+                    map.flyTo({ center: [lng, lat], zoom: 12, essential: true });
+                }
 
                 if ((addressInput.value || '').trim().length >= 3) {
                     updateAddressMatches();

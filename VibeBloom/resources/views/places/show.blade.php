@@ -4,11 +4,9 @@
 
     @php
         $container  = "max-w-7xl mx-auto px-4 sm:px-6 py-5 sm:py-6 pb-32 sm:pb-36";
-        $card       = "bg-white dark:bg-slate-900 shadow-sm rounded-2xl p-6 border border-gray-100 dark:border-slate-800";
-        $cardSoft   = "bg-slate-50/80 dark:bg-slate-800/60 rounded-2xl border border-gray-200 dark:border-slate-700";
+        $card       = "bg-white/92 dark:bg-slate-900/92 shadow-sm rounded-2xl p-6 border border-gray-100 dark:border-slate-800 backdrop-blur";
         $label      = "font-semibold text-gray-800 dark:text-slate-100";
         $hint       = "text-xs text-gray-500 dark:text-slate-400";
-        $muted      = "text-sm text-gray-600 dark:text-slate-400";
 
         $fieldBase  = "w-full bg-white dark:bg-slate-900 border border-gray-300 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm shadow-sm
                        text-gray-900 dark:text-slate-100 placeholder:text-gray-400 dark:placeholder:text-slate-500
@@ -27,8 +25,19 @@
         $pill       = "inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-50 dark:bg-blue-500/15 text-blue-800 dark:text-blue-300 text-xs font-semibold border border-blue-100 dark:border-blue-500/20";
 
         $textarea = $fieldBase;
-        $defaultPhoto = asset('images/default.jpg');
-        $defaultUserPhoto = asset('images/default-user.png');
+        $defaultPhoto = asset('images/vibebloom.png');
+        $defaultUserPhoto = asset('images/vibebloom.png');
+        $resolvePhotoUrl = function ($value) use ($defaultPhoto) {
+            $value = trim((string) $value);
+
+            if ($value === '') return $defaultPhoto;
+            if (str_starts_with($value, 'http://') || str_starts_with($value, 'https://') || str_starts_with($value, '//') || str_starts_with($value, 'data:')) return $value;
+            if (str_starts_with($value, '/storage/')) return asset(ltrim($value, '/'));
+            if (str_starts_with($value, 'storage/')) return asset($value);
+            if (str_starts_with($value, '/')) return $value;
+
+            return asset('storage/' . ltrim($value, '/'));
+        };
 
         $resolveUserField = function ($user, array $keys, $fallback = null) {
             if (!$user) return $fallback;
@@ -120,31 +129,6 @@
             return 'Sin fecha';
         };
 
-        $resolveAbsoluteDate = function ($value) {
-            if (!$value) return null;
-
-            try {
-                return \Illuminate\Support\Carbon::parse($value)->locale('es')->translatedFormat('d M Y, h:i A');
-            } catch (\Throwable $e) {
-                try {
-                    return \Illuminate\Support\Carbon::createFromFormat('Y-m-d H:i:s', (string) $value)->locale('es')->translatedFormat('d M Y, h:i A');
-                } catch (\Throwable $e) {
-                    return null;
-                }
-            }
-        };
-
-        $resolveShortAddress = function ($value) {
-            $value = trim((string) ($value ?? ''));
-            if ($value === '') return null;
-
-            if (mb_strlen($value) <= 52) {
-                return $value;
-            }
-
-            return mb_substr($value, 0, 49) . '...';
-        };
-
         $placeId = is_array($place) ? ($place['id'] ?? null) : ($place->id ?? null);
         $placeName = is_array($place) ? ($place['name'] ?? 'Sin nombre') : ($place->name ?? 'Sin nombre');
         $placeCity = is_array($place) ? ($place['city'] ?? 'Sin ciudad') : ($place->city ?? 'Sin ciudad');
@@ -164,11 +148,10 @@
 
         $placeUser = is_array($place) ? ($place['user'] ?? null) : ($place->user ?? null);
         $placeReviews = is_array($place) ? ($place['reviews'] ?? []) : ($place->reviews ?? collect());
+        $reviewsCount = is_array($placeReviews) ? count($placeReviews) : ($placeReviews?->count() ?? 0);
 
         $allPhotos = [];
-        $main = !empty($placePhotoUrl)
-            ? $placePhotoUrl
-            : (!empty($placePhoto) ? asset('storage/' . ltrim($placePhoto, '/')) : null);
+        $main = $resolvePhotoUrl($placePhotoUrl ?: $placePhoto);
 
         if ($main) $allPhotos[] = $main;
 
@@ -176,7 +159,7 @@
         if (!empty($placePhotosUrls) && is_array($placePhotosUrls)) {
             $extras = $placePhotosUrls;
         } elseif (is_array($placePhotos)) {
-            $extras = array_map(fn ($p) => asset('storage/' . ltrim($p, '/')), $placePhotos);
+            $extras = array_map(fn ($p) => $resolvePhotoUrl($p), $placePhotos);
         }
 
         if (is_array($extras)) {
@@ -196,12 +179,11 @@
 
         $address = trim((string)($placeAddress ?? ''));
         $address = $address !== '' ? $address : null;
-        $addressBadge = $resolveShortAddress($address);
 
         $hasCoords = is_numeric($placeLat) && is_numeric($placeLng) && $placeLat !== null && $placeLng !== null;
+        $formattedPrice = 'MXN $' . number_format((float)($placePrice ?? 0), 2);
 
         $iconBase = 'w-4 h-4 text-blue-700 dark:text-blue-400 shrink-0';
-
         $type = strtolower(trim((string)($placeType ?? '')));
 
         $typeIcons = [
@@ -280,187 +262,200 @@
         $isFavorite = $placeId ? in_array((int) $placeId, $favoritePlaceIds, true) : false;
     @endphp
 
-    <div class="min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-100/70 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900 relative overflow-hidden">
-        <div class="pointer-events-none absolute inset-x-0 top-0 h-72 bg-[radial-gradient(circle_at_top,rgba(37,99,235,0.12),transparent_55%)] dark:bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.12),transparent_55%)]"></div>
+    <div class="min-h-screen bg-[linear-gradient(180deg,#f8fafc_0%,#ffffff_42%,#eef2ff_100%)] dark:bg-[linear-gradient(180deg,#020617_0%,#0f172a_48%,#111827_100%)] relative overflow-hidden">
+        <div class="pointer-events-none absolute inset-x-0 top-0 h-96 bg-[radial-gradient(circle_at_20%_10%,rgba(37,99,235,0.16),transparent_34%),radial-gradient(circle_at_80%_0%,rgba(14,165,233,0.12),transparent_32%)] dark:bg-[radial-gradient(circle_at_20%_10%,rgba(59,130,246,0.18),transparent_34%),radial-gradient(circle_at_80%_0%,rgba(14,165,233,0.14),transparent_32%)]"></div>
 
         <div class="{{ $container }} relative">
 
-            <section class="mb-8">
-                <div class="rounded-[28px] border border-gray-100 dark:border-slate-800 bg-white/85 dark:bg-slate-900/85 backdrop-blur shadow-sm p-5 sm:p-6 lg:p-7">
-                    <div class="flex flex-col xl:flex-row xl:items-start xl:justify-between gap-6">
-                        <div class="min-w-0 flex-1">
-                            <div class="flex flex-wrap items-center gap-3 mb-4">
-                                <span class="{{ $pill }}">
-                                    {!! $typeIcon !!}
-                                    <span class="leading-none">{{ $placeType ?: 'Sin tipo' }}</span>
-                                </span>
+            <section class="mb-6">
+                <div class="rounded-[28px] border border-white/80 dark:border-slate-800 bg-white/88 dark:bg-slate-900/88 backdrop-blur shadow-[0_22px_70px_rgba(15,23,42,0.10)] overflow-hidden">
+                    <div class="grid grid-cols-1 xl:grid-cols-12">
+                        <div class="xl:col-span-5 relative bg-slate-100 dark:bg-slate-800">
+                            <div class="pointer-events-none absolute inset-0 z-10 bg-gradient-to-t from-slate-950/30 via-transparent to-transparent"></div>
 
-                                <div class="inline-flex items-center gap-1 rounded-full bg-amber-50 dark:bg-amber-500/10 border border-amber-100 dark:border-amber-500/20 px-3 py-1.5">
-                                    @for ($i = 1; $i <= 5; $i++)
-                                        <svg class="w-4 h-4 {{ $i <= $rating ? 'text-yellow-500' : 'text-gray-300 dark:text-slate-600' }}" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                                            <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
-                                        </svg>
-                                    @endfor
-                                    <span class="text-xs font-semibold text-amber-700 dark:text-amber-300 ml-1">{{ $rating }}/5</span>
+                            @if ($countPhotos > 1)
+                                <div class="absolute top-4 left-4 z-20">
+                                    <div class="relative photo-dd">
+                                        <button
+                                            type="button"
+                                            class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/95 dark:bg-slate-900/95 backdrop-blur border border-gray-200 dark:border-slate-700 shadow-sm text-xs font-semibold text-gray-800 dark:text-slate-100 hover:bg-white dark:hover:bg-slate-800 transition focus:outline-none focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-500/30"
+                                            data-toggle
+                                        >
+                                            <svg class="w-4 h-4 text-gray-700 dark:text-slate-300" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                                <path d="M8 7l1.2-2h5.6L16 7h3a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h3Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+                                                <circle cx="12" cy="13" r="4" stroke="currentColor" stroke-width="1.8"/>
+                                            </svg>
+                                            Fotos
+                                            <span class="text-gray-500 dark:text-slate-400 font-medium" data-counter>(1/{{ $countPhotos }})</span>
+                                        </button>
+
+                                        <div class="hidden absolute mt-2 w-56 rounded-2xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-lg overflow-hidden" data-menu>
+                                            <div class="p-3 grid grid-cols-3 gap-2">
+                                                @foreach ($allPhotos as $idx => $url)
+                                                    <button
+                                                        type="button"
+                                                        class="group rounded-xl overflow-hidden border border-gray-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-500 transition focus:outline-none focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-500/30"
+                                                        data-photo="{{ $url }}"
+                                                        data-index="{{ $idx + 1 }}"
+                                                    >
+                                                        <img src="{{ $url }}" class="w-full h-14 object-cover group-hover:scale-[1.02] transition" alt="Miniatura {{ $idx + 1 }}">
+                                                    </button>
+                                                @endforeach
+                                            </div>
+
+                                            <div class="px-3 pb-3">
+                                                <p class="text-[11px] text-gray-500 dark:text-slate-400">Selecciona una miniatura para cambiar la foto.</p>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
+                            @endif
 
-                                @if($addressBadge)
-                                    <span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300 max-w-full">
-                                        <svg class="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                                            <path d="M12 21s7-4.6 7-11a7 7 0 1 0-14 0c0 6.4 7 11 7 11Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
-                                            <circle cx="12" cy="10" r="2.2" stroke="currentColor" stroke-width="1.8"/>
-                                        </svg>
-                                        <span class="truncate">{{ $addressBadge }}</span>
-                                    </span>
-                                @endif
-                            </div>
-
-                            <h1 class="text-3xl md:text-4xl xl:text-[2.7rem] font-extrabold text-gray-900 dark:text-slate-100 leading-tight tracking-tight break-words">
-                                {{ $placeName }}
-                            </h1>
-
-                            <p class="mt-3 text-base text-gray-600 dark:text-slate-400 flex items-center gap-2">
-                                <svg class="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                                    <path d="M12 21s7-4.6 7-11a7 7 0 1 0-14 0c0 6.4 7 11 7 11Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
-                                    <circle cx="12" cy="10" r="2.2" stroke="currentColor" stroke-width="1.8"/>
-                                </svg>
-                                <span class="break-words">{{ $placeCity }}</span>
-                            </p>
-
-                            <p class="mt-2 text-sm sm:text-base text-gray-600 dark:text-slate-400 leading-relaxed max-w-3xl break-words">
-                                {{ $placeDescription ?: 'Este lugar aún no tiene descripción registrada.' }}
-                            </p>
+                            <button type="button" class="block w-full h-full" id="openPhotoModal" aria-label="Abrir foto en grande">
+                                <img
+                                    src="{{ $initialPhoto }}"
+                                    class="w-full h-[16rem] sm:h-[22rem] xl:h-full xl:min-h-[28rem] object-cover"
+                                    alt="Imagen de {{ $placeName }}"
+                                    id="mainPhoto"
+                                    onerror="this.onerror=null;this.src='{{ $defaultPhoto }}';"
+                                >
+                            </button>
                         </div>
 
-                        <div class="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-3 xl:justify-end w-full xl:w-auto">
-                            @auth
-                                @if($placeId)
-                                    <form action="{{ route('favorite.toggle', ['place' => $placeId]) }}" method="POST" class="w-full sm:w-auto">
-                                        @csrf
-                                        <button type="submit"
-                                            class="inline-flex w-full sm:w-auto items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-blue-50 dark:hover:bg-slate-800 shadow-sm transition focus:outline-none focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-500/30"
-                                            title="{{ $isFavorite ? 'Quitar de favoritos' : 'Agregar a favoritos' }}"
-                                            aria-label="{{ $isFavorite ? 'Quitar de favoritos' : 'Agregar a favoritos' }}">
-                                            @if ($isFavorite)
-                                                <svg class="w-5 h-5 text-blue-600 dark:text-blue-400" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                                                    <path d="M12 21s-7-4.4-9.3-8.5C.7 8.2 2.2 5.3 6 4.8c2-.3 3.7.7 4.7 2 1-1.3 2.7-2.3 4.7-2c3.8.5 5.3 3.4 3.3 6.7C19 16.6 12 21 12 21Z"/>
-                                                </svg>
-                                            @else
-                                                <svg class="w-5 h-5 text-blue-600 dark:text-blue-400" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                                                    <path d="M12 20s-7-4.4-9.3-8.5C.7 8.2 2.2 5.3 6 4.8c2-.3 3.7.7 4.7 2 1-1.3 2.7-2.3 4.7-2c3.8.5 5.3 3.4 3.3 6.7C19 15.6 12 20 12 20Z" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
-                                                </svg>
-                                            @endif
-                                            <span class="text-sm font-semibold text-gray-700 dark:text-slate-200">
-                                                {{ $isFavorite ? 'Guardado' : 'Guardar' }}
-                                            </span>
-                                        </button>
-                                    </form>
-                                @endif
-                            @endauth
+                        <div class="xl:col-span-7 p-5 sm:p-7 lg:p-8 flex flex-col justify-between gap-7">
+                            <div>
+                                <div class="flex flex-wrap items-center gap-3">
+                                    <span class="inline-flex items-center gap-2 rounded-full bg-slate-100 dark:bg-slate-800 px-3 py-1.5 text-xs font-semibold text-slate-600 dark:text-slate-300">
+                                        Vista del lugar
+                                    </span>
 
-                            <a href="{{ route('dashboard') }}" class="{{ $btnGhost }}">
-                                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                                    <path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                </svg>
-                                Volver
-                            </a>
+                                    <span class="inline-flex items-center gap-1 rounded-full bg-amber-50 dark:bg-amber-500/10 border border-amber-100 dark:border-amber-500/20 px-3 py-1.5">
+                                        @for ($i = 1; $i <= 5; $i++)
+                                            <svg class="w-4 h-4 {{ $i <= $rating ? 'text-yellow-500' : 'text-gray-300 dark:text-slate-600' }}" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                                                <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
+                                            </svg>
+                                        @endfor
+                                        <span class="text-xs font-semibold text-amber-700 dark:text-amber-300 ml-1">{{ $rating }}/5</span>
+                                    </span>
+                                </div>
+
+                                <h1 class="mt-5 text-3xl md:text-4xl xl:text-[2.6rem] font-extrabold text-gray-900 dark:text-slate-100 leading-tight break-words">
+                                    {{ $placeName }}
+                                </h1>
+
+                                <div class="mt-4 flex flex-wrap items-center gap-2 text-gray-600 dark:text-slate-400">
+                                    <span class="{{ $pill }}">
+                                        {!! $typeIcon !!}
+                                        <span class="leading-none">{{ $placeType ?: 'Sin tipo' }}</span>
+                                    </span>
+
+                                    <svg class="w-5 h-5 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                        <path d="M12 21s7-4.6 7-11a7 7 0 1 0-14 0c0 6.4 7 11 7 11Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+                                        <circle cx="12" cy="10" r="2.2" stroke="currentColor" stroke-width="1.8"/>
+                                    </svg>
+
+                                    <p class="font-semibold text-gray-800 dark:text-slate-200 break-words">{{ $placeCity }}</p>
+                                </div>
+
+                                <p class="mt-5 text-sm sm:text-base text-gray-600 dark:text-slate-400 leading-relaxed break-words">
+                                    {{ $placeDescription ?: 'Este lugar aún no tiene descripción registrada.' }}
+                                </p>
+
+                                <div class="mt-6 rounded-2xl border border-gray-200 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-800/50 p-3">
+                                    <div class="grid grid-cols-3 divide-x divide-gray-200 dark:divide-slate-700">
+                                        <div class="px-2">
+                                            <p class="text-[10px] font-semibold uppercase tracking-wide text-gray-400 dark:text-slate-500">Precio</p>
+                                            <p class="mt-1 text-xs sm:text-sm font-bold text-gray-700 dark:text-slate-200 truncate">{{ $formattedPrice }}</p>
+                                        </div>
+
+                                        <div class="px-3">
+                                            <p class="text-[10px] font-semibold uppercase tracking-wide text-gray-400 dark:text-slate-500">Reseñas</p>
+                                            <p class="mt-1 text-xs sm:text-sm font-bold text-gray-700 dark:text-slate-200">{{ $reviewsCount }}</p>
+                                        </div>
+
+                                        <div class="px-3">
+                                            <p class="text-[10px] font-semibold uppercase tracking-wide text-gray-400 dark:text-slate-500">Fotos</p>
+                                            <p class="mt-1 text-xs sm:text-sm font-bold text-gray-700 dark:text-slate-200">{{ $countPhotos ?: 1 }}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="flex flex-col sm:flex-row sm:flex-wrap gap-3">
+                                @auth
+                                    @if($placeId)
+                                        <form action="{{ route('favorite.toggle', ['place' => $placeId]) }}" method="POST" class="w-full sm:w-auto">
+                                            @csrf
+
+                                            <button type="submit"
+                                                class="inline-flex w-full sm:w-auto items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-blue-50 dark:hover:bg-slate-800 shadow-sm transition focus:outline-none focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-500/30"
+                                                title="{{ $isFavorite ? 'Quitar de favoritos' : 'Agregar a favoritos' }}"
+                                                aria-label="{{ $isFavorite ? 'Quitar de favoritos' : 'Agregar a favoritos' }}">
+                                                @if ($isFavorite)
+                                                    <svg class="w-5 h-5 text-blue-600 dark:text-blue-400" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                                                        <path d="M12 21s-7-4.4-9.3-8.5C.7 8.2 2.2 5.3 6 4.8c2-.3 3.7.7 4.7 2 1-1.3 2.7-2.3 4.7-2c3.8.5 5.3 3.4 3.3 6.7C19 16.6 12 21 12 21Z"/>
+                                                    </svg>
+                                                @else
+                                                    <svg class="w-5 h-5 text-blue-600 dark:text-blue-400" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                                        <path d="M12 20s-7-4.4-9.3-8.5C.7 8.2 2.2 5.3 6 4.8c2-.3 3.7.7 4.7 2 1-1.3 2.7-2.3 4.7-2c3.8.5 5.3 3.4 3.3 6.7C19 15.6 12 20 12 20Z" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+                                                    </svg>
+                                                @endif
+
+                                                <span class="text-sm font-semibold text-gray-700 dark:text-slate-200">
+                                                    {{ $isFavorite ? 'Guardado' : 'Guardar' }}
+                                                </span>
+                                            </button>
+                                        </form>
+                                    @endif
+                                @endauth
+
+                                <a href="{{ route('dashboard') }}" class="{{ $btnGhost }}">
+                                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                        <path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
+                                    Volver
+                                </a>
+                            </div>
                         </div>
                     </div>
                 </div>
             </section>
 
             <div class="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
-
-                <div class="xl:col-span-7 space-y-6">
-
-                    <div class="bg-white dark:bg-slate-900 shadow-sm rounded-[28px] overflow-hidden border border-gray-100 dark:border-slate-800 relative">
-                        @if ($countPhotos > 1)
-                            <div class="absolute top-4 left-4 z-20">
-                                <div class="relative photo-dd">
-                                    <button
-                                        type="button"
-                                        class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/95 dark:bg-slate-900/95 backdrop-blur border border-gray-200 dark:border-slate-700 shadow-sm text-xs font-semibold text-gray-800 dark:text-slate-100 hover:bg-white dark:hover:bg-slate-800 transition focus:outline-none focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-500/30"
-                                        data-toggle
-                                    >
-                                        <svg class="w-4 h-4 text-gray-700 dark:text-slate-300" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                                            <path d="M8 7l1.2-2h5.6L16 7h3a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h3Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
-                                            <circle cx="12" cy="13" r="4" stroke="currentColor" stroke-width="1.8"/>
-                                        </svg>
-                                        Fotos
-                                        <span class="text-gray-500 dark:text-slate-400 font-medium" data-counter>(1/{{ $countPhotos }})</span>
-                                        <svg class="w-4 h-4 text-gray-600 dark:text-slate-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                                            <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z" clip-rule="evenodd"/>
-                                        </svg>
-                                    </button>
-
-                                    <div class="hidden absolute mt-2 w-56 rounded-2xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-lg overflow-hidden" data-menu>
-                                        <div class="p-3 grid grid-cols-3 gap-2">
-                                            @foreach ($allPhotos as $idx => $url)
-                                                <button
-                                                    type="button"
-                                                    class="group rounded-xl overflow-hidden border border-gray-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-500 transition focus:outline-none focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-500/30"
-                                                    data-photo="{{ $url }}"
-                                                    data-index="{{ $idx + 1 }}"
-                                                >
-                                                    <img src="{{ $url }}" class="w-full h-14 object-cover group-hover:scale-[1.02] transition" alt="Miniatura {{ $idx + 1 }}">
-                                                </button>
-                                            @endforeach
-                                        </div>
-
-                                        <div class="px-3 pb-3">
-                                            <p class="text-[11px] text-gray-500 dark:text-slate-400">Selecciona una miniatura para cambiar la foto.</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        @endif
-
-                        <button type="button" class="block w-full" id="openPhotoModal" aria-label="Abrir foto en grande">
-                            <img
-                                src="{{ $initialPhoto }}"
-                                class="w-full h-[16.5rem] sm:h-[24rem] lg:h-[30rem] object-cover"
-                                alt="Imagen del lugar"
-                                id="mainPhoto"
-                                onerror="this.onerror=null;this.src='{{ $defaultPhoto }}';"
-                            >
-                        </button>
-                    </div>
-
-                    <div class="{{ $card }}">
-                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                            <div class="{{ $cardSoft }} p-5">
-                                <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">Precio aproximado</p>
-                                <p class="mt-2 text-3xl font-extrabold text-gray-900 dark:text-slate-100">
-                                    MXN ${{ number_format((float)($placePrice ?? 0), 2) }}
-                                </p>
-                                <p class="mt-1 text-sm text-gray-500 dark:text-slate-400">Costo estimado por persona</p>
-                            </div>
-
-                            <div class="{{ $cardSoft }} p-5">
-                                <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">Resumen</p>
-                                <p class="mt-2 text-sm leading-relaxed text-gray-700 dark:text-slate-300 break-words">
-                                    {{ $placeDescription ?: 'Este lugar aún no tiene descripción registrada.' }}
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="{{ $card }} space-y-6">
-                        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                <main class="xl:col-span-8 space-y-6">
+                    <section class="{{ $card }} space-y-5">
+                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-gray-100 dark:border-slate-800 pb-5">
                             <div>
-                                <h2 class="text-xl font-bold text-gray-900 dark:text-slate-100">Reseñas</h2>
+                                <div class="inline-flex items-center gap-2 rounded-full bg-blue-50 dark:bg-blue-500/10 px-3 py-1 text-xs font-semibold text-blue-700 dark:text-blue-300">
+                                    Conversación
+                                </div>
+                                <h2 class="mt-3 text-2xl font-extrabold text-gray-900 dark:text-slate-100">Opiniones y experiencias</h2>
                                 <p class="mt-1 text-sm text-gray-500 dark:text-slate-400">
-                                    {{ is_array($placeReviews) ? count($placeReviews) : ($placeReviews?->count() ?? 0) }} reseña(s) registradas
+                                    {{ $reviewsCount }} {{ $reviewsCount === 1 ? 'reseña registrada' : 'reseñas registradas' }}
                                 </p>
                             </div>
                         </div>
 
                         @auth
                             @if($placeId)
-                                <div class="{{ $cardSoft }} p-4 sm:p-5">
+                                <div class="rounded-2xl border border-blue-100 dark:border-blue-500/20 bg-gradient-to-br from-blue-50/90 to-white dark:from-blue-500/10 dark:to-slate-900 p-4 sm:p-5">
                                     <form action="{{ route('places.reviews.store', ['place' => $placeId]) }}" method="POST" class="space-y-3">
                                         @csrf
-                                        <label class="{{ $label }}">Compartir experiencia</label>
+
+                                        <div class="flex items-start gap-3">
+                                            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-sm">
+                                                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                                    <path d="M8 10h8M8 14h5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                                                    <path d="M6 4h12a2 2 0 0 1 2 2v12l-4-2-4 2-4-2-4 2V6a2 2 0 0 1 2-2Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+                                                </svg>
+                                            </div>
+
+                                            <div>
+                                                <label class="{{ $label }}">Comparte tu experiencia</label>
+                                                <p class="{{ $hint }}">Cuenta lo que realmente ayuda a decidir: ambiente, servicio, precio o ubicación.</p>
+                                            </div>
+                                        </div>
+
                                         <textarea
                                             name="body"
                                             rows="4"
@@ -501,7 +496,6 @@
                                     $reviewUserName = $resolveUserName($reviewUser, $reviewUserId ? 'Usuario #'.$reviewUserId : 'Usuario no disponible');
                                     $reviewUserPhoto = $resolveUserPhoto($reviewUser);
                                     $reviewTimeText = $resolveDisplayDate($reviewCreatedAt, $reviewUpdatedAt);
-                                    $reviewAbsoluteDate = $resolveAbsoluteDate($reviewCreatedAt ?: $reviewUpdatedAt);
                                     $reviewWasEdited = $reviewCreatedAt && $reviewUpdatedAt && $reviewCreatedAt !== $reviewUpdatedAt;
 
                                     $repliesList = is_array($reviewReplies) ? $reviewReplies : collect($reviewReplies)->toArray();
@@ -522,16 +516,13 @@
                                                 <p class="font-semibold text-gray-900 dark:text-slate-100 break-words leading-5">
                                                     {{ $reviewUserName }}
                                                 </p>
-                                                <div class="mt-1 space-y-1">
-                                                    <p class="text-sm text-gray-500 dark:text-slate-400 break-words" @if($reviewAbsoluteDate) title="{{ $reviewAbsoluteDate }}" @endif>
-                                                        {{ $reviewTimeText }}
-                                                    </p>
-                                                    @if($reviewAbsoluteDate)
-                                                        <p class="text-xs text-gray-400 dark:text-slate-500 break-words">
-                                                            {{ $reviewAbsoluteDate }}@if($reviewWasEdited) · Editada @endif
-                                                        </p>
+
+                                                <p class="mt-1 text-sm text-gray-500 dark:text-slate-400 break-words">
+                                                    {{ $reviewTimeText }}
+                                                    @if($reviewWasEdited)
+                                                        · Editada
                                                     @endif
-                                                </div>
+                                                </p>
                                             </div>
                                         </div>
 
@@ -544,13 +535,8 @@
                                                 >
                                                     @csrf
                                                     @method('DELETE')
+
                                                     <button class="{{ $btnDanger }} whitespace-nowrap" type="submit" onclick="return confirm('¿Eliminar tu reseña?')">
-                                                        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                                                            <path d="M4 7h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                                                            <path d="M10 11v6M14 11v6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                                                            <path d="M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
-                                                            <path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                                                        </svg>
                                                         Eliminar
                                                     </button>
                                                 </form>
@@ -567,29 +553,32 @@
                                     @auth
                                         @if ($reviewId && $placeId)
                                             <div class="pl-0 sm:pl-14 min-w-0">
-                                                <div class="{{ $cardSoft }} p-4">
+                                                <details class="group bg-slate-50/80 dark:bg-slate-800/60 rounded-2xl border border-gray-200 dark:border-slate-700 p-4">
+                                                    <summary class="cursor-pointer list-none text-sm font-semibold text-blue-700 dark:text-blue-300 flex items-center justify-between gap-3">
+                                                        <span>Responder reseña</span>
+                                                        <svg class="w-4 h-4 transition group-open:rotate-180" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                                            <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                                        </svg>
+                                                    </summary>
+
                                                     <form action="{{ route('places.reviews.replies.store', ['place' => $placeId, 'review' => $reviewId]) }}" method="POST" class="space-y-3">
                                                         @csrf
-                                                        <label class="text-sm font-semibold text-gray-800 dark:text-slate-100">Responder</label>
+
                                                         <textarea
                                                             name="body"
                                                             rows="2"
-                                                            class="{{ $textarea }}"
+                                                            class="mt-3 {{ $textarea }}"
                                                             placeholder="Escribe una respuesta clara y útil…"
                                                             required
                                                         ></textarea>
 
                                                         <div class="flex justify-end">
                                                             <button class="{{ $btnGhost }}" type="submit">
-                                                                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                                                                    <path d="M10 8l-4 4 4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                                                    <path d="M20 17v-1a4 4 0 0 0-4-4H6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                                                </svg>
                                                                 Responder
                                                             </button>
                                                         </div>
                                                     </form>
-                                                </div>
+                                                </details>
                                             </div>
                                         @endif
                                     @endauth
@@ -608,7 +597,6 @@
                                                     $replyUserName = $resolveUserName($replyUser, $replyUserId ? 'Usuario #'.$replyUserId : 'Usuario no disponible');
                                                     $replyUserPhoto = $resolveUserPhoto($replyUser);
                                                     $replyTimeText = $resolveDisplayDate($replyCreatedAt, $replyUpdatedAt);
-                                                    $replyAbsoluteDate = $resolveAbsoluteDate($replyCreatedAt ?: $replyUpdatedAt);
                                                     $replyWasEdited = $replyCreatedAt && $replyUpdatedAt && $replyCreatedAt !== $replyUpdatedAt;
                                                 @endphp
 
@@ -627,16 +615,13 @@
                                                                 <p class="font-semibold text-sm text-gray-900 dark:text-slate-100 break-words leading-5">
                                                                     {{ $replyUserName }}
                                                                 </p>
-                                                                <div class="mt-1 space-y-1">
-                                                                    <p class="text-xs text-gray-500 dark:text-slate-400 break-words" @if($replyAbsoluteDate) title="{{ $replyAbsoluteDate }}" @endif>
-                                                                        {{ $replyTimeText }}
-                                                                    </p>
-                                                                    @if($replyAbsoluteDate)
-                                                                        <p class="text-[11px] text-gray-400 dark:text-slate-500 break-words">
-                                                                            {{ $replyAbsoluteDate }}@if($replyWasEdited) · Editada @endif
-                                                                        </p>
+
+                                                                <p class="mt-1 text-xs text-gray-500 dark:text-slate-400 break-words">
+                                                                    {{ $replyTimeText }}
+                                                                    @if($replyWasEdited)
+                                                                        · Editada
                                                                     @endif
-                                                                </div>
+                                                                </p>
                                                             </div>
                                                         </div>
 
@@ -649,13 +634,8 @@
                                                                 >
                                                                     @csrf
                                                                     @method('DELETE')
+
                                                                     <button class="{{ $btnDanger }} whitespace-nowrap" type="submit" onclick="return confirm('¿Eliminar tu respuesta?')">
-                                                                        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                                                                            <path d="M4 7h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                                                                            <path d="M10 11v6M14 11v6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                                                                            <path d="M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
-                                                                            <path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                                                                        </svg>
                                                                         Eliminar
                                                                     </button>
                                                                 </form>
@@ -679,87 +659,92 @@
                                             <path d="M6 4h12a2 2 0 0 1 2 2v12l-4-2-4 2-4-2-4 2V6a2 2 0 0 1 2-2Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
                                         </svg>
                                     </div>
+
                                     <p class="text-gray-900 dark:text-slate-100 font-bold text-lg">Aún no hay reseñas</p>
                                     <p class="mt-1 text-sm text-gray-500 dark:text-slate-400">Sé la primera persona en compartir su experiencia.</p>
                                 </div>
                             @endforelse
                         </div>
-                    </div>
-                </div>
+                    </section>
+                </main>
 
-                <div class="xl:col-span-5 space-y-6">
-
-                    <div class="{{ $card }} xl:sticky xl:top-6 space-y-5">
-                        <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                <aside class="xl:col-span-4 space-y-6">
+                    <section class="{{ $card }} xl:sticky xl:top-6 space-y-5">
+                        <div class="flex items-start justify-between gap-4">
                             <div>
-                                <h2 class="text-xl font-bold text-gray-900 dark:text-slate-100">Ubicación y ruta</h2>
-                                <p class="mt-1 text-sm text-gray-500 dark:text-slate-400">Consulta la ubicación y abre la navegación ampliada.</p>
+                                <div class="inline-flex items-center gap-2 rounded-full bg-blue-50 dark:bg-blue-500/10 px-3 py-1 text-xs font-semibold text-blue-700 dark:text-blue-300">
+                                    Ubicación
+                                </div>
+                                <h2 class="mt-3 text-xl font-extrabold text-gray-900 dark:text-slate-100">Mapa inteligente</h2>
                             </div>
 
-                            @if ($hasCoords)
-                                <button type="button" id="btnRoute" class="{{ $btnPrimary }} whitespace-nowrap">
-                                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                                        <path d="M3 12h5l2 7 4-14 2 7h5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-                                    </svg>
-                                    Ver ruta
-                                </button>
-                            @endif
-                        </div>
-
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <div class="rounded-2xl border border-gray-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/70 p-4">
-                                <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">Dirección</p>
-                                <p class="text-sm font-semibold text-gray-900 dark:text-slate-100 mt-2 leading-relaxed break-words">
-                                    {{ $address ?: 'No se registró dirección.' }}
-                                </p>
-                            </div>
-
-                            <div class="rounded-2xl border border-gray-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/70 p-4">
-                                <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">Estado</p>
-                                <p class="text-sm font-semibold text-gray-900 dark:text-slate-100 mt-2">
-                                    {{ $hasCoords ? 'Ubicación disponible' : 'Sin coordenadas' }}
-                                </p>
-                            </div>
-                        </div>
-
-                        <div id="map" class="w-full h-72 sm:h-80 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm overflow-hidden"></div>
-
-                        @if (!$hasCoords)
-                            <p class="text-sm text-gray-500 dark:text-slate-400">
-                                No hay coordenadas guardadas para este lugar.
-                            </p>
-                        @endif
-                    </div>
-
-                    <div class="{{ $card }} flex flex-col sm:flex-row sm:items-center gap-4">
-                        <div class="relative shrink-0">
-                            <img src="{{ $publisherPhoto }}"
-                                 class="w-14 h-14 rounded-full object-cover shadow-sm border border-gray-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800"
-                                 alt="Foto de {{ $publisherName }}"
-                                 loading="lazy"
-                                 onerror="this.onerror=null;this.src='{{ $defaultUserPhoto }}';">
-                            <span class="absolute -bottom-1 -right-1 inline-flex items-center rounded-full bg-blue-600 px-2 py-0.5 text-[10px] font-bold text-white shadow-sm">
-                                Autor
+                            <span class="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-100 dark:bg-slate-800 text-blue-700 dark:text-blue-300">
+                                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                    <path d="M9 18l-6 3V6l6-3 6 3 6-3v15l-6 3-6-3Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+                                    <path d="M9 3v15M15 6v15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                                </svg>
                             </span>
                         </div>
 
-                        <div class="min-w-0 flex-1">
-                            <p class="text-sm text-gray-500 dark:text-slate-400">Publicado por</p>
-                            <p class="text-lg font-semibold text-gray-900 dark:text-slate-100 break-words">
-                                {{ $publisherName }}
-                            </p>
-                            <p class="text-sm text-gray-500 dark:text-slate-400">
-                                Miembro desde {{ $resolveMonthYear($publisherCreated) }}
+                        <div id="map" class="w-full h-72 sm:h-80 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm overflow-hidden bg-slate-100 dark:bg-slate-800"></div>
+
+                        @if ($hasCoords)
+                            <button type="button" id="btnRoute" class="{{ $btnPrimary }}">
+                                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                    <path d="M3 12h5l2 7 4-14 2 7h5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                                Iniciar ruta
+                            </button>
+                        @endif
+
+                        @if (!$hasCoords)
+                            <div class="rounded-2xl border border-amber-100 dark:border-amber-500/20 bg-amber-50 dark:bg-amber-500/10 p-4">
+                                <p class="text-sm font-semibold text-amber-800 dark:text-amber-300">
+                                    No hay coordenadas guardadas para este lugar.
+                                </p>
+                            </div>
+                        @endif
+
+                        <div class="rounded-2xl border border-gray-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/70 p-4">
+                            <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">Dirección</p>
+                            <p class="text-sm font-semibold text-gray-900 dark:text-slate-100 mt-2 leading-relaxed break-words">
+                                {{ $address ?: 'No se registró dirección.' }}
                             </p>
                         </div>
-                    </div>
-                </div>
+                    </section>
+
+                    <section class="{{ $card }} overflow-hidden">
+                        <div class="flex items-center gap-4">
+                            <div class="relative shrink-0">
+                                <img src="{{ $publisherPhoto }}"
+                                    class="w-14 h-14 rounded-2xl object-cover shadow-sm border border-gray-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800"
+                                    alt="Foto de {{ $publisherName }}"
+                                    loading="lazy"
+                                    onerror="this.onerror=null;this.src='{{ $defaultUserPhoto }}';">
+                            </div>
+
+                            <div class="min-w-0 flex-1">
+                                <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">Publicado por</p>
+                                <p class="text-lg font-bold text-gray-900 dark:text-slate-100 break-words">
+                                    {{ $publisherName }}
+                                </p>
+                                <p class="text-sm text-gray-500 dark:text-slate-400">
+                                    Miembro desde {{ $resolveMonthYear($publisherCreated) }}
+                                </p>
+                            </div>
+                        </div>
+
+                        <p class="mt-5 rounded-2xl bg-slate-50 dark:bg-slate-800/70 border border-gray-200 dark:border-slate-700 p-4 text-sm leading-6 text-gray-600 dark:text-slate-300">
+                            Este lugar forma parte de la comunidad VibeBloom y puede recibir experiencias, recuerdos y recomendaciones de otros usuarios.
+                        </p>
+                    </section>
+                </aside>
             </div>
         </div>
     </div>
 
     <div id="photoModal" class="fixed inset-0 bg-black/75 hidden items-center justify-center z-50 px-4 sm:px-6">
-        <div class="relative w-full max-w-5xl">
+        <div class="relative w-full max-w-4xl">
             <button
                 type="button"
                 id="closePhotoModal"
@@ -770,7 +755,7 @@
             </button>
 
             <div class="bg-white dark:bg-slate-900 rounded-[28px] overflow-hidden shadow-2xl border border-gray-100 dark:border-slate-700">
-                <img id="modalPhoto" src="{{ $initialPhoto }}" class="w-full max-h-[80vh] object-contain bg-black" alt="Foto completa">
+                <img id="modalPhoto" src="{{ $initialPhoto }}" class="w-full max-h-[68vh] object-contain bg-black" alt="Foto completa">
             </div>
 
             @if ($countPhotos > 1)

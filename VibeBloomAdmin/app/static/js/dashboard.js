@@ -289,13 +289,94 @@ document.addEventListener('DOMContentLoaded', () => {
         return new Chart(canvas, config);
     }
 
+    function normalizeSeries(items) {
+        return Array.isArray(items)
+            ? items.filter((item) => item && item.label !== undefined)
+            : [];
+    }
+
+    function hasChartData(items) {
+        return normalizeSeries(items).some((item) => Number(item.total) > 0);
+    }
+
+    function getMonthlyLabels(seriesList) {
+        const labels = [];
+
+        seriesList.forEach((series) => {
+            normalizeSeries(series.items).forEach((item) => {
+                if (!labels.includes(item.label)) {
+                    labels.push(item.label);
+                }
+            });
+        });
+
+        return labels;
+    }
+
+    function getValuesForLabels(items, labels) {
+        const totalsByLabel = new Map(
+            normalizeSeries(items).map((item) => [item.label, Number(item.total || 0)])
+        );
+
+        return labels.map((label) => totalsByLabel.get(label) || 0);
+    }
+
+    function buildEmptyState(canvas, message = 'Sin datos suficientes') {
+        const shell = canvas ? canvas.closest('.chart-shell') : null;
+        if (!shell || shell.querySelector('.chart-empty-state')) return;
+
+        const empty = document.createElement('div');
+        empty.className = 'chart-empty-state';
+        empty.textContent = message;
+        shell.appendChild(empty);
+    }
+
     function initCharts() {
-        const placesByType = Array.isArray(dashboardData.places_by_type) ? dashboardData.places_by_type : [];
-        const usersMonthly = Array.isArray(dashboardData.users_monthly) ? dashboardData.users_monthly : [];
-        const placesMonthly = Array.isArray(dashboardData.places_monthly) ? dashboardData.places_monthly : [];
+        const stats = dashboardData.stats || {};
+        const placesByType = normalizeSeries(dashboardData.places_by_type);
+        const usersMonthly = normalizeSeries(dashboardData.users_monthly);
+        const placesMonthly = normalizeSeries(dashboardData.places_monthly);
+        const reviewsMonthly = normalizeSeries(dashboardData.reviews_monthly);
+        const favoritesMonthly = normalizeSeries(dashboardData.favorites_monthly);
+
+        const statsOverview = [
+            { label: 'Usuarios', total: Number(stats.users || 0) },
+            { label: 'Lugares', total: Number(stats.places || 0) },
+            { label: 'Reseñas', total: Number(stats.reviews || 0) },
+            { label: 'Favoritos', total: Number(stats.favorites || 0) },
+            { label: 'Aprobaciones', total: Number(stats.approvals || 0) }
+        ];
+
+        const statsOverviewCanvas = document.getElementById('statsOverviewChart');
+        if (statsOverviewCanvas && hasChartData(statsOverview)) {
+            buildChart(statsOverviewCanvas, {
+                type: 'bar',
+                data: {
+                    labels: statsOverview.map((item) => item.label),
+                    datasets: [{
+                        label: 'Total',
+                        data: statsOverview.map((item) => item.total),
+                        backgroundColor: ['#1f5fbf', '#087a4b', '#b45309', '#7c3aed', '#be123c'],
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+        } else {
+            buildEmptyState(statsOverviewCanvas);
+        }
 
         const placesTypeCanvas = document.getElementById('placesTypeChart');
-        if (placesTypeCanvas && placesByType.length) {
+        if (placesTypeCanvas && hasChartData(placesByType)) {
             buildChart(placesTypeCanvas, {
                 type: 'doughnut',
                 data: {
@@ -303,14 +384,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     datasets: [{
                         data: placesByType.map((item) => item.total),
                         backgroundColor: [
-                            '#2563eb',
-                            '#3b82f6',
-                            '#60a5fa',
-                            '#93c5fd',
-                            '#bfdbfe',
-                            '#1d4ed8',
-                            '#1e40af',
-                            '#dbeafe'
+                            '#1f5fbf',
+                            '#087a4b',
+                            '#b45309',
+                            '#7c3aed',
+                            '#be123c',
+                            '#0f766e',
+                            '#475569',
+                            '#8db5f5'
                         ],
                         borderWidth: 0
                     }]
@@ -320,64 +401,76 @@ document.addEventListener('DOMContentLoaded', () => {
                     maintainAspectRatio: false,
                     plugins: {
                         legend: {
-                            position: 'bottom'
+                            position: 'bottom',
+                            labels: {
+                                boxWidth: 10,
+                                boxHeight: 10
+                            }
                         }
                     }
                 }
             });
+        } else {
+            buildEmptyState(placesTypeCanvas);
         }
 
-        const usersMonthlyCanvas = document.getElementById('usersMonthlyChart');
-        if (usersMonthlyCanvas && usersMonthly.length) {
-            buildChart(usersMonthlyCanvas, {
-                type: 'bar',
-                data: {
-                    labels: usersMonthly.map((item) => item.label),
-                    datasets: [{
-                        label: 'Usuarios',
-                        data: usersMonthly.map((item) => item.total),
-                        backgroundColor: '#2563eb',
-                        borderRadius: 12
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            display: false
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true
-                        }
-                    }
-                }
-            });
-        }
+        const monthlySeries = [
+            {
+                label: 'Usuarios',
+                items: usersMonthly,
+                borderColor: '#1f5fbf',
+                backgroundColor: 'rgba(31, 95, 191, 0.12)'
+            },
+            {
+                label: 'Lugares',
+                items: placesMonthly,
+                borderColor: '#087a4b',
+                backgroundColor: 'rgba(8, 122, 75, 0.12)'
+            },
+            {
+                label: 'Reseñas',
+                items: reviewsMonthly,
+                borderColor: '#b45309',
+                backgroundColor: 'rgba(180, 83, 9, 0.12)'
+            },
+            {
+                label: 'Favoritos',
+                items: favoritesMonthly,
+                borderColor: '#7c3aed',
+                backgroundColor: 'rgba(124, 58, 237, 0.12)'
+            }
+        ];
+        const monthlyLabels = getMonthlyLabels(monthlySeries);
+        const activityMonthlyCanvas = document.getElementById('activityMonthlyChart');
+        const hasMonthlyData = monthlySeries.some((series) => hasChartData(series.items));
 
-        const placesMonthlyCanvas = document.getElementById('placesMonthlyChart');
-        if (placesMonthlyCanvas && placesMonthly.length) {
-            buildChart(placesMonthlyCanvas, {
+        if (activityMonthlyCanvas && monthlyLabels.length && hasMonthlyData) {
+            buildChart(activityMonthlyCanvas, {
                 type: 'line',
                 data: {
-                    labels: placesMonthly.map((item) => item.label),
-                    datasets: [{
-                        label: 'Lugares',
-                        data: placesMonthly.map((item) => item.total),
-                        borderColor: '#2563eb',
-                        backgroundColor: 'rgba(37, 99, 235, 0.12)',
-                        fill: true,
-                        tension: 0.35
-                    }]
+                    labels: monthlyLabels,
+                    datasets: monthlySeries.map((series) => ({
+                        label: series.label,
+                        data: getValuesForLabels(series.items, monthlyLabels),
+                        borderColor: series.borderColor,
+                        backgroundColor: series.backgroundColor,
+                        borderWidth: 2,
+                        fill: false,
+                        tension: 0.35,
+                        pointRadius: 3,
+                        pointHoverRadius: 5
+                    }))
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
                         legend: {
-                            display: false
+                            position: 'bottom',
+                            labels: {
+                                boxWidth: 10,
+                                boxHeight: 10
+                            }
                         }
                     },
                     scales: {
@@ -387,6 +480,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }
             });
+        } else {
+            buildEmptyState(activityMonthlyCanvas);
         }
     }
 

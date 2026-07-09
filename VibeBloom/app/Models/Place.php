@@ -32,19 +32,43 @@ class Place extends Model
         'photos_urls',
     ];
 
-    public function getPhotoUrlAttribute()
+    private function publicPhotoUrl(?string $path): ?string
     {
-        if (!$this->photo) {
-            return asset('images/default.jpg');
+        $path = trim((string) $path);
+
+        if ($path === '') {
+            return null;
         }
 
-        $path = ltrim($this->photo, '/');
+        if (
+            str_starts_with($path, 'http://') ||
+            str_starts_with($path, 'https://') ||
+            str_starts_with($path, '//') ||
+            str_starts_with($path, 'data:')
+        ) {
+            return $path;
+        }
+
+        if (str_starts_with($path, '/storage/')) {
+            return asset(ltrim($path, '/'));
+        }
+
+        if (str_starts_with($path, 'storage/')) {
+            return asset($path);
+        }
+
+        $path = ltrim($path, '/');
 
         if (Storage::disk('public')->exists($path)) {
-            return Storage::url($path);
+            return Storage::disk('public')->url($path);
         }
 
-        return asset('images/default.jpg');
+        return null;
+    }
+
+    public function getPhotoUrlAttribute()
+    {
+        return $this->publicPhotoUrl($this->photo) ?: asset('images/vibebloom.png');
     }
 
     public function getPhotosUrlsAttribute()
@@ -56,10 +80,10 @@ class Place extends Model
         $urls = [];
 
         foreach ($this->photos as $path) {
-            $path = ltrim((string) $path, '/');
+            $url = $this->publicPhotoUrl($path);
 
-            if (Storage::disk('public')->exists($path)) {
-                $urls[] = Storage::url($path);
+            if ($url) {
+                $urls[] = $url;
             }
         }
 

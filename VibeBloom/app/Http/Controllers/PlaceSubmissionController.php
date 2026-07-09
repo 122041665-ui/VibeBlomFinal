@@ -3,6 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\PlaceSubmission;
+use App\Models\User;
+use App\Models\UserNotification;
+use App\Services\FastApiService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -11,6 +14,21 @@ use Illuminate\Support\Facades\Storage;
 
 class PlaceSubmissionController extends Controller
 {
+    private function getApiToken(): ?string
+    {
+        $token = session('access_token');
+
+        if (is_string($token) && trim($token) !== '') {
+            return $token;
+        }
+
+        $nestedToken = data_get(session('user'), 'access_token')
+            ?? data_get(session('api'), 'access_token')
+            ?? data_get(session('api_user'), 'access_token');
+
+        return is_string($nestedToken) && trim($nestedToken) !== '' ? $nestedToken : null;
+    }
+
     private function activityLogExists(): bool
     {
         return Schema::hasTable('activity_log');
@@ -53,7 +71,7 @@ class PlaceSubmissionController extends Controller
         return Auth::user()?->role ?? 'user';
     }
 
-    public function store(Request $request)
+    public function store(Request $request, FastApiService $api)
     {
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
@@ -70,7 +88,7 @@ class PlaceSubmissionController extends Controller
             'photos.*' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
         ]);
 
-        DB::transaction(function () use ($validated, $request) {
+        $submission = DB::transaction(function () use ($validated, $request) {
 
             $submission = PlaceSubmission::create([
                 'user_id' => Auth::id(),
@@ -108,7 +126,42 @@ class PlaceSubmissionController extends Controller
                 statusLabel: 'Pendiente',
                 details: "Se envió solicitud de aprobación para '{$submission->name}' en {$submission->city}"
             );
+
+            return $submission;
         });
+
+        $token = $this->getApiToken();
+
+        if ($token) {
+            try {
+                $apiPayload = [
+                    'name' => $validated['name'],
+                    'type' => $validated['type'],
+                    'rating' => $validated['rating'] ?? 0,
+                    'price' => $validated['price'],
+                    'city' => $validated['city'],
+                    'city_place_id' => $validated['city_place_id'] ?? '',
+                    'address' => $validated['address'] ?? '',
+                    'lat' => $validated['lat'],
+                    'lng' => $validated['lng'],
+                    'description' => $validated['description'] ?? '',
+                ];
+
+                $api->postMultipart('/approvals', $apiPayload, $request->file('photos', []), $token, 'photos');
+            } catch (\Throwable $e) {
+                report($e);
+            }
+        }
+
+        UserNotification::sendTo(
+            user: Auth::id(),
+            type: 'approval_sent',
+            title: 'Aprobación enviada',
+            body: "Tu solicitud para '{$submission->name}' fue enviada a revisión.",
+            url: route('place-submissions.show', $submission),
+            actor: Auth::user(),
+            data: ['place_submission_id' => $submission->id]
+        );
 
         return redirect()
             ->route('place-submissions.index')
@@ -159,10 +212,58 @@ class PlaceSubmissionController extends Controller
             details: "Se eliminó la solicitud '{$placeSubmission->name}'"
         );
 
+        UserNotification::sendTo(
+            user: Auth::id(),
+            type: 'place_deleted',
+            title: 'Lugar eliminado',
+            body: "Eliminaste la solicitud '{$placeSubmission->name}'.",
+            url: route('place-submissions.index'),
+            actor: Auth::user(),
+            data: ['place_submission_id' => $placeSubmission->id]
+        );
+
         $placeSubmission->delete();
 
         return redirect()
             ->route('place-submissions.index')
             ->with('success', 'Solicitud eliminada correctamente.');
+    }
+
+    public function approve(PlaceSubmission $placeSubmission)
+    {
+        $placeSubmission->update([
+            'status' => 'approved',
+        ]);
+
+        UserNotification::sendTo(
+            user: $placeSubmission->user_id,
+            type: 'approval_accepted',
+            title: 'Aprobación aceptada',
+            body: "Tu lugar '{$placeSubmission->name}' fue aprobado.",
+            url: route('place-submissions.show', $placeSubmission),
+            actor: Auth::user(),
+            data: ['place_submission_id' => $placeSubmission->id]
+        );
+
+        return back()->with('success', 'Solicitud aprobada correctamente.');
+    }
+
+    public function reject(PlaceSubmission $placeSubmission)
+    {
+        $placeSubmission->update([
+            'status' => 'rejected',
+        ]);
+
+        UserNotification::sendTo(
+            user: $placeSubmission->user_id,
+            type: 'approval_rejected',
+            title: 'Aprobación rechazada',
+            body: "Tu lugar '{$placeSubmission->name}' necesita ajustes antes de publicarse.",
+            url: route('place-submissions.show', $placeSubmission),
+            actor: Auth::user(),
+            data: ['place_submission_id' => $placeSubmission->id]
+        );
+
+        return back()->with('success', 'Solicitud rechazada correctamente.');
     }
 }

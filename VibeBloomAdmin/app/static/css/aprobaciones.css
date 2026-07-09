@@ -572,3 +572,168 @@
 @media (max-width: 480px) {
   .ap-stats { grid-template-columns: 1fr 1fr; }
 }
+
+/* Corporate visual refresh */
+.ap-container {
+  max-width: 1240px;
+  gap: 18px;
+}
+
+.ap-stat,
+.ap-card,
+.ap-noresults,
+.ap-modal,
+.ap-empty-icon {
+  border-radius: 8px;
+}
+
+.ap-stat,
+.ap-card {
+  border-color: #dbe3ef;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, .07);
+}
+
+.ap-stat-label,
+.ap-search,
+.ap-filter-btn {
+  letter-spacing: 0;
+}
+
+.ap-toolbar {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 14px;
+  box-shadow: 0 8px 22px rgba(15, 23, 42, .05);
+}
+
+.ap-search,
+.ap-filter-btn,
+.ap-card-id,
+.ap-tag,
+.ap-user-avatar,
+.ap-btn,
+.ap-modal-textarea,
+.ap-modal-cancel,
+.ap-modal-confirm,
+.ap-status-badge {
+  border-radius: 8px;
+}
+
+.ap-grid {
+  gap: 18px;
+}
+
+.ap-card {
+  background: #ffffff;
+}
+
+.ap-card:hover {
+  box-shadow: 0 14px 32px rgba(15, 23, 42, .10);
+  transform: translateY(-1px);
+}
+
+.ap-card-media {
+  height: 190px;
+  background: #f1f5f9;
+}
+
+.ap-card-img-placeholder {
+  background: #f8fafc;
+}
+
+.ap-status-badge {
+  top: 10px;
+  right: 10px;
+  height: 28px;
+}
+
+.ap-card-body {
+  gap: 14px;
+}
+
+.ap-card-title {
+  font-size: 16px;
+  letter-spacing: 0;
+}
+
+.ap-card-user {
+  background: #f8fafc;
+  border: 1px solid #edf2f7;
+  border-radius: 8px;
+  padding: 10px;
+}
+
+.ap-user-avatar {
+  background: #1f5fbf;
+}
+
+.ap-btn-detail {
+  background: #f8fafc;
+}
+
+.ap-overlay {
+  background: rgba(15, 23, 42, .52);
+}
+
+/* Approval photo polish */
+.ap-card-media {
+  height: auto;
+  aspect-ratio: 16 / 9;
+  background: #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.ap-card-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  background: #f1f5f9;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.ap-card:hover .ap-card-img {
+  transform: none;
+}
+
+.ap-card-img-placeholder {
+  background: #f8fafc;
+  color: #64748b;
+}
+
+.ap-card-img-fallback {
+  display: none;
+  width: 100%;
+  height: 100%;
+  place-items: center;
+  background:
+    linear-gradient(135deg, #f8fafc 0%, #eef3f8 100%);
+  color: #1f5fbf;
+}
+
+.ap-card-media--missing .ap-card-img-fallback {
+  display: grid;
+}
+
+.ap-card-img-fallback span {
+  width: 56px;
+  height: 56px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  background: #ffffff;
+  border: 1px solid #d8e7ff;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, .08);
+  font-size: 22px;
+  font-weight: 850;
+}
+
+@media (max-width: 768px) {
+  .ap-card-media {
+    aspect-ratio: 16 / 9;
+  }
+}

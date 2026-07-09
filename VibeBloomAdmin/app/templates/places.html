@@ -62,6 +62,7 @@
         <thead>
           <tr>
             <th>#</th>
+            <th>Foto</th>
             <th>Lugar</th>
             <th>Ciudad</th>
             <th>Tipo</th>
@@ -78,9 +79,20 @@
           {% set ptype  = p.type        or 'OTRO' %}
           {% set pdesc  = p.description or 'Sin descripción' %}
           {% set pprice = p.price_range %}
+          {% set pphoto = p.photo_url or p.photo %}
           <tr class="pl-row" data-q="{{ (pname ~ ' ' ~ pcity ~ ' ' ~ ptype)|lower }}">
 
             <td><span class="pl-id">#{{ p.id }}</span></td>
+
+            <td>
+              <div class="pl-photo-thumb" aria-label="Foto de {{ pname }}">
+                {% if pphoto %}
+                <img src="{{ pphoto }}" alt="{{ pname }}" loading="lazy">
+                {% else %}
+                <span>{{ pname[:1]|upper }}</span>
+                {% endif %}
+              </div>
+            </td>
 
             <td>
               <div class="pl-name-cell">
@@ -170,7 +182,21 @@
       {% set ptype  = p.type        or 'OTRO' %}
       {% set pdesc  = p.description or 'Sin descripción' %}
       {% set pprice = p.price_range %}
+      {% set pphoto = p.photo_url or p.photo %}
       <article class="pl-mcard" data-q="{{ (pname ~ ' ' ~ pcity ~ ' ' ~ ptype)|lower }}">
+
+        <div class="pl-mcard-media">
+          {% if pphoto %}
+          <img src="{{ pphoto }}" alt="{{ pname }}" loading="lazy">
+          {% else %}
+          <div class="pl-mcard-media-placeholder">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+              <circle cx="12" cy="10" r="3"/>
+            </svg>
+          </div>
+          {% endif %}
+        </div>
 
         <div class="pl-mcard-top">
           <div class="pl-name-cell">

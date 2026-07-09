@@ -9,6 +9,7 @@ from app.core.security import require_admin
 from app.models.user import User
 from app.models.place import Place
 from app.models.review import Review
+from app.models.favorite import Favorite
 
 router = APIRouter(prefix="/admin/dashboard", tags=["Admin Dashboard"])
 
@@ -49,6 +50,16 @@ def has_model_attr(model, attr_name: str) -> bool:
         return attr_name in mapper.columns
     except Exception:
         return hasattr(model, attr_name)
+
+
+def table_exists(db: Session, table_name: str) -> bool:
+    row = db.execute(text("""
+        SELECT COUNT(*)
+        FROM information_schema.tables
+        WHERE table_schema = DATABASE()
+          AND table_name = :table_name
+    """), {"table_name": table_name}).scalar()
+    return bool(row)
 
 
 def get_month_label(dt_value):
@@ -173,6 +184,47 @@ def get_monthly_counts(db: Session, model):
     ]
 
 
+def get_approval_status_counts(db: Session):
+    if table_exists(db, "place_submissions"):
+        rows = db.execute(text("""
+            SELECT
+                COALESCE(status, 'pending') AS label,
+                COUNT(*) AS total
+            FROM place_submissions
+            GROUP BY COALESCE(status, 'pending')
+            ORDER BY total DESC
+        """)).fetchall()
+    elif has_model_attr(Place, "status"):
+        status_col = getattr(Place, "status")
+
+        rows = db.execute(
+            select(
+                func.coalesce(status_col, "sin_estado").label("label"),
+                func.count().label("total"),
+            )
+            .where(status_col.in_(["pending", "approved", "rejected"]))
+            .group_by(func.coalesce(status_col, "sin_estado"))
+            .order_by(func.count().desc())
+        ).all()
+    else:
+        return []
+
+    status_labels = {
+        "pending": "Pendientes",
+        "approved": "Aprobadas",
+        "rejected": "Rechazadas",
+        "sin_estado": "Sin estado",
+    }
+
+    return [
+        {
+            "label": status_labels.get(row.label, str(row.label).title()),
+            "total": row.total,
+        }
+        for row in rows
+    ]
+
+
 @router.get("")
 def get_admin_dashboard(
     db: Session = Depends(get_db),
@@ -181,11 +233,17 @@ def get_admin_dashboard(
     users_count = db.scalar(select(func.count()).select_from(User)) or 0
     places_count = db.scalar(select(func.count()).select_from(Place)) or 0
     reviews_count = db.scalar(select(func.count()).select_from(Review)) or 0
+    favorites_count = db.scalar(select(func.count()).select_from(Favorite)) or 0
 
-    favorites_count = 0
     approvals_count = 0
 
-    if has_model_attr(Place, "status"):
+    if table_exists(db, "place_submissions"):
+        approvals_count = db.execute(text("""
+            SELECT COUNT(*)
+            FROM place_submissions
+            WHERE COALESCE(status, 'pending') IN ('pending', 'approved', 'rejected')
+        """)).scalar() or 0
+    elif has_model_attr(Place, "status"):
         status_col = getattr(Place, "status")
         approvals_count = db.scalar(
             select(func.count()).select_from(Place).where(
@@ -253,6 +311,9 @@ def get_admin_dashboard(
         "places_by_type": get_places_by_type(db),
         "users_monthly": get_monthly_counts(db, User),
         "places_monthly": get_monthly_counts(db, Place),
+        "reviews_monthly": get_monthly_counts(db, Review),
+        "favorites_monthly": get_monthly_counts(db, Favorite),
+        "approvals_by_status": get_approval_status_counts(db),
         "report_options": REPORT_OPTIONS,
     }
 

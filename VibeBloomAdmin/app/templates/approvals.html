@@ -74,7 +74,10 @@
       {# Image / header ─── #}
       <div class="ap-card-media">
         {% if aphoto %}
-        <img src="{{ aphoto }}" alt="{{ aname }}" class="ap-card-img" loading="lazy">
+        <img src="{{ aphoto }}" alt="{{ aname }}" class="ap-card-img" loading="lazy" onerror="this.closest('.ap-card-media').classList.add('ap-card-media--missing'); this.remove();">
+        <div class="ap-card-img-fallback">
+          <span>{{ aname[:1]|upper }}</span>
+        </div>
         {% else %}
         <div class="ap-card-img-placeholder">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4">

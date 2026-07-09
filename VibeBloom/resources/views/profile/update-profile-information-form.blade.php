@@ -79,7 +79,7 @@
                     <div class="mt-4" x-show="!photoPreview">
                         <div class="flex items-center gap-4">
                             <img
-                                src="{{ $this->user->profile_photo_url }}"
+                                src="{{ $this->user->display_photo_url }}"
                                 alt="{{ $this->user->name }}"
                                 class="rounded-2xl h-20 w-20 object-cover border border-gray-200 dark:border-slate-700 shadow-sm"
                             >
@@ -185,6 +185,23 @@
                     @endif
                 </div>
             @endif
+        </div>
+
+        <div class="col-span-6 sm:col-span-4">
+            <div class="rounded-2xl border border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-950/40 p-5">
+                <div class="flex items-start justify-between gap-4">
+                    <div class="min-w-0">
+                        <p class="font-bold text-gray-900 dark:text-slate-100">Perfil público</p>
+                        <p class="{{ $hint }}">Permite que otros usuarios vean tu perfil y tus lugares publicados en Comunidad.</p>
+                    </div>
+
+                    <label class="relative inline-flex cursor-pointer items-center">
+                        <input type="checkbox" class="peer sr-only" wire:model="state.profile_is_public">
+                        <span class="h-7 w-12 rounded-full bg-gray-200 after:absolute after:left-1 after:top-1 after:h-5 after:w-5 after:rounded-full after:bg-white after:shadow after:transition peer-checked:bg-blue-600 peer-checked:after:translate-x-5 dark:bg-slate-700"></span>
+                    </label>
+                </div>
+            </div>
+            <x-input-error for="state.profile_is_public" class="mt-2" />
         </div>
     </x-slot>
 

@@ -48,11 +48,14 @@
 
     @php
         $container = "max-w-7xl mx-auto px-6 py-6 pb-32";
-        $card = "bg-white dark:bg-slate-900 shadow rounded-2xl border border-gray-100 dark:border-slate-800 overflow-hidden";
+        $card = "bg-white/92 dark:bg-slate-900/92 shadow-sm rounded-[28px] border border-gray-100 dark:border-slate-800 overflow-hidden backdrop-blur";
         $section = "p-6 sm:p-7";
     @endphp
 
-    <div class="{{ $container }}">
+    <div class="bg-[linear-gradient(180deg,#f8fafc_0%,#ffffff_42%,#eef2ff_100%)] dark:bg-[linear-gradient(180deg,#020617_0%,#0f172a_48%,#111827_100%)] relative overflow-hidden">
+        <div class="pointer-events-none absolute inset-x-0 top-0 h-96 bg-[radial-gradient(circle_at_20%_10%,rgba(37,99,235,0.12),transparent_34%),radial-gradient(circle_at_82%_0%,rgba(14,165,233,0.08),transparent_32%)] dark:bg-[radial-gradient(circle_at_20%_10%,rgba(59,130,246,0.14),transparent_34%),radial-gradient(circle_at_82%_0%,rgba(14,165,233,0.10),transparent_32%)]"></div>
+
+    <div class="{{ $container }} relative">
         <div class="space-y-6">
             @if (Laravel\Fortify\Features::canUpdateProfileInformation())
                 <div class="{{ $card }}">
@@ -94,5 +97,6 @@
         </div>
 
         <div class="h-10 sm:h-14"></div>
+    </div>
     </div>
 </x-app-layout>

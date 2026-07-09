@@ -2,7 +2,7 @@
 
     @php
         $container = "max-w-7xl mx-auto px-6 py-6 pb-40 sm:pb-44";
-        $card = "bg-white dark:bg-slate-900 shadow-sm rounded-[28px] p-6 border border-gray-100 dark:border-slate-800";
+        $card = "bg-white/92 dark:bg-slate-900/92 shadow-sm rounded-[28px] p-6 border border-gray-100 dark:border-slate-800 backdrop-blur";
 
         $btnPrimary = "px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl shadow-sm transition
                        active:scale-[0.99] focus:outline-none focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-500/30";
@@ -62,7 +62,18 @@
             </svg>',
         ];
 
-        $defaultPhoto = asset('images/default.jpg');
+        $defaultPhoto = asset('images/vibebloom.png');
+        $resolvePhotoUrl = function ($value) use ($defaultPhoto) {
+            $value = trim((string) $value);
+
+            if ($value === '') return $defaultPhoto;
+            if (str_starts_with($value, 'http://') || str_starts_with($value, 'https://') || str_starts_with($value, '//') || str_starts_with($value, 'data:')) return $value;
+            if (str_starts_with($value, '/storage/')) return asset(ltrim($value, '/'));
+            if (str_starts_with($value, 'storage/')) return asset($value);
+            if (str_starts_with($value, '/')) return $value;
+
+            return asset('storage/' . ltrim($value, '/'));
+        };
 
         $errorText = trim((string) ($error ?? ''));
         $errorTextLower = function_exists('mb_strtolower') ? mb_strtolower($errorText, 'UTF-8') : strtolower($errorText);
@@ -75,13 +86,13 @@
         );
     @endphp
 
-    <div class="min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-100/70 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900 relative overflow-hidden">
-        <div class="pointer-events-none absolute inset-x-0 top-0 h-72 bg-[radial-gradient(circle_at_top,rgba(37,99,235,0.10),transparent_55%)] dark:bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.10),transparent_55%)]"></div>
+    <div class="min-h-screen bg-[linear-gradient(180deg,#f8fafc_0%,#ffffff_42%,#eef2ff_100%)] dark:bg-[linear-gradient(180deg,#020617_0%,#0f172a_48%,#111827_100%)] relative overflow-hidden">
+        <div class="pointer-events-none absolute inset-x-0 top-0 h-96 bg-[radial-gradient(circle_at_20%_10%,rgba(37,99,235,0.14),transparent_34%),radial-gradient(circle_at_82%_0%,rgba(14,165,233,0.10),transparent_32%)] dark:bg-[radial-gradient(circle_at_20%_10%,rgba(59,130,246,0.16),transparent_34%),radial-gradient(circle_at_82%_0%,rgba(14,165,233,0.12),transparent_32%)]"></div>
 
         <div class="{{ $container }}">
 
             <div class="mb-6">
-                <div class="rounded-[28px] border border-gray-100 dark:border-slate-800 bg-white/85 dark:bg-slate-900/85 backdrop-blur shadow-sm p-5 sm:p-6 lg:p-7">
+                <div class="rounded-[30px] border border-white/80 dark:border-slate-800 bg-white/88 dark:bg-slate-900/88 backdrop-blur shadow-[0_22px_70px_rgba(15,23,42,0.10)] p-5 sm:p-6 lg:p-7">
                     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                         <div>
                             <div class="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50/80 px-3 py-1.5 text-xs font-semibold text-blue-700 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-300">
@@ -93,11 +104,11 @@
                             <p class="{{ $hint }}">Tus lugares guardados para regresar después.</p>
                         </div>
 
-                        <a href="{{ route('dashboard') }}" class="{{ $btnGhost }} inline-flex items-center gap-2 justify-center shrink-0">
+                        <a href="{{ route('places.mine') }}" class="{{ $btnGhost }} inline-flex items-center gap-2 justify-center shrink-0">
                             <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                                 <path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                             </svg>
-                            Volver al inicio
+                            Volver al perfil
                         </a>
                     </div>
                 </div>
@@ -123,8 +134,8 @@
                     </p>
 
                     <div class="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3">
-                        <a href="{{ route('dashboard') }}" class="{{ $btnPrimary }}">
-                            Ir al inicio
+                        <a href="{{ route('places.mine') }}" class="{{ $btnPrimary }}">
+                            Ir al perfil
                         </a>
 
                         <a href="{{ route('places.index') }}" class="{{ $btnGhost }}">
@@ -155,8 +166,8 @@
                         </p>
 
                         <div class="mt-6 flex items-center justify-center">
-                            <a href="{{ route('dashboard') }}" class="{{ $btnPrimary }}">
-                                Ir al inicio
+                            <a href="{{ route('places.mine') }}" class="{{ $btnPrimary }}">
+                                Ir al perfil
                             </a>
                         </div>
                     </div>
@@ -191,14 +202,14 @@
                                 $placePhotos = is_array($place) ? ($place['photos'] ?? null) : ($place->photos ?? null);
 
                                 $allPhotos = [];
-                                $main = $placePhotoUrl ?: ($placePhoto ? asset('storage/' . ltrim($placePhoto, '/')) : null);
+                                $main = $resolvePhotoUrl($placePhotoUrl ?: $placePhoto);
                                 if ($main) $allPhotos[] = $main;
 
                                 $extras = [];
                                 if (!empty($placePhotosUrls) && is_array($placePhotosUrls)) {
                                     $extras = $placePhotosUrls;
                                 } elseif (is_array($placePhotos)) {
-                                    $extras = array_map(fn($p) => asset('storage/' . ltrim($p, '/')), $placePhotos);
+                                    $extras = array_map(fn($p) => $resolvePhotoUrl($p), $placePhotos);
                                 }
 
                                 if (is_array($extras)) {

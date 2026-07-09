@@ -1,9 +1,9 @@
 <x-app-layout>
 
     @php
-        $container = "max-w-7xl mx-auto px-6 py-6 pb-40 sm:pb-44";
+        $container = "max-w-7xl mx-auto px-4 sm:px-6 py-6 pb-40 sm:pb-44";
 
-        $card = "bg-white dark:bg-slate-900 shadow rounded-2xl p-6 border border-gray-100 dark:border-slate-800";
+        $card = "bg-white/92 dark:bg-slate-900/92 shadow-sm rounded-[28px] p-6 border border-gray-100 dark:border-slate-800 backdrop-blur";
         $hint = "text-xs text-gray-500 dark:text-slate-400";
 
         $btnGhost = "px-4 py-2.5 bg-blue-50 dark:bg-slate-800 hover:bg-blue-100 dark:hover:bg-slate-700 text-blue-700 dark:text-blue-400 font-semibold rounded-xl shadow-sm
@@ -25,7 +25,18 @@
         ];
 
         $hasAnyFilter = request()->filled('buscar') || request()->filled('city') || request()->filled('type') || request()->filled('max_price');
-        $defaultPhoto = asset('images/default.jpg');
+        $defaultPhoto = asset('images/vibebloom.png');
+        $resolvePhotoUrl = function ($value) use ($defaultPhoto) {
+            $value = trim((string) $value);
+
+            if ($value === '') return $defaultPhoto;
+            if (str_starts_with($value, 'http://') || str_starts_with($value, 'https://') || str_starts_with($value, '//') || str_starts_with($value, 'data:')) return $value;
+            if (str_starts_with($value, '/storage/')) return asset(ltrim($value, '/'));
+            if (str_starts_with($value, 'storage/')) return asset($value);
+            if (str_starts_with($value, '/')) return $value;
+
+            return asset('storage/' . ltrim($value, '/'));
+        };
 
         $typeIcons = [
             'RESTAURANTE' => '<svg class="w-4 h-4 text-blue-700 dark:text-blue-400 shrink-0" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -74,17 +85,48 @@
         ];
     @endphp
 
-    <div class="min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-100/70 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900">
-        <div class="{{ $container }}">
+    <div class="min-h-screen bg-[linear-gradient(180deg,#f8fafc_0%,#ffffff_42%,#eef2ff_100%)] dark:bg-[linear-gradient(180deg,#020617_0%,#0f172a_48%,#111827_100%)] relative overflow-hidden">
+        <div class="pointer-events-none absolute inset-x-0 top-0 h-96 bg-[radial-gradient(circle_at_20%_10%,rgba(37,99,235,0.14),transparent_34%),radial-gradient(circle_at_82%_0%,rgba(14,165,233,0.10),transparent_32%)] dark:bg-[radial-gradient(circle_at_20%_10%,rgba(59,130,246,0.16),transparent_34%),radial-gradient(circle_at_82%_0%,rgba(14,165,233,0.12),transparent_32%)]"></div>
 
-            <div class="mb-6 mt-2">
-                <h1 class="text-4xl font-extrabold text-gray-900 dark:text-slate-100 tracking-tight">
-                    Explora lugares con <span class="text-blue-600 dark:text-blue-400">VibeBloom</span>
-                </h1>
-                <p class="text-gray-600 dark:text-slate-400 mt-1 text-lg">
-                    Descubre lugares y experiencias increíbles cerca de ti.
-                </p>
-            </div>
+        <div class="{{ $container }} relative">
+
+            <section class="mb-7 mt-2 overflow-hidden rounded-[30px] border border-white/80 dark:border-slate-800 bg-white/88 dark:bg-slate-900/88 shadow-[0_22px_70px_rgba(15,23,42,0.10)] backdrop-blur">
+                <div class="relative p-5 sm:p-7 lg:p-8">
+                    <div class="pointer-events-none absolute inset-0 bg-[linear-gradient(135deg,rgba(37,99,235,0.08),transparent_38%),radial-gradient(circle_at_88%_16%,rgba(14,165,233,0.14),transparent_26%)] dark:bg-[linear-gradient(135deg,rgba(59,130,246,0.12),transparent_38%),radial-gradient(circle_at_88%_16%,rgba(14,165,233,0.12),transparent_26%)]"></div>
+
+                    <div class="relative flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
+                        <div class="max-w-3xl">
+                            <div class="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50/80 px-3 py-1.5 text-xs font-semibold text-blue-700 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-300">
+                                <span class="inline-block h-2 w-2 rounded-full bg-blue-500"></span>
+                                Comunidad VibeBloom
+                            </div>
+
+                            <h1 class="mt-4 text-3xl sm:text-4xl lg:text-5xl font-extrabold text-gray-950 dark:text-slate-100 leading-tight">
+                                Explora lugares con <span class="text-blue-600 dark:text-blue-400">VibeBloom</span>
+                            </h1>
+
+                            <p class="mt-4 max-w-2xl text-base sm:text-lg leading-8 text-gray-600 dark:text-slate-400">
+                                Descubre spots creados por la comunidad, revisa sus detalles y guarda los que quieras visitar después.
+                            </p>
+                        </div>
+
+                        <div class="flex flex-col sm:flex-row lg:flex-col xl:flex-row gap-3 lg:items-end">
+                            @if ($hasAnyFilter)
+                                <a href="{{ route('dashboard') }}" class="inline-flex items-center justify-center rounded-xl border border-gray-200 dark:border-slate-700 bg-white/80 dark:bg-slate-900/70 px-4 py-2.5 text-sm font-semibold text-gray-700 dark:text-slate-200 shadow-sm transition hover:border-blue-200 hover:text-blue-700 dark:hover:border-blue-500/30 dark:hover:text-blue-300">
+                                    Limpiar filtros
+                                </a>
+                            @endif
+
+                            <a href="{{ route('places.create') }}" class="inline-flex items-center justify-center gap-2 rounded-xl border border-blue-100 dark:border-blue-500/20 bg-blue-50/80 dark:bg-blue-500/10 px-4 py-2.5 text-sm font-semibold text-blue-700 dark:text-blue-300 shadow-sm transition hover:bg-blue-100 dark:hover:bg-blue-500/15 focus:outline-none focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-500/30">
+                                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                    <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                </svg>
+                                Crear lugar
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </section>
 
             @if (!empty($error))
                 <div class="mb-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-300">
@@ -93,7 +135,7 @@
             @endif
 
             @if ($places->count() > 0)
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 lg:gap-6 mt-6">
                     @foreach ($places as $place)
                         @php
                             $placeId = is_array($place) ? ($place['id'] ?? null) : ($place->id ?? null);
@@ -112,9 +154,7 @@
 
                             $photos = [];
 
-                            $main = !empty($placePhotoUrl)
-                                ? $placePhotoUrl
-                                : (!empty($placePhoto) ? asset('storage/' . ltrim($placePhoto, '/')) : null);
+                            $main = $resolvePhotoUrl($placePhotoUrl ?: $placePhoto);
 
                             if ($main) {
                                 $photos[] = $main;
@@ -124,7 +164,7 @@
                             if (!empty($placePhotosUrls) && is_array($placePhotosUrls)) {
                                 $extras = $placePhotosUrls;
                             } elseif (is_array($placePhotos)) {
-                                $extras = array_map(fn ($p) => asset('storage/' . ltrim($p, '/')), $placePhotos);
+                                $extras = array_map(fn ($p) => $resolvePhotoUrl($p), $placePhotos);
                             }
 
                             if (is_array($extras)) {
@@ -185,7 +225,7 @@
                         @endphp
 
                         @if($placeId)
-                            <article class="group relative">
+                            <article class="group relative h-full">
                                 @auth
                                     <div class="absolute top-3 right-3 z-30">
                                         <form action="{{ route('favorite.toggle', ['place' => $placeId]) }}"
@@ -228,9 +268,9 @@
                                 @endauth
 
                                 <a href="{{ route('places.show', ['place' => $placeId]) }}"
-                                   class="block relative bg-white dark:bg-slate-900 rounded-2xl shadow transition-all duration-300 ease-out
-                                          overflow-hidden border border-gray-100 dark:border-slate-800
-                                          hover:-translate-y-1 hover:shadow-xl hover:border-blue-100 dark:hover:border-blue-500/30">
+                                   class="block h-full relative bg-white/95 dark:bg-slate-900/95 rounded-[26px] shadow-sm transition-all duration-300 ease-out
+                                          overflow-hidden border border-gray-100 dark:border-slate-800 backdrop-blur
+                                          hover:-translate-y-1 hover:shadow-[0_24px_60px_rgba(15,23,42,0.14)] hover:border-blue-100 dark:hover:border-blue-500/30">
 
                                     @if ($countPhotos > 1)
                                         <div class="absolute top-3 left-3 z-20">
@@ -281,45 +321,57 @@
                                         </div>
                                     @endif
 
-                                    <div class="relative h-48 w-full overflow-hidden bg-gray-100 dark:bg-slate-800">
+                                    <div class="relative h-56 w-full overflow-hidden bg-gray-100 dark:bg-slate-800">
                                         <img src="{{ $initialPhoto }}"
-                                             class="h-48 w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.04]"
+                                             class="h-56 w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.04]"
                                              alt="Foto de {{ $placeName }}"
                                              data-main-photo="{{ $placeId }}"
                                              data-fallback="{{ $defaultPhoto }}"
                                              onerror="this.onerror=null; this.src=this.dataset.fallback;" />
-                                    </div>
-
-                                    <div class="p-5 space-y-3">
-                                        <div>
-                                            <h2 class="text-xl font-semibold leading-tight text-gray-900 dark:text-slate-100 transition-colors duration-300 group-hover:text-blue-600 dark:group-hover:text-blue-400">
-                                                {{ $placeName }}
-                                            </h2>
-                                            <p class="text-gray-600 dark:text-slate-400 text-sm mt-1">{{ $placeCity }}</p>
-                                        </div>
-
-                                        <div class="flex items-center justify-between gap-3">
-                                            <span class="{{ $pill }}">
+                                        <div class="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-slate-950/45 to-transparent"></div>
+                                        <div class="absolute bottom-3 left-3 right-3 flex items-center justify-between gap-3">
+                                            <span class="inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/90 px-3 py-1.5 text-xs font-bold text-gray-900 shadow-sm backdrop-blur dark:bg-slate-900/85 dark:text-slate-100 dark:border-slate-700">
                                                 {!! $typeIcon !!}
                                                 {{ $typeLabelCard }}
                                             </span>
 
+                                            <span class="rounded-full bg-slate-950/70 px-3 py-1.5 text-xs font-bold text-white shadow-sm backdrop-blur">
+                                                MXN ${{ number_format((float) $placePrice, 0) }}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <div class="p-5 space-y-4">
+                                        <div>
+                                            <h2 class="text-xl font-extrabold leading-tight text-gray-950 dark:text-slate-100 transition-colors duration-300 group-hover:text-blue-600 dark:group-hover:text-blue-400">
+                                                {{ $placeName }}
+                                            </h2>
+                                            <p class="mt-2 inline-flex items-center gap-2 text-gray-600 dark:text-slate-400 text-sm">
+                                                <svg class="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                                    <path d="M12 21s7-4.6 7-11a7 7 0 1 0-14 0c0 6.4 7 11 7 11Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+                                                    <circle cx="12" cy="10" r="2.2" stroke="currentColor" stroke-width="1.8"/>
+                                                </svg>
+                                                {{ $placeCity }}
+                                            </p>
+                                        </div>
+
+                                        <div class="flex items-center justify-between gap-3 border-t border-gray-100 dark:border-slate-800 pt-4">
                                             <div class="flex items-center gap-1" title="{{ $rating }}/5">
                                                 @for ($i = 1; $i <= 5; $i++)
-                                                    <svg class="w-5 h-5 {{ $i <= $rating ? 'text-yellow-500' : 'text-gray-300 dark:text-slate-600' }}"
+                                                    <svg class="w-4 h-4 {{ $i <= $rating ? 'text-yellow-500' : 'text-gray-300 dark:text-slate-600' }}"
                                                          viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                                                         <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
                                                     </svg>
                                                 @endfor
-                                                <span class="text-xs text-gray-500 dark:text-slate-400 ml-1">{{ $rating }}/5</span>
+                                                <span class="text-xs font-semibold text-gray-500 dark:text-slate-400 ml-1">{{ $rating }}/5</span>
                                             </div>
-                                        </div>
 
-                                        <div class="pt-1">
-                                            <p class="{{ $hint }}">Precio aprox. por persona</p>
-                                            <p class="text-gray-900 dark:text-slate-100 font-bold text-lg">
-                                                MXN ${{ number_format((float) $placePrice, 2) }}
-                                            </p>
+                                            <span class="inline-flex items-center gap-2 text-sm font-bold text-blue-700 dark:text-blue-300">
+                                                Ver detalle
+                                                <svg class="w-4 h-4 transition group-hover:translate-x-0.5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                                    <path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                                </svg>
+                                            </span>
                                         </div>
                                     </div>
                                 </a>

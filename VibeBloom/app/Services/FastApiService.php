@@ -13,7 +13,7 @@ class FastApiService
 
     public function __construct()
     {
-        $this->baseUrl = rtrim(env('FASTAPI_URL', 'http://127.0.0.1:8010'), '/');
+        $this->baseUrl = rtrim(config('services.fastapi.url', 'http://127.0.0.1:8010'), '/');
     }
 
     protected function client(?string $token = null): PendingRequest

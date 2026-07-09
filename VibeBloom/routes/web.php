@@ -7,12 +7,14 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AIVoiceController;
 use App\Http\Controllers\FavoriteController;
 use App\Http\Controllers\MemoryController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PlaceController;
 use App\Http\Controllers\PlacesMapController;
 use App\Http\Controllers\PlaceSubmissionController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\ReviewReplyController;
 use App\Http\Controllers\RouteVoiceController;
+use App\Http\Controllers\UserNetworkController;
 
 /*
 |--------------------------------------------------------------------------
@@ -63,6 +65,14 @@ Route::middleware([
 
     /*
     |--------------------------------------------------------------------------
+    | NOTIFICACIONES
+    |--------------------------------------------------------------------------
+    */
+    Route::get('/notificaciones', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::post('/notificaciones/marcar-leidas', [NotificationController::class, 'markAllRead'])->name('notifications.read-all');
+
+    /*
+    |--------------------------------------------------------------------------
     | MEMORIES
     |--------------------------------------------------------------------------
     */
@@ -106,6 +116,16 @@ Route::middleware([
     |--------------------------------------------------------------------------
     */
     Route::get('/mis-lugares', [PlaceController::class, 'myPlaces'])->name('places.mine');
+
+    /*
+    |--------------------------------------------------------------------------
+    | COMUNIDAD / RED SOCIAL
+    |--------------------------------------------------------------------------
+    */
+    Route::get('/usuarios', [UserNetworkController::class, 'index'])->name('users.index');
+    Route::get('/usuarios/{user}', [UserNetworkController::class, 'show'])->name('users.show');
+    Route::post('/usuarios/{user}/seguir', [UserNetworkController::class, 'follow'])->name('users.follow');
+    Route::delete('/usuarios/{user}/seguir', [UserNetworkController::class, 'unfollow'])->name('users.unfollow');
 
     /*
     |--------------------------------------------------------------------------

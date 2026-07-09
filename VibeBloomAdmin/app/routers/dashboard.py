@@ -99,6 +99,9 @@ def build_dashboard_context(raw_data):
         "places_by_type": raw_data.get("places_by_type") or [],
         "users_monthly": raw_data.get("users_monthly") or [],
         "places_monthly": raw_data.get("places_monthly") or [],
+        "reviews_monthly": raw_data.get("reviews_monthly") or [],
+        "favorites_monthly": raw_data.get("favorites_monthly") or [],
+        "approvals_by_status": raw_data.get("approvals_by_status") or [],
         "report_options": raw_data.get("report_options") or DEFAULT_REPORT_OPTIONS,
     }
 

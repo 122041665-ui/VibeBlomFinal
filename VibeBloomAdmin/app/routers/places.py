@@ -1,3 +1,5 @@
+import os
+
 from flask import Blueprint, render_template, request, session, redirect, url_for, flash
 from app.services.api_client import api_delete, api_get, api_put
 
@@ -17,12 +19,30 @@ def _handle_auth_errors(response):
     return None
 
 
+def _normalize_asset_url(value):
+    if not value:
+        return None
+
+    value = str(value).strip()
+    if not value:
+        return None
+
+    if value.startswith(("http://", "https://", "data:")):
+        return value
+
+    public_base = os.getenv("API_PUBLIC_URL", "http://127.0.0.1:8010").rstrip("/")
+    path = value if value.startswith("/") else f"/storage/{value.lstrip('/')}"
+    return f"{public_base}{path}"
+
+
 def _normalize_places(raw_places):
     normalized = []
 
     for item in raw_places or []:
         place_id = item.get("id")
         user = item.get("user") or {}
+        photo = _normalize_asset_url(item.get("photo"))
+        photo_url = _normalize_asset_url(item.get("photo_url") or item.get("photo"))
 
         normalized.append(
             {
@@ -33,8 +53,8 @@ def _normalize_places(raw_places):
                 "type": item.get("type"),
                 "price_range": item.get("price_range") if item.get("price_range") is not None else item.get("price"),
                 "rating": item.get("rating"),
-                "photo": item.get("photo"),
-                "photo_url": item.get("photo_url"),
+                "photo": photo,
+                "photo_url": photo_url,
                 "user_id": item.get("user_id"),
                 "user_name": user.get("name"),
                 "edit_url": url_for("places.edit_place_view", place_id=place_id) if place_id else "",

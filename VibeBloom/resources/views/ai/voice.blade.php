@@ -1,7 +1,7 @@
 <x-app-layout>
     @php
-        $container = "max-w-7xl mx-auto px-6 py-6 pb-40 sm:pb-44";
-        $card = "bg-white dark:bg-slate-900 shadow-sm rounded-[28px] border border-gray-100 dark:border-slate-800";
+        $container = "max-w-7xl mx-auto px-4 sm:px-6 py-6 pb-40 sm:pb-44";
+        $card = "bg-white/92 dark:bg-slate-900/92 shadow-sm rounded-[28px] border border-gray-100 dark:border-slate-800 backdrop-blur";
         $hint = "text-sm text-gray-600 dark:text-slate-400";
         $hintXs = "text-xs text-gray-500 dark:text-slate-400";
 
@@ -23,214 +23,190 @@
         $userName = auth()->check()
             ? (auth()->user()->name ?? null)
             : null;
+
+        $openAiConfigured = (bool) ($openAiConfigured ?? false);
+        $quickPrompts = [
+            'Cafeterías tranquilas en Querétaro para trabajar',
+            'Restaurantes bonitos con presupuesto medio',
+            'Bares para ir de noche con buen ambiente',
+            'Parques o miradores para un plan tranquilo',
+        ];
     @endphp
 
     @once
         <meta name="csrf-token" content="{{ csrf_token() }}">
     @endonce
 
-    <div class="min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-100/70 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900 relative overflow-hidden">
-        <div class="pointer-events-none absolute inset-x-0 top-0 h-72 bg-[radial-gradient(circle_at_top,rgba(37,99,235,0.10),transparent_55%)] dark:bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.10),transparent_55%)]"></div>
+    <div class="min-h-screen bg-[linear-gradient(180deg,#f8fafc_0%,#ffffff_42%,#eef2ff_100%)] dark:bg-[linear-gradient(180deg,#020617_0%,#0f172a_48%,#111827_100%)] relative overflow-hidden">
+        <div class="pointer-events-none absolute inset-x-0 top-0 h-96 bg-[radial-gradient(circle_at_20%_10%,rgba(37,99,235,0.14),transparent_34%),radial-gradient(circle_at_82%_0%,rgba(14,165,233,0.10),transparent_32%)] dark:bg-[radial-gradient(circle_at_20%_10%,rgba(59,130,246,0.16),transparent_34%),radial-gradient(circle_at_82%_0%,rgba(14,165,233,0.12),transparent_32%)]"></div>
 
-        <div class="{{ $container }}">
-            <div class="mb-6">
-                <div class="rounded-[28px] border border-gray-100 dark:border-slate-800 bg-white/85 dark:bg-slate-900/85 backdrop-blur shadow-sm p-5 sm:p-6 lg:p-7">
-                    <div class="flex items-start justify-between gap-4 flex-wrap">
-                        <div>
-                            <div class="{{ $pill }} mb-3">
-                                <span class="inline-flex w-2.5 h-2.5 rounded-full bg-blue-500"></span>
-                                Asistente inteligente
+        <div class="{{ $container }} relative">
+            <section class="mb-6 overflow-hidden rounded-[30px] border border-white/80 dark:border-slate-800 bg-white/88 dark:bg-slate-900/88 shadow-[0_22px_70px_rgba(15,23,42,0.10)] backdrop-blur">
+                <div class="relative p-5 sm:p-7 lg:p-8">
+                    <div class="pointer-events-none absolute inset-0 bg-[linear-gradient(135deg,rgba(37,99,235,0.08),transparent_38%),radial-gradient(circle_at_88%_16%,rgba(14,165,233,0.14),transparent_26%)] dark:bg-[linear-gradient(135deg,rgba(59,130,246,0.12),transparent_38%),radial-gradient(circle_at_88%_16%,rgba(14,165,233,0.12),transparent_26%)]"></div>
+
+                    <div class="relative flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
+                        <div class="max-w-3xl">
+                            <div class="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50/80 px-3 py-1.5 text-xs font-semibold text-blue-700 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-300">
+                                <span class="inline-block h-2 w-2 rounded-full {{ $openAiConfigured ? 'bg-emerald-500' : 'bg-amber-500' }}"></span>
+                                {{ $openAiConfigured ? 'Vibe IA' : 'Configura OPENAI_API_KEY' }}
                             </div>
 
-                            <h1 class="text-3xl sm:text-4xl font-extrabold text-gray-900 dark:text-slate-100 tracking-tight leading-tight">
-                                Asistente de <span class="text-blue-600 dark:text-blue-400">VibeBloom</span>
+                            <h1 class="mt-4 text-3xl sm:text-4xl lg:text-5xl font-extrabold text-gray-950 dark:text-slate-100 leading-tight">
+                                Vibe IA para encontrar <span class="text-blue-600 dark:text-blue-400">lugares</span>
                             </h1>
 
-                            <p class="{{ $hint }} mt-2">
-                                Escribe o habla y encuentra lugares de forma más rápida.
+                            <p class="{{ $hint }} mt-4 max-w-2xl leading-8">
+                                Habla o escribe lo que traes en mente. Vibe interpreta intención, ciudad, presupuesto y tipo de plan para recomendar lugares dentro de VibeBloom.
                             </p>
                         </div>
 
-                        <div class="flex items-center gap-2 flex-wrap">
-                            <button id="btnClearChatTop"
-                                    type="button"
-                                    class="{{ $buttonDanger }} inline-flex items-center gap-2"
-                                    title="Limpiar chat">
-                                <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                                    <path fill-rule="evenodd" d="M8.5 3a1 1 0 00-1 1V5H5a1 1 0 100 2h.293l.853 9.388A2 2 0 008.138 18h3.724a2 2 0 001.992-1.612L14.707 7H15a1 1 0 100-2h-2.5V4a1 1 0 00-1-1h-3Zm2 2h-1V5h1v0Zm-2.215 2 .75 8.25h2.93l.75-8.25H8.285Z" clip-rule="evenodd"/>
-                                </svg>
+                        <div class="flex flex-wrap gap-3">
+                            <button id="btnClearChatTop" type="button" class="inline-flex items-center justify-center gap-2 rounded-xl border border-gray-200 dark:border-slate-700 bg-white/80 dark:bg-slate-900/70 px-4 py-2.5 text-sm font-semibold text-gray-700 dark:text-slate-200 shadow-sm transition hover:border-blue-200 hover:text-blue-700 dark:hover:border-blue-500/30 dark:hover:text-blue-300">
                                 Limpiar chat
                             </button>
 
-                            <a href="{{ route('dashboard') }}"
-                               class="{{ $buttonGhost }} inline-flex items-center gap-2"
-                               title="Regresar a lugares">
-                                <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                                    <path fill-rule="evenodd" d="M7.707 14.707a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 1.414L5.414 9H16a1 1 0 110 2H5.414l2.293 2.293a1 1 0 010 1.414z" clip-rule="evenodd"/>
-                                </svg>
+                            <a href="{{ route('dashboard') }}" class="{{ $buttonGhost }} inline-flex items-center justify-center gap-2">
                                 Volver a lugares
                             </a>
                         </div>
                     </div>
                 </div>
-            </div>
+            </section>
 
-            <div class="{{ $card }} overflow-hidden">
-                <div class="grid grid-cols-1 xl:grid-cols-[1.15fr_.85fr]">
-                    <div class="border-b xl:border-b-0 xl:border-r border-gray-200 dark:border-slate-800">
-                        <div class="px-6 py-4 bg-white dark:bg-slate-900 border-b border-gray-100 dark:border-slate-800">
-                            <div class="flex items-center justify-between gap-3 flex-wrap">
-                                <div>
-                                    <h2 class="text-lg font-extrabold text-gray-900 dark:text-slate-100">Conversación</h2>
-                                    <p class="text-sm text-gray-600 dark:text-slate-400">
-                                        El asistente interpreta la búsqueda y propone opciones.
-                                    </p>
-                                </div>
+            <div class="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_390px] gap-6 items-start">
+                <main class="{{ $card }} overflow-hidden">
+                    <div class="border-b border-gray-100 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 px-5 sm:px-6 py-4">
+                        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                            <div>
+                                <h2 class="text-lg font-extrabold text-gray-950 dark:text-slate-100">Conversación</h2>
+                                <p class="{{ $hintXs }} mt-1">Pide algo como “cafetería tranquila en Querétaro, máximo $250”.</p>
+                            </div>
 
-                                <span class="{{ $pill }}">
-                                    <span class="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
-                                    Activo
-                                </span>
+                            <div class="flex flex-col sm:flex-row gap-2">
+                                <input id="cityFilter" class="{{ $fieldBase }} sm:w-48" placeholder="Ciudad opcional">
+                                <select id="limitSelect" class="{{ $fieldBase }} sm:w-44">
+                                    <option value="">Resultados auto</option>
+                                    <option value="3">Top 3</option>
+                                    <option value="6">Top 6</option>
+                                    <option value="10">Top 10</option>
+                                    <option value="20">Top 20</option>
+                                </select>
                             </div>
                         </div>
+                    </div>
 
-                        <div class="p-6 bg-gray-50 dark:bg-slate-950/60">
-                            <div id="chatWrap" class="min-h-[360px] max-h-[520px] overflow-auto pr-1 space-y-4">
-                                <div id="chat" class="space-y-4"></div>
+                    <div class="p-5 sm:p-6 bg-slate-50/80 dark:bg-slate-950/50">
+                        <div class="mb-4 flex gap-2 overflow-x-auto pb-1">
+                            @foreach ($quickPrompts as $prompt)
+                                <button type="button" data-prompt="{{ $prompt }}" class="quick-prompt shrink-0 rounded-full border border-blue-100 dark:border-blue-500/20 bg-white/90 dark:bg-slate-900/80 px-4 py-2 text-sm font-semibold text-blue-700 dark:text-blue-300 shadow-sm transition hover:bg-blue-50 dark:hover:bg-blue-500/10">
+                                    {{ $prompt }}
+                                </button>
+                            @endforeach
+                        </div>
 
-                                <div id="emptyState" class="hidden">
-                                    <div class="rounded-2xl border border-dashed border-blue-200 dark:border-slate-700 bg-white/80 dark:bg-slate-900/60 p-6 text-center">
-                                        <div class="mx-auto mb-4 w-14 h-14 rounded-2xl bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-300 flex items-center justify-center">
-                                            <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                                                <path d="M8 10h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-                                                <path d="M8 14h5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-                                                <path d="M7 4h10a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
-                                            </svg>
-                                        </div>
-                                        <h3 class="text-base font-semibold text-gray-900 dark:text-slate-100">Empieza una búsqueda</h3>
-                                        <p class="text-sm text-gray-600 dark:text-slate-400 mt-1">
-                                            Escribe tu consulta para buscar lugares dentro de VibeBloom.
-                                        </p>
+                        <div id="chatWrap" class="min-h-[430px] max-h-[58vh] overflow-auto pr-1 space-y-4">
+                            <div id="chat" class="space-y-4"></div>
+
+                            <div id="emptyState" class="hidden">
+                                <div class="rounded-[24px] border border-dashed border-blue-200 dark:border-slate-700 bg-white/80 dark:bg-slate-900/60 p-8 text-center">
+                                    <div class="mx-auto mb-4 w-16 h-16 rounded-3xl bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-300 flex items-center justify-center">
+                                        <svg class="w-8 h-8" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                            <path d="M8 10h8M8 14h5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                                            <path d="M6 4h12a2 2 0 0 1 2 2v12l-4-2-4 2-4-2-4 2V6a2 2 0 0 1 2-2Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+                                        </svg>
                                     </div>
+                                    <h3 class="text-lg font-extrabold text-gray-950 dark:text-slate-100">Empieza con una intención</h3>
+                                    <p class="{{ $hint }} mt-2">Puedes escribir, dictar por micrófono o usar una sugerencia rápida.</p>
                                 </div>
+                            </div>
 
-                                <div id="typing" class="hidden mt-4">
-                                    <div class="flex items-start gap-3">
-                                        <div class="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-500/15 flex items-center justify-center font-bold text-blue-700 dark:text-blue-400 shrink-0">
-                                            VB
-                                        </div>
-                                        <div class="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-2xl px-4 py-3 shadow-sm inline-block w-fit max-w-[80%]">
-                                            <div class="flex items-center gap-2 text-gray-500 dark:text-slate-400 text-sm">
-                                                <span class="inline-block w-2 h-2 rounded-full bg-gray-300 dark:bg-slate-600 animate-pulse"></span>
-                                                <span class="inline-block w-2 h-2 rounded-full bg-gray-300 dark:bg-slate-600 animate-pulse" style="animation-delay:120ms"></span>
-                                                <span class="inline-block w-2 h-2 rounded-full bg-gray-300 dark:bg-slate-600 animate-pulse" style="animation-delay:240ms"></span>
-                                                <span class="ml-2">Vibe está escribiendo…</span>
-                                            </div>
+                            <div id="typing" class="hidden mt-4">
+                                <div class="flex items-start gap-3">
+                                    <div class="w-10 h-10 rounded-2xl bg-blue-600 text-white flex items-center justify-center font-bold shadow-sm shrink-0">VB</div>
+                                    <div class="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-2xl px-4 py-3 shadow-sm inline-block w-fit max-w-[80%]">
+                                        <div class="flex items-center gap-2 text-gray-500 dark:text-slate-400 text-sm">
+                                            <span class="inline-block w-2 h-2 rounded-full bg-blue-400 animate-pulse"></span>
+                                            <span class="inline-block w-2 h-2 rounded-full bg-blue-400 animate-pulse" style="animation-delay:120ms"></span>
+                                            <span class="inline-block w-2 h-2 rounded-full bg-blue-400 animate-pulse" style="animation-delay:240ms"></span>
+                                            <span class="ml-2">Vibe está pensando...</span>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
+                    </div>
 
-                        <div class="p-4 bg-white dark:bg-slate-900 border-t border-gray-200 dark:border-slate-800">
-                            <div class="flex gap-2 items-center">
-                                <div class="flex-1 relative">
-                                    <input id="q"
-                                           placeholder="Escribe lo que buscas…"
-                                           class="{{ $fieldBase }} pr-11"/>
+                    <div class="border-t border-gray-100 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 p-4">
+                        <div class="flex gap-2 items-center">
+                            <div class="flex-1 relative">
+                                <input id="q" placeholder="Describe el plan que quieres..." class="{{ $fieldBase }} pr-12">
 
-                                    <button id="btnSend"
-                                            class="absolute right-1.5 top-1/2 -translate-y-1/2 {{ $buttonPrimary }} !px-3 inline-flex items-center justify-center"
-                                            type="button"
-                                            title="Enviar"
-                                            aria-label="Enviar">
-                                        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                                            <path d="M4.5 12h13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-                                            <path d="M14.5 7l5 5-5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-                                        </svg>
-                                    </button>
-                                </div>
-
-                                <button id="btnMic"
-                                        class="{{ $buttonGhost }} inline-flex items-center justify-center shrink-0"
-                                        type="button"
-                                        title="Grabar"
-                                        aria-label="Grabar">
-                                    <span id="micIcon" class="inline-flex">
-                                        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                                            <path d="M12 14a3 3 0 0 0 3-3V7a3 3 0 1 0-6 0v4a3 3 0 0 0 3 3Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-                                            <path d="M19 11a7 7 0 0 1-14 0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-                                            <path d="M12 18v3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-                                            <path d="M8 21h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-                                        </svg>
-                                    </span>
+                                <button id="btnSend" class="absolute right-1.5 top-1/2 -translate-y-1/2 {{ $buttonPrimary }} !px-3 inline-flex items-center justify-center" type="button" title="Enviar" aria-label="Enviar">
+                                    <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                        <path d="M4.5 12h13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                                        <path d="M14.5 7l5 5-5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
                                 </button>
                             </div>
 
-                            <div class="mt-2 flex items-center justify-between gap-3 flex-wrap">
-                                <p id="estado" class="{{ $hintXs }}"></p>
+                            <button id="btnMic" class="{{ $buttonGhost }} inline-flex items-center justify-center shrink-0" type="button" title="Grabar" aria-label="Grabar">
+                                <span id="micIcon" class="inline-flex"></span>
+                            </button>
+                        </div>
+
+                        <div class="mt-3 flex items-center justify-between gap-3 flex-wrap">
+                            <p id="estado" class="{{ $hintXs }}"></p>
+                            <div class="flex items-center gap-2">
+                                <button id="btnCopyLast" type="button" class="text-xs font-semibold text-blue-700 dark:text-blue-300 hover:underline">Copiar última búsqueda</button>
+                                <span class="text-xs text-gray-300 dark:text-slate-700">/</span>
                                 <p class="{{ $hintXs }}">Enter para enviar</p>
                             </div>
                         </div>
                     </div>
+                </main>
 
-                    <div class="bg-white dark:bg-slate-900">
-                        <div class="px-6 py-4 border-b border-gray-100 dark:border-slate-800">
-                            <div class="flex items-end justify-between gap-3 flex-wrap">
-                                <div>
-                                    <h2 class="text-lg font-extrabold text-gray-900 dark:text-slate-100">Resultados</h2>
-                                    <p class="text-sm text-gray-600 dark:text-slate-400">
-                                        Lugares encontrados según la búsqueda.
-                                    </p>
-                                </div>
-
-                                <button id="btnClear"
-                                        class="{{ $buttonGhost }}"
-                                        type="button">
-                                    Limpiar todo
-                                </button>
+                <aside class="{{ $card }} overflow-hidden xl:sticky xl:top-6">
+                    <div class="border-b border-gray-100 dark:border-slate-800 px-5 sm:px-6 py-4 bg-white/80 dark:bg-slate-900/80">
+                        <div class="flex items-start justify-between gap-3">
+                            <div>
+                                <h2 class="text-lg font-extrabold text-gray-950 dark:text-slate-100">Recomendaciones</h2>
+                                <p class="{{ $hintXs }} mt-1">Resultados generados por intención.</p>
                             </div>
+
+                            <button id="btnClear" class="rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm font-semibold text-gray-700 dark:text-slate-200 shadow-sm transition hover:border-blue-200 hover:text-blue-700 dark:hover:border-blue-500/30 dark:hover:text-blue-300" type="button">
+                                Limpiar
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="p-5 sm:p-6">
+                        <div id="resultsEmpty" class="rounded-[24px] border border-dashed border-gray-200 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-950/40 p-7 text-center">
+                            <div class="mx-auto mb-4 w-14 h-14 rounded-2xl bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-300 flex items-center justify-center">
+                                <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                    <path d="M10 18a8 8 0 1 1 5.293-14.293A8 8 0 0 1 10 18Zm0 0 8 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </div>
+                            <h3 class="text-base font-bold text-gray-950 dark:text-slate-100">Sin resultados todavía</h3>
+                            <p class="{{ $hint }} mt-2">Cuando hagas una búsqueda, Vibe colocará aquí las mejores opciones.</p>
                         </div>
 
-                        <div class="p-6">
-                            <div id="resultsEmpty" class="rounded-2xl border border-dashed border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-950/40 p-8 text-center">
-                                <div class="mx-auto mb-4 w-14 h-14 rounded-2xl bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-300 flex items-center justify-center">
-                                    <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                                        <path d="M10 18a8 8 0 1 1 5.293-14.293A8 8 0 0 1 10 18Zm0 0 8 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-                                    </svg>
-                                </div>
-                                <h3 class="text-base font-semibold text-gray-900 dark:text-slate-100">Aún no hay resultados</h3>
-                                <p class="text-sm text-gray-600 dark:text-slate-400 mt-1">
-                                    Cuando se haga una búsqueda, aquí aparecerán las recomendaciones.
-                                </p>
+                        <div id="resultsSection" class="hidden">
+                            <div id="insightsPanel" class="mb-4 hidden rounded-[22px] border border-blue-100 dark:border-blue-500/20 bg-blue-50/70 dark:bg-blue-500/10 p-4">
+                                <p class="text-xs font-extrabold uppercase tracking-wide text-blue-700 dark:text-blue-300">Lectura de Vibe</p>
+                                <div id="insightsChips" class="mt-3 flex flex-wrap gap-2"></div>
                             </div>
 
-                            <div id="resultsSection" class="hidden">
-                                <div id="cards" class="grid grid-cols-1 sm:grid-cols-2 gap-6"></div>
+                            <div id="cards" class="grid grid-cols-1 gap-4"></div>
 
-                                <div id="moreWrap" class="hidden mt-6 flex justify-center">
-                                    <button id="btnMore" class="{{ $buttonGhost }}" type="button">Cargar más</button>
-                                </div>
+                            <div id="moreWrap" class="hidden mt-6 flex justify-center">
+                                <button id="btnMore" class="{{ $buttonGhost }}" type="button">Cargar más</button>
                             </div>
                         </div>
                     </div>
-                </div>
+                </aside>
             </div>
         </div>
-
-        <a href="{{ url('/ai/voz') }}"
-           class="fixed bottom-6 right-6 z-50 group"
-           aria-label="Abrir Vibe IA"
-           title="Vibe IA">
-            <span class="absolute -inset-1 rounded-2xl bg-blue-600/20 blur-lg opacity-0 group-hover:opacity-100 transition"></span>
-            <span class="relative inline-flex items-center gap-3 px-5 py-3 rounded-2xl bg-blue-600 text-white shadow-lg hover:bg-blue-700 active:scale-[0.98] transition">
-                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                    <path d="M12 21s6-5.2 6-11a6 6 0 1 0-12 0c0 5.8 6 11 6 11Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
-                    <path d="M12 13.25a2.25 2.25 0 1 0 0-4.5a2.25 2.25 0 0 0 0 4.5Z" fill="currentColor"/>
-                </svg>
-                <span class="font-semibold">Vibe IA</span>
-            </span>
-        </a>
     </div>
 
     <script>
@@ -238,6 +214,7 @@
         const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
         const ENDPOINT = @json(url('/ai/voz/recomendar'));
         const USER_NAME = @json($userName);
+        const OPENAI_CONFIGURED = @json($openAiConfigured);
 
         const estado = $('estado');
         const cards = $('cards');
@@ -248,9 +225,15 @@
         const resultsSection = $('resultsSection');
         const resultsEmpty = $('resultsEmpty');
         const emptyState = $('emptyState');
+        const cityFilter = $('cityFilter');
+        const limitSelect = $('limitSelect');
+        const insightsPanel = $('insightsPanel');
+        const insightsChips = $('insightsChips');
 
-        const LS_CHAT = 'vb_ai_chat_v7_dark';
-        const LS_RESULTS = 'vb_ai_results_v7_dark';
+        const LS_CHAT = 'vb_ai_chat_v8_modern';
+        const LS_RESULTS = 'vb_ai_results_v8_modern';
+        const LS_LAST_QUERY = 'vb_ai_last_query_v8';
+        const LS_INSIGHTS = 'vb_ai_insights_v8';
 
         function buildGreeting(name) {
             const n = (name && String(name).trim()) ? String(name).trim() : null;
@@ -258,7 +241,7 @@
 
             return [
                 `${hello}. Soy **Vibe**, tu asistente virtual.`,
-                `Escribe o dicta tu búsqueda para encontrar lugares dentro de VibeBloom.`
+                `Puedo recomendar lugares por **tipo**, **ciudad**, **presupuesto** y estilo de plan.`
             ].join('\n');
         }
 
@@ -306,7 +289,26 @@
             resultsSection.classList.add('hidden');
             resultsEmpty.classList.remove('hidden');
             moreWrap.classList.add('hidden');
+            insightsPanel?.classList.add('hidden');
             cards.innerHTML = '';
+        }
+
+        function renderInsights(data = null) {
+            const filters = data?.filtros_aplicados || data?.filters || [];
+            if (!Array.isArray(filters) || !filters.length) {
+                insightsPanel?.classList.add('hidden');
+                if (insightsChips) insightsChips.innerHTML = '';
+                localStorage.removeItem(LS_INSIGHTS);
+                return;
+            }
+
+            insightsPanel?.classList.remove('hidden');
+            insightsChips.innerHTML = filters.map(filter => `
+                <span class="inline-flex items-center rounded-full border border-blue-100 dark:border-blue-500/20 bg-white/85 dark:bg-slate-900/70 px-3 py-1.5 text-xs font-bold text-blue-800 dark:text-blue-300">
+                    ${escapeHtml(filter)}
+                </span>
+            `).join('');
+            localStorage.setItem(LS_INSIGHTS, JSON.stringify(filters));
         }
 
         function loadChat() {
@@ -547,8 +549,12 @@
             const backendClean = cleanAssistantText(data?.assistant_reply, userQuery);
 
             if (results.length) {
-                if (backendClean) return `${intro}\n\n${backendClean}`;
-                return intro;
+                const countText = results.length === 1
+                    ? 'Encontré **1 lugar** que cumple mejor con tu búsqueda.'
+                    : `Encontré **${results.length} lugares** que cumplen mejor con tu búsqueda.`;
+
+                if (backendClean) return `${countText}\n\n${intro}`;
+                return `${countText}\n\n${intro}`;
             }
 
             if (backendClean) return backendClean;
@@ -585,7 +591,7 @@
                 const limpio = String(p.photo).replaceAll('\\','/').replace(/^\/+/, '').replace(/^storage\//,'');
                 return '/storage/' + limpio;
             }
-            return '/images/default.jpg';
+            return '/images/vibebloom.png';
         }
 
         function prettyTypeLabel(tipo) {
@@ -608,6 +614,8 @@
             const id = p.id ?? p.place_id ?? null;
             const nombre = p.name ?? 'Lugar';
             const ciudad = p.city ?? '';
+            const address = p.address ?? '';
+            const description = p.description ?? '';
             const tipo = p.type ?? 'OTRO';
             const tipoLabel = prettyTypeLabel(tipo);
             const rating = clamp(p.rating ?? 0, 0, 5);
@@ -615,52 +623,79 @@
             const priceText = hasPrice ? money(p.price) : null;
             const foto = urlFoto(p);
             const url = p.url ?? (id ? `/places/${id}` : '#');
+            const mapUrl = p.map_url || '/places/map';
+            const reasons = Array.isArray(p.match_reasons) ? p.match_reasons.slice(0, 3) : [];
+            const shortDescription = String(description || address || '').trim();
 
             return `
-                <div class="relative bg-white dark:bg-slate-900 rounded-2xl shadow hover:shadow-lg transition overflow-hidden border border-gray-100 dark:border-slate-800">
-                    <a href="${url}" class="block">
-                        <img src="${foto}" class="h-48 w-full object-cover"
-                             alt="Foto de ${escapeHtml(nombre)}"
-                             onerror="this.onerror=null; this.src='/images/default.jpg';">
-                    </a>
+                <article class="group overflow-hidden rounded-[22px] border border-gray-100 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 shadow-sm transition hover:-translate-y-0.5 hover:shadow-[0_18px_45px_rgba(15,23,42,0.12)]">
+                    <div class="grid grid-cols-[112px_minmax(0,1fr)]">
+                        <a href="${url}" class="relative block h-full min-h-[138px] overflow-hidden bg-slate-100 dark:bg-slate-800">
+                            <img src="${foto}" class="h-full w-full object-cover transition group-hover:scale-[1.04]"
+                                 alt="Foto de ${escapeHtml(nombre)}"
+                                 onerror="this.onerror=null; this.src='/images/vibebloom.png';">
+                        </a>
 
-                    <div class="p-5 space-y-3">
-                        <div>
-                            <h2 class="text-xl font-semibold leading-tight text-gray-900 dark:text-slate-100">${escapeHtml(nombre)}</h2>
-                            <p class="text-gray-600 dark:text-slate-400 text-sm mt-1">${escapeHtml(ciudad || 'Sin ciudad')}</p>
-                        </div>
+                        <div class="min-w-0 p-4">
+                            <div class="flex items-start justify-between gap-3">
+                                <div class="min-w-0">
+                                    <h2 class="truncate text-base font-extrabold leading-tight text-gray-950 dark:text-slate-100">${escapeHtml(nombre)}</h2>
+                                    <p class="mt-1 truncate text-sm text-gray-600 dark:text-slate-400">${escapeHtml(ciudad || 'Sin ciudad')}</p>
+                                </div>
 
-                        <div class="flex items-center justify-between gap-3">
-                            <span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-50 dark:bg-blue-500/15 text-blue-800 dark:text-blue-300 text-xs font-semibold border border-blue-100 dark:border-blue-500/20">
-                                ${getPlaceIcon(tipo)}
-                                ${escapeHtml(tipoLabel)}
-                            </span>
+                                <span class="shrink-0 rounded-full bg-blue-50 dark:bg-blue-500/10 px-2.5 py-1 text-xs font-bold text-blue-700 dark:text-blue-300">
+                                    ${rating}/5
+                                </span>
+                            </div>
 
-                            <div class="flex items-center gap-1" title="${rating}/5">
-                                ${starsHTML(rating)}
-                                <span class="text-xs text-gray-500 dark:text-slate-400 ml-1">${rating}/5</span>
+                            <div class="mt-3 flex flex-wrap items-center gap-2">
+                                <span class="inline-flex items-center gap-1.5 rounded-full border border-blue-100 dark:border-blue-500/20 bg-blue-50/80 dark:bg-blue-500/10 px-2.5 py-1 text-xs font-semibold text-blue-800 dark:text-blue-300">
+                                    ${getPlaceIcon(tipo)}
+                                    ${escapeHtml(tipoLabel)}
+                                </span>
+
+                                <span class="rounded-full border border-gray-200 dark:border-slate-700 px-2.5 py-1 text-xs font-semibold text-gray-600 dark:text-slate-300">
+                                    ${hasPrice ? priceText : 'Sin precio'}
+                                </span>
+                            </div>
+
+                            ${shortDescription ? `
+                                <p class="mt-3 line-clamp-2 text-xs leading-5 text-gray-500 dark:text-slate-400">
+                                    ${escapeHtml(shortDescription)}
+                                </p>
+                            ` : ''}
+
+                            ${reasons.length ? `
+                                <div class="mt-3 flex flex-wrap gap-1.5">
+                                    ${reasons.map(reason => `
+                                        <span class="rounded-full bg-slate-100 dark:bg-slate-800 px-2 py-1 text-[11px] font-bold text-slate-600 dark:text-slate-300">
+                                            ${escapeHtml(reason)}
+                                        </span>
+                                    `).join('')}
+                                </div>
+                            ` : ''}
+
+                            <div class="mt-4 flex items-center justify-between gap-3">
+                                <div class="flex items-center gap-0.5" title="${rating}/5">
+                                    ${starsHTML(rating).replaceAll('w-5 h-5', 'w-3.5 h-3.5')}
+                                </div>
+
+                                <div class="flex items-center gap-3">
+                                    <a href="${mapUrl}" class="text-sm font-bold text-gray-500 dark:text-slate-400 hover:text-blue-700 dark:hover:text-blue-300">
+                                        Mapa
+                                    </a>
+
+                                    <a href="${url}" class="inline-flex items-center gap-1 text-sm font-bold text-blue-700 dark:text-blue-300">
+                                        Detalle
+                                        <svg class="w-4 h-4 transition group-hover:translate-x-0.5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                            <path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                        </svg>
+                                    </a>
+                                </div>
                             </div>
                         </div>
-
-                        <div class="pt-1">
-                            <p class="text-gray-500 dark:text-slate-400 text-xs">Precio aprox. por persona</p>
-                            ${hasPrice
-                                ? `<p class="text-gray-900 dark:text-slate-100 font-bold text-lg">${priceText}</p>`
-                                : `<p class="text-gray-500 dark:text-slate-400 text-sm">Sin precio estimado</p>`
-                            }
-                        </div>
-
-                        <div class="pt-1 flex items-center justify-end">
-                            <a href="${url}"
-                               class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-50 dark:bg-slate-800 hover:bg-blue-100 dark:hover:bg-slate-700 text-blue-800 dark:text-blue-300 text-sm font-semibold shadow-sm transition border border-blue-100 dark:border-slate-700">
-                                Ver detalle
-                                <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                                    <path fill-rule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2H14.586l-4.293-4.293a1 1 0 010-1.414z" clip-rule="evenodd"/>
-                                </svg>
-                            </a>
-                        </div>
                     </div>
-                </div>
+                </article>
             `;
         }
 
@@ -696,8 +731,11 @@
             try {
                 const raw = localStorage.getItem(LS_RESULTS);
                 const arr = raw ? JSON.parse(raw) : [];
+                const insightsRaw = localStorage.getItem(LS_INSIGHTS);
+                const insights = insightsRaw ? JSON.parse(insightsRaw) : [];
 
                 if (Array.isArray(arr) && arr.length) {
+                    renderInsights({ filtros_aplicados: insights });
                     renderFirst(arr);
                 } else {
                     hideResults();
@@ -721,6 +759,7 @@
             estado.textContent = '';
             localStorage.removeItem(LS_CHAT);
             localStorage.removeItem(LS_RESULTS);
+            localStorage.removeItem(LS_INSIGHTS);
             chat.innerHTML = '';
             hideResults();
             allResults = [];
@@ -729,9 +768,46 @@
             ensureGreeting(true);
         }
 
+        function appendSearchMeta(form) {
+            const city = cityFilter?.value?.trim();
+            const limit = limitSelect?.value;
+
+            if (city) form.append('city', city);
+            if (limit) form.append('limit', limit);
+        }
+
+        function rememberQuery(query) {
+            if (!query) return;
+            localStorage.setItem(LS_LAST_QUERY, query);
+        }
+
         $('btnClear').onclick = clearAll;
         $('btnClearChatTop').onclick = clearChatOnly;
         $('btnMore').onclick = renderMore;
+
+        $('btnCopyLast')?.addEventListener('click', async () => {
+            const last = localStorage.getItem(LS_LAST_QUERY) || '';
+            if (!last) {
+                estado.textContent = 'Aún no hay una búsqueda para copiar.';
+                return;
+            }
+
+            try {
+                await navigator.clipboard.writeText(last);
+                estado.textContent = 'Última búsqueda copiada.';
+            } catch {
+                $('q').value = last;
+                estado.textContent = 'No pude copiarla, la dejé en el campo.';
+            }
+        });
+
+        document.querySelectorAll('[data-prompt]').forEach(button => {
+            button.addEventListener('click', () => {
+                const prompt = button.dataset.prompt || '';
+                $('q').value = prompt;
+                $('q').focus();
+            });
+        });
 
         async function postForm(form) {
             const res = await fetch(ENDPOINT, {
@@ -753,16 +829,19 @@
             try {
                 estado.textContent = 'Buscando...';
                 addMessage('user', query);
+                rememberQuery(query);
                 showTyping(true);
 
                 const form = new FormData();
                 form.append('text', query);
+                appendSearchMeta(form);
 
                 const data = await postForm(form);
                 const assistantText = buildAssistantText(data, query);
 
                 if (assistantText) addMessage('assistant', assistantText);
 
+                renderInsights(data);
                 renderFirst(pickResults(data));
                 estado.textContent = pickResults(data).length ? 'Listo' : 'No hubo resultados.';
             } catch (err) {
@@ -864,6 +943,7 @@
                         const blob = new Blob(chunks, { type: 'audio/webm' });
                         const form = new FormData();
                         form.append('audio', blob, 'voz.webm');
+                        appendSearchMeta(form);
 
                         const data = await postForm(form);
 
@@ -873,6 +953,7 @@
                         const assistantText = buildAssistantText(data, userMsg);
                         if (assistantText) addMessage('assistant', assistantText);
 
+                        renderInsights(data);
                         renderFirst(pickResults(data));
                         estado.textContent = pickResults(data).length ? 'Listo' : 'No hubo resultados.';
                     } catch (err) {
@@ -894,6 +975,10 @@
         };
 
         (async function init() {
+            if (!OPENAI_CONFIGURED) {
+                estado.textContent = 'Falta configurar OPENAI_API_KEY en .env.';
+            }
+
             await ensureGreeting();
             restoreResults();
             toggleEmptyChat();

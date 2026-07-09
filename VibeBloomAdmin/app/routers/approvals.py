@@ -1,3 +1,5 @@
+import os
+
 from flask import Blueprint, render_template, session, redirect, url_for, flash, request
 from app.services.api_client import api_get, api_post
 
@@ -66,6 +68,38 @@ def redirect_to_approvals_with_error(message):
     return redirect(url_for("approvals.list_approvals"))
 
 
+def normalize_asset_url(value):
+    if not value:
+        return None
+
+    value = str(value).strip()
+    if not value:
+        return None
+
+    if value.startswith(("http://", "https://", "data:")):
+        return value
+
+    public_base = os.getenv("API_PUBLIC_URL", "http://127.0.0.1:8010").rstrip("/")
+    path = value if value.startswith("/") else f"/storage/{value.lstrip('/')}"
+    return f"{public_base}{path}"
+
+
+def normalize_photo_list(raw_photos):
+    photos = []
+
+    for item in raw_photos or []:
+        if isinstance(item, dict):
+            value = item.get("url") or item.get("photo_url") or item.get("path") or item.get("photo_path")
+        else:
+            value = item
+
+        url = normalize_asset_url(value)
+        if url:
+            photos.append({"url": url})
+
+    return photos
+
+
 def handle_action_response(response, success_message):
     auth_error = handle_api_auth_errors(response)
     if auth_error:
@@ -108,6 +142,17 @@ def list_approvals():
 
     approvals = data.get("approvals", [])
     stats = data.get("stats", {}) if isinstance(data, dict) else {}
+
+    for approval in approvals:
+        photos = normalize_photo_list(approval.get("photos") or [])
+        approval["photos"] = photos
+        approval["photo_url"] = normalize_asset_url(
+            approval.get("photo_url")
+            or approval.get("photo")
+            or approval.get("image_url")
+            or approval.get("cover_url")
+            or (photos[0]["url"] if photos else None)
+        )
 
     return render_template(
         "approvals.html",

@@ -51,6 +51,7 @@ class PlaceBase(BaseModel):
     lng: Optional[float] = None
     price: float
     photo: Optional[str] = None
+    photo_url: Optional[str] = None
     photos: Optional[str] = None
     description: Optional[str] = None
     price_range: Optional[float] = None

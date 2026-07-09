@@ -1,255 +1,143 @@
 <x-app-layout>
     @php
-        $container = "max-w-7xl mx-auto px-6 py-6 pb-40 sm:pb-44";
-        $shell = "max-w-7xl mx-auto";
-        $card = "bg-white dark:bg-slate-900 shadow-sm rounded-[28px] p-6 border border-gray-100 dark:border-slate-800";
-
-        $btnPrimary = "px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl shadow-sm transition
-                       active:scale-[0.99] focus:outline-none focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-500/30";
-        $btnGhost = "px-6 py-2.5 bg-blue-50 dark:bg-slate-800 hover:bg-blue-100 dark:hover:bg-slate-700 text-blue-700 dark:text-blue-400 font-semibold rounded-xl shadow-sm transition
-                     active:scale-[0.99] border border-blue-100 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-500/30";
-
-        $hint = "text-sm text-gray-600 dark:text-slate-400 mt-1";
-        $title = "text-3xl sm:text-4xl font-extrabold text-gray-900 dark:text-slate-100 tracking-tight";
+        $mapboxToken = (string) env('MAPBOX_TOKEN');
 
         $typeIcons = [
-            'RESTAURANTE' => '<svg class="w-4 h-4 text-blue-700 dark:text-blue-400 shrink-0" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="M7 3v9M10 3v9M7 7h3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-                <path d="M14 3v8.5a3 3 0 0 0 6 0V3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-            </svg>',
-            'CAFETERIA' => '<svg class="w-4 h-4 text-blue-700 dark:text-blue-400 shrink-0" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="M4.5 9h10.5v6a4 4 0 0 1-4 4H8.5a4 4 0 0 1-4-4V9Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
-                <path d="M15 10h2.25a2.75 2.75 0 1 1 0 5.5H15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-                <path d="M7.5 5.5c0 1 .8 1.5.8 2.5M10.5 5.5c0 1 .8 1.5.8 2.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" opacity=".7"/>
-            </svg>',
-            'BAR' => '<svg class="w-4 h-4 text-blue-700 dark:text-blue-400 shrink-0" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="M7 3h10l-1 7a4 4 0 0 1-4 3H12a4 4 0 0 1-4-3L7 3Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
-                <path d="M12 13v7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-                <path d="M9 20h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-            </svg>',
-            'ANTRO' => '<svg class="w-4 h-4 text-blue-700 dark:text-blue-400 shrink-0" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="M12 3v9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-                <path d="M7 12h10l-1 9H8l-1-9Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
-                <path d="M9.25 8.5l5.5-3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" opacity=".75"/>
-            </svg>',
-            'PARQUE' => '<svg class="w-4 h-4 text-blue-700 dark:text-blue-400 shrink-0" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="M12 2l4.5 7H7.5L12 2Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
-                <path d="M8 9l4 6 4-6" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
-                <path d="M12 15v7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-                <path d="M9 22h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-            </svg>',
-            'PLAZA' => '<svg class="w-4 h-4 text-blue-700 dark:text-blue-400 shrink-0" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="M4 10h16v10H4V10Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
-                <path d="M7 10V7a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-                <path d="M9 14h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" opacity=".7"/>
-            </svg>',
-            'MIRADOR' => '<svg class="w-4 h-4 text-blue-700 dark:text-blue-400 shrink-0" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="M3 20l6-6 4 4 7-7 1 1-8 8-4-4-5 5H3Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
-            </svg>',
-            'MUSEO' => '<svg class="w-4 h-4 text-blue-700 dark:text-blue-400 shrink-0" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="M12 3l9 6H3l9-6Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
-                <path d="M5 10v9M9 10v9M15 10v9M19 10v9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-                <path d="M4 19h16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-            </svg>',
-            'OTRO' => '<svg class="w-4 h-4 text-blue-700 dark:text-blue-400 shrink-0" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="M12 21a9 9 0 1 1 0-18a9 9 0 0 1 0 18Z" stroke="currentColor" stroke-width="1.8"/>
-                <path d="M12 8.25v4.25" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-                <path d="M12 16.5h.01" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
-            </svg>',
+            'RESTAURANTE' => '<svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 3v9M10 3v9M7 7h3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M14 3v8.5a3 3 0 0 0 6 0V3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
+            'CAFETERIA' => '<svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4.5 9h10.5v6a4 4 0 0 1-4 4H8.5a4 4 0 0 1-4-4V9Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M15 10h2.25a2.75 2.75 0 1 1 0 5.5H15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M7.5 5.5c0 1 .8 1.5.8 2.5M10.5 5.5c0 1 .8 1.5.8 2.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" opacity=".7"/></svg>',
+            'BAR' => '<svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 3h10l-1 7a4 4 0 0 1-4 3H12a4 4 0 0 1-4-3L7 3Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M12 13v7M9 20h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
+            'ANTRO' => '<svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3v9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M7 12h10l-1 9H8l-1-9Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M9.25 8.5l5.5-3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" opacity=".75"/></svg>',
+            'PARQUE' => '<svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 2l4.5 7H7.5L12 2Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M8 9l4 6 4-6" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M12 15v7M9 22h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
+            'PLAZA' => '<svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 10h16v10H4V10Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M7 10V7a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M9 14h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" opacity=".7"/></svg>',
+            'MIRADOR' => '<svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3 20l6-6 4 4 7-7 1 1-8 8-4-4-5 5H3Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>',
+            'MUSEO' => '<svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3l9 6H3l9-6Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M5 10v9M9 10v9M15 10v9M19 10v9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M4 19h16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
+            'OTRO' => '<svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 21a9 9 0 1 1 0-18a9 9 0 0 1 0 18Z" stroke="currentColor" stroke-width="1.8"/><path d="M12 8.25v4.25" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M12 16.5h.01" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>',
         ];
 
         $labels = [
-            'RESTAURANTE' => 'Restaurante',
-            'CAFETERIA' => 'Cafetería',
-            'BAR' => 'Bar',
-            'ANTRO' => 'Antro',
-            'PARQUE' => 'Parque',
-            'PLAZA' => 'Plaza',
-            'MIRADOR' => 'Mirador',
-            'MUSEO' => 'Museo',
-            'OTRO' => 'Otro',
+            'TODOS' => 'Todos',
+            'RESTAURANTE' => 'Restaurantes',
+            'CAFETERIA' => 'Cafeterías',
+            'BAR' => 'Bares',
+            'ANTRO' => 'Antros',
+            'PARQUE' => 'Parques',
+            'PLAZA' => 'Plazas',
+            'MIRADOR' => 'Miradores',
+            'MUSEO' => 'Museos',
+            'OTRO' => 'Otros',
         ];
 
-        $mapboxToken = (string) env('MAPBOX_TOKEN');
+        $btnPrimary = "inline-flex items-center justify-center gap-2 rounded-2xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-blue-700 active:scale-[0.99] focus:outline-none focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-500/30";
+        $btnGhost = "inline-flex items-center justify-center gap-2 rounded-2xl border border-gray-200 bg-white/90 px-4 py-2.5 text-sm font-bold text-gray-700 shadow-sm backdrop-blur transition hover:border-blue-200 hover:text-blue-700 active:scale-[0.99] dark:border-slate-700 dark:bg-slate-900/90 dark:text-slate-200 dark:hover:border-blue-500/30 dark:hover:text-blue-300";
     @endphp
 
-    <div class="min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-100/70 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900 relative overflow-hidden">
-        <div class="pointer-events-none absolute inset-x-0 top-0 h-72 bg-[radial-gradient(circle_at_top,rgba(37,99,235,0.10),transparent_55%)] dark:bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.10),transparent_55%)]"></div>
+    <link href="https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.css" rel="stylesheet">
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.js"></script>
 
-        <div class="{{ $container }}">
-            <div class="{{ $shell }} mb-6">
-                <div class="rounded-[28px] border border-gray-100 dark:border-slate-800 bg-white/85 dark:bg-slate-900/85 backdrop-blur shadow-sm p-5 sm:p-6 lg:p-7">
-                    <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-5">
+    <div class="relative overflow-hidden bg-white dark:bg-slate-950" style="height: calc(100vh - 4rem); min-height: 680px;">
+        <div id="vbMap" class="absolute inset-0 h-full w-full bg-slate-50 dark:bg-slate-950" style="height: 100%; min-height: 680px;"></div>
+
+        <div class="pointer-events-none absolute inset-x-0 top-0 z-10 h-56 bg-gradient-to-b from-white/90 via-white/45 to-transparent dark:from-slate-950/92 dark:via-slate-950/42 dark:to-transparent"></div>
+        <div class="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-44 bg-gradient-to-t from-white/88 via-white/35 to-transparent dark:from-slate-950/90 dark:via-slate-950/35 dark:to-transparent"></div>
+
+        <section class="pointer-events-none absolute inset-x-0 top-0 z-20 px-3 py-4 sm:px-5 lg:px-6">
+            <div class="mx-auto flex max-w-7xl flex-col gap-3">
+                <div class="pointer-events-auto rounded-[26px] border border-white/20 bg-white/92 p-3 shadow-[0_24px_70px_rgba(15,23,42,0.22)] backdrop-blur-xl dark:border-slate-700/80 dark:bg-slate-950/92 dark:shadow-[0_24px_70px_rgba(0,0,0,0.48)]">
+                    <div class="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
                         <div class="min-w-0">
-                            <div class="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50/80 px-3 py-1.5 text-xs font-semibold text-blue-700 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-300">
-                                <span class="inline-block h-2 w-2 rounded-full bg-blue-500"></span>
-                                Explora por tipo y ubicación
+                            <div class="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700 dark:bg-blue-500/10 dark:text-blue-300">
+                                <span class="h-2 w-2 rounded-full bg-blue-500"></span>
+                                Explorador VibeBloom
                             </div>
-
-                            <h1 class="{{ $title }} mt-4">Mapa de lugares</h1>
-                            <p class="{{ $hint }}">Hover para ver detalles, click para abrir el lugar.</p>
+                            <h1 class="mt-2 text-xl font-extrabold leading-tight text-gray-950 sm:text-2xl dark:text-slate-100">Mapa de lugares</h1>
+                            <p class="mt-1 text-sm text-gray-500 dark:text-slate-400">Filtra por nombre o tipo para encontrar ubicaciones creadas por la comunidad.</p>
                         </div>
 
-                        <div class="flex flex-wrap items-center gap-3">
-                            <a href="{{ route('dashboard') }}" class="{{ $btnGhost }} inline-flex items-center gap-2">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none"
-                                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M15 18l-6-6 6-6" />
-                                </svg>
-                                Volver
-                            </a>
+                        <div class="grid gap-2 sm:grid-cols-[minmax(220px,1fr)_auto_auto] xl:min-w-[620px]">
+                            <label class="relative block">
+                                <span class="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-500">
+                                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                        <path d="m21 21-4.35-4.35M10.75 18.5a7.75 7.75 0 1 1 0-15.5a7.75 7.75 0 0 1 0 15.5Z" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
+                                    </svg>
+                                </span>
+                                <input id="vbSearchInput"
+                                       type="search"
+                                       autocomplete="off"
+                                       class="h-11 w-full rounded-2xl border border-gray-200 bg-slate-50/90 pl-11 pr-4 text-sm font-semibold text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-blue-300 focus:bg-white focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-800/90 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-blue-500/50 dark:focus:bg-slate-900 dark:focus:ring-blue-500/20"
+                                       placeholder="Buscar por nombre, ciudad o tipo">
+                            </label>
 
                             <a href="{{ route('places.create') }}" class="{{ $btnPrimary }}">
                                 Crear lugar
                             </a>
+
+                            <a href="{{ route('dashboard') }}" class="{{ $btnGhost }}">
+                                Volver
+                            </a>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <div class="{{ $shell }}">
-                <div class="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
-                    <aside class="xl:col-span-4">
-                        <div class="{{ $card }} xl:sticky xl:top-6">
-                            <div class="flex items-start justify-between gap-3 flex-wrap">
-                                <div>
-                                    <div class="text-base font-extrabold text-gray-900 dark:text-slate-100">Filtrar por tipo</div>
-                                    <div class="text-xs text-gray-500 dark:text-slate-400 mt-1 leading-relaxed">
-                                        Presiona un botón para mostrar solo ese tipo. Presiona de nuevo para quitar el filtro.
-                                    </div>
-                                </div>
-
-                                <button type="button"
-                                        id="vbClearType"
-                                        class="{{ $btnGhost }} px-4 py-2 text-sm hidden">
-                                    Quitar filtro
-                                </button>
-                            </div>
-
-                            <div class="mt-5 grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-2 gap-2.5">
-                                @foreach($labels as $k => $label)
-                                    <button type="button"
-                                            class="vb-type-btn flex items-center gap-2 rounded-2xl px-3.5 py-3 border border-blue-100 dark:border-slate-700 bg-blue-50 dark:bg-slate-800
-                                                   text-blue-800 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-slate-700 transition focus:outline-none focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-500/30"
-                                            data-type="{{ $k }}">
-                                        <span class="vb-gloss-plain">
-                                            {!! $typeIcons[$k] !!}
-                                        </span>
-                                        <span class="text-xs font-semibold">{{ $label }}</span>
-                                    </button>
-                                @endforeach
-                            </div>
-
-                            <div class="mt-5 rounded-2xl border border-blue-100 dark:border-slate-700 bg-blue-50/70 dark:bg-slate-800/80 px-4 py-4">
-                                <div class="flex items-center justify-between gap-3">
-                                    <div class="text-sm font-semibold text-gray-800 dark:text-slate-200">
-                                        <span class="text-gray-500 dark:text-slate-400 font-medium">Mostrando:</span>
-                                        <span id="vbFilterLabel" class="text-blue-700 dark:text-blue-400 font-extrabold">Todos</span>
-                                    </div>
-
-                                    <div class="text-xs text-gray-500 dark:text-slate-400">
-                                        Tipos
-                                    </div>
-                                </div>
-
-                                <div class="mt-4">
-                                    <button type="button"
-                                            id="vbFullscreenBtn"
-                                            class="{{ $btnPrimary }} w-full justify-center px-4 py-2.5 text-sm inline-flex items-center gap-2">
-                                        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                                            <path d="M9 3H5a2 2 0 0 0-2 2v4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-                                            <path d="M15 3h4a2 2 0 0 1 2 2v4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-                                            <path d="M9 21H5a2 2 0 0 1-2-2v-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-                                            <path d="M15 21h4a2 2 0 0 0 2-2v-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-                                        </svg>
-                                        Pantalla completa
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div class="mt-5 rounded-2xl border border-gray-200 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-800/60 p-4">
-                                <div class="text-sm font-semibold text-gray-900 dark:text-slate-100">Sugerencia</div>
-                                <p class="mt-1 text-xs leading-relaxed text-gray-500 dark:text-slate-400">
-                                    Usa pantalla completa para revisar mejor la distribución de los lugares y detectar zonas con más actividad.
-                                </p>
-                            </div>
-                        </div>
-                    </aside>
-
-                    <section class="xl:col-span-8">
-                        <div class="{{ $card }}">
-                            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-                                <div>
-                                    <div class="text-base font-extrabold text-gray-900 dark:text-slate-100">Navegación del mapa</div>
-                                    <div class="text-xs text-gray-500 dark:text-slate-400 mt-1">
-                                        Tip: si no ves popups, mueve el mouse sobre un marcador
-                                    </div>
-                                </div>
-
-                                <div class="inline-flex items-center gap-2 rounded-full border border-gray-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-1.5 text-xs font-semibold text-gray-600 dark:text-slate-300">
-                                    <span class="h-2 w-2 rounded-full bg-blue-500"></span>
-                                    Vista interactiva
-                                </div>
-                            </div>
-
-                            <div id="map"
-                                 class="w-full rounded-[24px] border border-gray-200 dark:border-slate-700 shadow-sm overflow-hidden bg-white dark:bg-slate-950"
-                                 style="height: 680px;"></div>
-
-                            <div id="mapEmpty" class="hidden mt-4 text-sm text-gray-600 dark:text-slate-400">
-                                No hay lugares con coordenadas todavía. Asegúrate de guardar <span class="font-semibold">lat/lng</span> al crear un lugar.
-                            </div>
-
-                            <div id="mapError" class="hidden mt-4 rounded-2xl border border-red-200 dark:border-red-900/60 bg-red-50 dark:bg-red-950/40 p-4 text-sm text-red-800 dark:text-red-300">
-                                No se pudo cargar el mapa. Revisa el token de Mapbox (MAPBOX_TOKEN) y la consola del navegador.
-                            </div>
-                        </div>
-                    </section>
+                <div class="pointer-events-auto grid grid-cols-2 gap-2 rounded-[22px] border border-white/20 bg-white/86 p-2 shadow-lg backdrop-blur-xl dark:border-slate-700/80 dark:bg-slate-950/88 dark:shadow-[0_18px_45px_rgba(0,0,0,0.35)] sm:grid-cols-3 md:grid-cols-5 xl:grid-cols-10">
+                    @foreach ($labels as $key => $label)
+                        <button type="button"
+                                class="vb-filter-btn inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl border border-transparent px-3 py-2 text-xs font-extrabold text-gray-600 transition hover:bg-blue-50 hover:text-blue-700 dark:text-slate-300 dark:hover:bg-blue-500/10 dark:hover:text-blue-300"
+                                data-type="{{ $key }}">
+                            @if ($key !== 'TODOS')
+                                <span class="text-blue-700 dark:text-blue-300">{!! $typeIcons[$key] !!}</span>
+                            @else
+                                <span class="h-2.5 w-2.5 rounded-full bg-blue-500"></span>
+                            @endif
+                            {{ $label }}
+                        </button>
+                    @endforeach
                 </div>
             </div>
-        </div>
-    </div>
+        </section>
 
-    <div id="vbMapOverlay" class="hidden fixed inset-0 z-[9999]">
-        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm"></div>
-
-        <div class="relative mx-auto h-[92vh] w-[96vw] max-w-7xl top-[4vh]">
-            <div class="h-full bg-white dark:bg-slate-900 rounded-[28px] shadow-xl border border-gray-200 dark:border-slate-700 overflow-hidden flex flex-col">
-                <div class="px-4 py-3 border-b border-gray-100 dark:border-slate-800 flex items-center justify-between gap-4">
-                    <div class="flex items-center gap-2 min-w-0">
-                        <div class="h-9 w-9 rounded-xl bg-blue-50 dark:bg-slate-800 border border-blue-100 dark:border-slate-700 grid place-items-center text-blue-700 dark:text-blue-400">
-                            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                                <path d="M12 21s7-4.6 7-11a7 7 0 1 0-14 0c0 6.4 7 11 7 11Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
-                                <path d="M12 11a2 2 0 1 0 0-4a2 2 0 0 0 0 4Z" stroke="currentColor" stroke-width="1.8"/>
-                            </svg>
+        <aside class="pointer-events-none absolute inset-x-0 bottom-0 z-20 px-3 pb-4 sm:px-5 lg:inset-x-auto lg:bottom-6 lg:right-6 lg:w-[380px] lg:px-0 lg:pb-0">
+            <div class="pointer-events-auto max-h-[34vh] overflow-hidden rounded-[26px] border border-white/20 bg-white/94 shadow-[0_24px_70px_rgba(15,23,42,0.24)] backdrop-blur-xl dark:border-slate-700/80 dark:bg-slate-950/94 dark:shadow-[0_24px_70px_rgba(0,0,0,0.48)] lg:max-h-[58vh]">
+                <div class="border-b border-gray-100 px-4 py-3 dark:border-slate-800">
+                    <div class="flex items-center justify-between gap-3">
+                        <div>
+                            <p class="text-xs font-bold uppercase tracking-wide text-gray-400 dark:text-slate-500">Resultados</p>
+                            <p class="text-lg font-extrabold text-gray-950 dark:text-slate-100">
+                                <span id="vbResultCount">0</span> lugares
+                            </p>
                         </div>
-                        <div class="min-w-0">
-                            <div class="text-sm font-extrabold text-gray-900 dark:text-slate-100">Mapa de lugares</div>
-                            <div class="text-xs text-gray-500 dark:text-slate-400">
-                                Filtro: <span id="vbFilterLabelFs" class="font-semibold text-blue-700 dark:text-blue-400">Todos</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="flex items-center gap-2">
-                        <button type="button" id="vbExitFullscreen" class="{{ $btnGhost }} px-4 py-2 text-sm">
-                            Cerrar
+                        <button type="button" id="vbFitBtn" class="{{ $btnGhost }} px-3 py-2 text-xs">
+                            Ajustar mapa
                         </button>
                     </div>
+                    <p id="vbActiveFilterLabel" class="mt-1 text-xs font-semibold text-blue-700 dark:text-blue-300">Mostrando todos los lugares</p>
                 </div>
 
-                <div id="mapFs" class="w-full flex-1 bg-white dark:bg-slate-950"></div>
+                <div id="vbResultsList" class="max-h-[22vh] overflow-y-auto p-2 lg:max-h-[44vh]"></div>
+
+                <div id="vbEmptyState" class="hidden p-5 text-sm text-gray-500 dark:text-slate-400">
+                    No encontramos lugares con esos filtros. Prueba con otro nombre o tipo.
+                </div>
             </div>
+        </aside>
+
+        <div id="mapEmpty" class="pointer-events-none hidden absolute left-1/2 top-1/2 z-30 w-[min(92vw,420px)] -translate-x-1/2 -translate-y-1/2 rounded-[26px] border border-white/20 bg-white/94 p-6 text-center shadow-xl backdrop-blur-xl dark:border-slate-700 dark:bg-slate-950/94">
+            <p class="text-lg font-extrabold text-gray-950 dark:text-slate-100">Aún no hay lugares con ubicación</p>
+            <p class="mt-2 text-sm text-gray-500 dark:text-slate-400">Cuando existan lugares con coordenadas, aparecerán en este mapa.</p>
+        </div>
+
+        <div id="mapError" class="hidden absolute left-1/2 top-1/2 z-30 w-[min(92vw,460px)] -translate-x-1/2 -translate-y-1/2 rounded-[26px] border border-red-200 bg-red-50 p-6 text-center text-red-800 shadow-xl dark:border-red-900/60 dark:bg-red-950/80 dark:text-red-300">
+            <p class="text-lg font-extrabold">No se pudo cargar el mapa</p>
+            <p class="mt-2 text-sm">Revisa el token de Mapbox en <span class="font-bold">MAPBOX_TOKEN</span>.</p>
         </div>
     </div>
 
     <a href="{{ url('/ai/voz') }}"
-       class="fixed bottom-6 right-6 z-50 group"
+       class="fixed bottom-6 left-6 z-50 group"
        aria-label="Abrir Vibe IA"
        title="Vibe IA">
-        <span class="absolute -inset-1 rounded-2xl bg-blue-600/20 blur-lg opacity-0 group-hover:opacity-100 transition"></span>
-        <span class="relative inline-flex items-center gap-3 px-5 py-3 rounded-2xl bg-blue-600 text-white shadow-lg hover:bg-blue-700 active:scale-[0.98] transition">
-            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <span class="absolute -inset-1 rounded-2xl bg-blue-600/20 blur-lg opacity-0 transition group-hover:opacity-100"></span>
+        <span class="relative inline-flex items-center gap-3 rounded-2xl bg-blue-600 px-5 py-3 text-white shadow-lg transition hover:bg-blue-700 active:scale-[0.98]">
+            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                 <path d="M12 21s6-5.2 6-11a6 6 0 1 0-12 0c0 5.8 6 11 6 11Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
                 <path d="M12 13.25a2.25 2.25 0 1 0 0-4.5a2.25 2.25 0 0 0 0 4.5Z" fill="currentColor"/>
             </svg>
@@ -257,20 +145,41 @@
         </span>
     </a>
 
-    <link href="https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.css" rel="stylesheet">
-    <script src="https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.js"></script>
-
     <style>
-        .vb-gloss-plain {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 18px;
-            height: 18px;
+        html, body {
+            overscroll-behavior: none;
         }
 
-        .mapboxgl-ctrl-top-right { top: 12px !important; right: 12px !important; }
-        .mapboxgl-ctrl-top-left { top: 12px !important; left: 12px !important; }
+        #vbMap,
+        #vbMap .mapboxgl-canvas-container,
+        #vbMap .mapboxgl-canvas {
+            min-height: 680px !important;
+            height: 100% !important;
+            width: 100% !important;
+        }
+
+        a[aria-label="Abrir Vibe IA"][href$="/ai/voz"] {
+            left: 1.5rem !important;
+            right: auto !important;
+        }
+
+        @media (max-width: 640px) {
+            a[aria-label="Abrir Vibe IA"][href$="/ai/voz"] {
+                left: 1rem !important;
+                right: auto !important;
+            }
+        }
+
+        .mapboxgl-ctrl-top-right {
+            top: 162px !important;
+            right: 18px !important;
+        }
+
+        @media (max-width: 1023px) {
+            .mapboxgl-ctrl-top-right {
+                top: 210px !important;
+            }
+        }
 
         .dark .mapboxgl-ctrl-group {
             background: rgb(15 23 42 / 0.95) !important;
@@ -282,9 +191,109 @@
             filter: invert(1) opacity(.85);
         }
 
-        .vb-popup {
-            pointer-events: none;
-            z-index: 9999 !important;
+        .vb-filter-btn.is-active {
+            background: rgb(37 99 235) !important;
+            border-color: rgb(37 99 235) !important;
+            color: #fff !important;
+            box-shadow: 0 12px 30px rgba(37, 99, 235, .25);
+        }
+
+        .vb-filter-btn.is-active span {
+            color: #fff !important;
+        }
+
+        .vb-marker {
+            --pin-color: rgb(37 99 235);
+            --pin-shadow: rgba(37, 99, 235, .30);
+            position: relative;
+            display: grid;
+            place-items: center;
+            width: 46px;
+            height: 46px;
+            border-radius: 18px 18px 18px 6px;
+            background: #fff;
+            border: 2px solid var(--pin-color);
+            color: var(--pin-color);
+            box-shadow: 0 16px 34px rgba(15, 23, 42, .18);
+            cursor: pointer;
+            transform: rotate(-45deg);
+            transition: transform .14s ease, box-shadow .14s ease, background .14s ease, color .14s ease;
+        }
+
+        .vb-marker::after {
+            content: "";
+            position: absolute;
+            inset: 5px;
+            z-index: -1;
+            border-radius: 14px 14px 14px 4px;
+            background: color-mix(in srgb, var(--pin-color) 12%, white);
+        }
+
+        .dark .vb-marker {
+            background: #fff;
+            border-color: var(--pin-color);
+            color: var(--pin-color);
+        }
+
+        .vb-marker:hover,
+        .vb-marker.is-highlighted {
+            transform: translateY(-4px) rotate(-45deg) scale(1.08);
+            background: var(--pin-color);
+            color: #fff;
+            box-shadow: 0 20px 42px var(--pin-shadow);
+        }
+
+        .vb-marker svg {
+            position: relative;
+            z-index: 1;
+            width: 20px;
+            height: 20px;
+            transform: rotate(45deg);
+        }
+
+        .vb-marker--restaurante {
+            --pin-color: rgb(37 99 235);
+            --pin-shadow: rgba(37, 99, 235, .34);
+        }
+
+        .vb-marker--cafeteria {
+            --pin-color: rgb(14 165 233);
+            --pin-shadow: rgba(14, 165, 233, .34);
+        }
+
+        .vb-marker--bar {
+            --pin-color: rgb(124 58 237);
+            --pin-shadow: rgba(124, 58, 237, .34);
+        }
+
+        .vb-marker--antro {
+            --pin-color: rgb(219 39 119);
+            --pin-shadow: rgba(219, 39, 119, .34);
+        }
+
+        .vb-marker--parque {
+            --pin-color: rgb(22 163 74);
+            --pin-shadow: rgba(22, 163, 74, .34);
+        }
+
+        .vb-marker--plaza {
+            --pin-color: rgb(234 88 12);
+            --pin-shadow: rgba(234, 88, 12, .34);
+        }
+
+        .vb-marker--mirador {
+            --pin-color: rgb(13 148 136);
+            --pin-shadow: rgba(13, 148, 136, .34);
+        }
+
+        .vb-marker--museo {
+            --pin-color: rgb(79 70 229);
+            --pin-shadow: rgba(79, 70, 229, .34);
+        }
+
+        .vb-marker--otro {
+            --pin-color: rgb(71 85 105);
+            --pin-shadow: rgba(71, 85, 105, .30);
         }
 
         .vb-popup.mapboxgl-popup {
@@ -292,464 +301,155 @@
         }
 
         .vb-popup .mapboxgl-popup-content {
-            max-width: none !important;
-            width: 320px;
-            border-radius: 18px;
-            padding: 0;
+            width: 300px;
             overflow: hidden;
-            border: 1px solid rgba(229, 231, 235, 1);
-            box-shadow: 0 12px 34px rgba(0, 0, 0, .14);
+            border-radius: 22px;
+            border: 1px solid rgba(226, 232, 240, 1);
             background: #fff;
+            padding: 0;
+            box-shadow: 0 20px 42px rgba(15, 23, 42, .2);
         }
 
         .dark .vb-popup .mapboxgl-popup-content {
-            background: rgb(15 23 42);
             border-color: rgb(51 65 85);
-            box-shadow: 0 16px 36px rgba(0, 0, 0, .35);
-        }
-
-        .vb-popup .mapboxgl-popup-tip {
-            border-top-color: #fff !important;
-        }
-
-        .dark .vb-popup .mapboxgl-popup-tip {
-            border-top-color: rgb(15 23 42) !important;
-        }
-
-        .vb-marker {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 7px 10px;
-            border-radius: 999px;
-            background: rgba(255, 255, 255, .96);
-            border: 1px solid rgba(229, 231, 235, 1);
-            box-shadow: 0 10px 24px rgba(0, 0, 0, .10);
-            backdrop-filter: blur(8px);
-            cursor: pointer;
-            user-select: none;
-            transition: transform .12s ease, box-shadow .12s ease;
-            max-width: 220px;
-            white-space: nowrap;
-        }
-
-        .dark .vb-marker {
-            background: rgba(15, 23, 42, .96);
-            border-color: rgba(51, 65, 85, 1);
-            box-shadow: 0 12px 28px rgba(0, 0, 0, .28);
-        }
-
-        .vb-marker:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 14px 34px rgba(0, 0, 0, .14);
-        }
-
-        .vb-marker__icon {
-            width: 28px;
-            height: 28px;
-            border-radius: 999px;
-            display: grid;
-            place-items: center;
-            border: 1px solid rgba(229, 231, 235, 1);
-            background: rgba(37, 99, 235, .08);
-            color: rgba(29, 78, 216, 1);
-            flex: 0 0 auto;
-        }
-
-        .dark .vb-marker__icon {
-            border-color: rgba(51, 65, 85, 1);
-            background: rgba(59, 130, 246, .18);
-            color: rgb(96 165 250);
-        }
-
-        .vb-marker__icon svg {
-            width: 16px;
-            height: 16px;
-            display: block;
-        }
-
-        .vb-marker__name {
-            font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
-            font-weight: 900;
-            font-size: 12.5px;
-            color: rgba(17, 24, 39, 1);
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .dark .vb-marker__name {
-            color: rgb(241 245 249);
-        }
-
-        .vb-mini {
-            width: 100%;
-            background: #fff;
-            font-family: ui-sans-serif, system-ui;
-        }
-
-        .dark .vb-mini {
             background: rgb(15 23 42);
+            color: rgb(226 232 240);
         }
 
-        .vb-mini__media {
-            height: 170px;
-            position: relative;
+        .vb-popup-card {
+            font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        }
+
+        .vb-popup-card__media {
+            height: 138px;
+            background: rgb(241 245 249);
             overflow: hidden;
-            background: rgba(243, 244, 246, 1);
         }
 
-        .dark .vb-mini__media {
+        .dark .vb-popup-card__media {
             background: rgb(30 41 59);
         }
 
-        .vb-mini__bg {
-            position: absolute;
-            inset: 0;
-            background-size: cover;
-            background-position: center;
-            filter: blur(18px);
-            transform: scale(1.25);
-            opacity: .55;
-        }
-
-        .vb-mini__img {
-            position: absolute;
-            inset: 0;
+        .vb-popup-card__media img {
             width: 100%;
             height: 100%;
             object-fit: cover;
-            object-position: center;
-            transform: scale(1.02);
-            display: block;
-        }
-
-        .vb-mini__noimg {
-            position: absolute;
-            inset: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            color: rgba(107, 114, 128, 1);
-            font-weight: 800;
-            font-size: 12px;
-        }
-
-        .dark .vb-mini__noimg {
-            color: rgb(148 163 184);
-        }
-
-        .vb-mini__noimg svg {
-            width: 16px;
-            height: 16px;
-            color: rgba(107, 114, 128, 1);
-        }
-
-        .dark .vb-mini__noimg svg {
-            color: rgb(148 163 184);
-        }
-
-        .vb-mini__body {
-            padding: 12px;
-        }
-
-        .vb-mini__badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 6px 10px;
-            border-radius: 999px;
-            background: rgba(239, 246, 255, 1);
-            color: rgba(29, 78, 216, 1);
-            border: 1px solid rgba(219, 234, 254, 1);
-            font-weight: 900;
-            font-size: 12px;
-        }
-
-        .dark .vb-mini__badge {
-            background: rgba(30, 41, 59, 1);
-            color: rgb(96 165 250);
-            border-color: rgb(51 65 85);
-        }
-
-        .vb-mini__badgeIcon {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            flex: 0 0 auto;
-        }
-
-        .vb-mini__badgeIcon svg {
-            width: 16px;
-            height: 16px;
-            display: block;
-        }
-
-        .vb-mini__title {
-            margin-top: 10px;
-            font-weight: 950;
-            font-size: 15px;
-            color: rgba(17, 24, 39, 1);
-            line-height: 1.15;
-            white-space: normal;
-            word-break: break-word;
-        }
-
-        .dark .vb-mini__title {
-            color: rgb(241 245 249);
-        }
-
-        .vb-mini__meta {
-            margin-top: 6px;
-            color: rgba(107, 114, 128, 1);
-            font-size: 12px;
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-            row-gap: 4px;
-            align-items: flex-start;
-            white-space: normal;
-        }
-
-        .dark .vb-mini__meta {
-            color: rgb(148 163 184);
-        }
-
-        .vb-mini__meta span {
-            white-space: normal;
-        }
-
-        .vb-mini__bottom {
-            padding: 10px 12px 12px 12px;
-            border-top: 1px solid rgba(243, 244, 246, 1);
-        }
-
-        .dark .vb-mini__bottom {
-            border-top-color: rgb(30 41 59);
-        }
-
-        .vb-mini__hint {
-            color: rgba(156, 163, 175, 1);
-            font-size: 11px;
-            line-height: 1.2;
-        }
-
-        .dark .vb-mini__hint {
-            color: rgb(148 163 184);
-        }
-
-        .vb-mini__bar {
-            height: 4px;
-            width: 100%;
-            background: rgba(37, 99, 235, 1);
-        }
-
-        .vb-type-btn.is-active {
-            background: rgba(37, 99, 235, 1) !important;
-            border-color: rgba(37, 99, 235, 1) !important;
-            color: #fff !important;
-            box-shadow: 0 10px 24px rgba(37, 99, 235, .22);
-        }
-
-        .vb-type-btn.is-active .vb-gloss-plain svg {
-            color: #fff !important;
         }
     </style>
 
     <script>
         const VB_MAPBOX_TOKEN = @json($mapboxToken);
+        const TYPE_ICONS = {
+            RESTAURANTE: @json($typeIcons['RESTAURANTE']),
+            CAFETERIA: @json($typeIcons['CAFETERIA']),
+            BAR: @json($typeIcons['BAR']),
+            ANTRO: @json($typeIcons['ANTRO']),
+            PARQUE: @json($typeIcons['PARQUE']),
+            PLAZA: @json($typeIcons['PLAZA']),
+            MIRADOR: @json($typeIcons['MIRADOR']),
+            MUSEO: @json($typeIcons['MUSEO']),
+            OTRO: @json($typeIcons['OTRO']),
+        };
+        const TYPE_LABELS = @json($labels);
 
-        const popup = new mapboxgl.Popup({
-            closeButton: false,
-            closeOnClick: false,
-            offset: 18,
-            className: 'vb-popup'
-        });
-
-        let allFeatures = [];
-        let activeType = null;
         let map = null;
-        let mapFs = null;
-        let activeMarkerId = null;
+        let allFeatures = [];
+        let markers = [];
+        let activeType = 'TODOS';
+        let activeQuery = '';
+        let highlightedMarkerId = null;
+        let popup = null;
+        let fitTimer = null;
 
-        const markersMain = [];
-        const markersFs = [];
+        function isDarkMode() {
+            return document.documentElement.classList.contains('dark');
+        }
 
-        function escapeAttr(value) {
-            return String(value)
+        function mapStyleUrl() {
+            return isDarkMode()
+                ? 'mapbox://styles/mapbox/dark-v11'
+                : 'mapbox://styles/mapbox/light-v11';
+        }
+
+        function normalize(value) {
+            return String(value || '')
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .trim()
+                .toLowerCase();
+        }
+
+        function escapeHtml(value) {
+            return String(value || '')
                 .replaceAll('&', '&amp;')
-                .replaceAll('"', '&quot;')
-                .replaceAll("'", '&#39;')
                 .replaceAll('<', '&lt;')
-                .replaceAll('>', '&gt;');
+                .replaceAll('>', '&gt;')
+                .replaceAll('"', '&quot;')
+                .replaceAll("'", '&#39;');
         }
 
-        function decodeEntitiesLite(value) {
-            return String(value)
-                .replaceAll('&quot;', '"')
-                .replaceAll('&#34;', '"')
-                .replaceAll('&apos;', "'")
-                .replaceAll('&#39;', "'")
-                .replaceAll('&gt;', '>')
-                .replaceAll('&#62;', '>')
-                .replaceAll('&lt;', '<')
-                .replaceAll('&#60;', '<')
-                .replaceAll('&amp;', '&');
-        }
+        function iconKey(place) {
+            const raw = normalize(place.iconKey || place.type);
 
-        function safePhoto(url) {
-            if (!url) return '';
-
-            let cleaned = decodeEntitiesLite(String(url)).trim();
-
-            if (cleaned.includes('<img')) {
-                const match = cleaned.match(/src\s*=\s*["']([^"']+)["']/i);
-                if (match && match[1]) cleaned = match[1].trim();
-            }
-
-            cleaned = cleaned.split('"')[0]
-                .split("'")[0]
-                .split('<')[0]
-                .split('>')[0]
-                .split(';')[0]
-                .trim();
-
-            if (cleaned.startsWith('storage/')) {
-                cleaned = '/' + cleaned;
-            }
-
-            if (!(cleaned.startsWith('/') || cleaned.startsWith('http://') || cleaned.startsWith('https://'))) {
-                return '';
-            }
-
-            try {
-                cleaned = encodeURI(cleaned);
-            } catch (error) {}
-
-            return cleaned;
-        }
-
-        function noImgHtml() {
-            return `
-                <div class="vb-mini__noimg">
-                    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                        <path d="M4 7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7Z" stroke="currentColor" stroke-width="1.5"/>
-                        <path d="M8 11l2.5 2.5L14 10l4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                        <path d="M9 9h.01" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
-                    </svg>
-                    Sin foto
-                </div>
-            `;
-        }
-
-        function typeSvg(keyUpper) {
-            const icons = {
-                RESTAURANTE: @json($typeIcons['RESTAURANTE']),
-                CAFETERIA: @json($typeIcons['CAFETERIA']),
-                BAR: @json($typeIcons['BAR']),
-                ANTRO: @json($typeIcons['ANTRO']),
-                PARQUE: @json($typeIcons['PARQUE']),
-                PLAZA: @json($typeIcons['PLAZA']),
-                MIRADOR: @json($typeIcons['MIRADOR']),
-                MUSEO: @json($typeIcons['MUSEO']),
-                OTRO: @json($typeIcons['OTRO']),
-            };
-
-            return icons[keyUpper] || icons.OTRO;
-        }
-
-        function iconsHasKey(key) {
-            return ['RESTAURANTE', 'CAFETERIA', 'BAR', 'ANTRO', 'PARQUE', 'PLAZA', 'MIRADOR', 'MUSEO', 'OTRO'].includes(key);
-        }
-
-        function keyToUpper(iconKey, typeLabel) {
-            const normalized = (iconKey || '').toString().trim().toLowerCase();
-
-            const mapKeys = {
-                restaurante: 'RESTAURANTE',
-                cafeteria: 'CAFETERIA',
-                'café': 'CAFETERIA',
-                bar: 'BAR',
-                antro: 'ANTRO',
-                parque: 'PARQUE',
-                plaza: 'PLAZA',
-                mirador: 'MIRADOR',
-                museo: 'MUSEO',
-                otro: 'OTRO'
-            };
-
-            if (mapKeys[normalized]) {
-                return mapKeys[normalized];
-            }
-
-            if (typeLabel) {
-                const fallback = typeLabel.toString().trim().toUpperCase();
-                if (iconsHasKey(fallback)) {
-                    return fallback;
-                }
-            }
+            if (raw.includes('rest')) return 'RESTAURANTE';
+            if (raw.includes('cafe')) return 'CAFETERIA';
+            if (raw.includes('antro')) return 'ANTRO';
+            if (raw.includes('bar')) return 'BAR';
+            if (raw.includes('parque') || raw.includes('natur')) return 'PARQUE';
+            if (raw.includes('plaza') || raw.includes('centro comercial') || raw.includes('mall')) return 'PLAZA';
+            if (raw.includes('mirador')) return 'MIRADOR';
+            if (raw.includes('museo') || raw.includes('arte')) return 'MUSEO';
 
             return 'OTRO';
         }
 
-        function money(price) {
+        function photoUrl(place) {
+            const url = String(place.photo_url || '').trim();
+            if (!url) return '';
+            if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('/')) return url;
+            if (url.startsWith('storage/')) return `/${url}`;
+            return '';
+        }
+
+        function priceText(price) {
             const amount = Number(price);
-            if (!Number.isFinite(amount)) return null;
+            if (!Number.isFinite(amount)) return '';
 
             return amount.toLocaleString('es-MX', {
                 style: 'currency',
-                currency: 'MXN'
+                currency: 'MXN',
+                maximumFractionDigits: 0
             });
         }
 
-        function renderMiniCard(place) {
-            const iconKey = (place.iconKey || '').toString();
-            const upper = keyToUpper(iconKey, place.type);
-            const svg = typeSvg(upper);
-
-            const rating = place.rating ? `⭐ ${Number(place.rating).toFixed(1)}` : '⭐ —';
-            const city = place.city ? place.city : 'Ubicación';
-            const price = money(place.price);
-
-            const rawPhoto = safePhoto(place.photo_url);
-            const photoAttr = escapeAttr(rawPhoto);
-            const photoCss = escapeAttr(rawPhoto);
-
-            const media = rawPhoto
-                ? `
-                    <div class="vb-mini__media">
-                        <div class="vb-mini__bg" style="background-image:url('${photoCss}')"></div>
-                        <img class="vb-mini__img" src="${photoAttr}" alt="Foto del lugar"
-                             onerror="this.onerror=null;this.style.display='none';" />
-                    </div>
-                  `
-                : `<div class="vb-mini__media">${noImgHtml()}</div>`;
+        function popupHtml(place) {
+            const key = iconKey(place);
+            const photo = photoUrl(place);
+            const rating = place.rating ? Number(place.rating).toFixed(1) : null;
+            const price = priceText(place.price);
 
             return `
-                <div class="vb-mini">
-                    ${media}
-                    <div class="vb-mini__body">
-                        <span class="vb-mini__badge">
-                            <span class="vb-mini__badgeIcon">${svg}</span>
-                            <span>${escapeAttr(place.type || 'Lugar')}</span>
-                        </span>
-
-                        <div class="vb-mini__title">${escapeAttr(place.name || 'Lugar')}</div>
-
-                        <div class="vb-mini__meta">
-                            <span>${escapeAttr(city)}</span>
-                            <span>•</span>
-                            <span>${escapeAttr(rating)}</span>
-                            ${price ? `<span>•</span><span>${escapeAttr(price)}</span>` : ``}
+                <article class="vb-popup-card">
+                    <div class="vb-popup-card__media">
+                        ${photo
+                            ? `<img src="${escapeHtml(photo)}" alt="Foto de ${escapeHtml(place.name)}" onerror="this.style.display='none'">`
+                            : `<div style="height:100%;display:grid;place-items:center;color:#64748b;font-weight:800;font-size:12px;">Sin foto</div>`
+                        }
+                    </div>
+                    <div style="padding:14px;">
+                        <div style="display:inline-flex;align-items:center;gap:7px;border-radius:999px;background:rgba(37,99,235,.08);color:#1d4ed8;padding:6px 10px;font-weight:900;font-size:12px;">
+                            ${TYPE_ICONS[key] || TYPE_ICONS.OTRO}
+                            ${escapeHtml(place.type || 'Lugar')}
                         </div>
+                        <h3 style="margin:10px 0 0;font-size:16px;line-height:1.15;font-weight:950;color:inherit;">${escapeHtml(place.name || 'Lugar')}</h3>
+                        <p style="margin:6px 0 0;color:#64748b;font-size:12px;font-weight:700;">${escapeHtml(place.city || 'Ubicación')}</p>
+                        <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;color:#475569;font-size:12px;font-weight:800;">
+                            ${rating ? `<span>⭐ ${rating}</span>` : ''}
+                            ${price ? `<span>${escapeHtml(price)}</span>` : ''}
+                        </div>
+                        <p style="margin:10px 0 0;color:#94a3b8;font-size:11px;font-weight:700;">Click en el marcador para abrir el lugar</p>
                     </div>
-
-                    <div class="vb-mini__bottom">
-                        <div class="vb-mini__hint">Click para abrir el lugar</div>
-                    </div>
-
-                    <div class="vb-mini__bar"></div>
-                </div>
+                </article>
             `;
         }
 
@@ -758,240 +458,307 @@
                 headers: { Accept: 'application/json' }
             });
 
-            if (!response.ok) {
-                return { type: 'FeatureCollection', features: [] };
+            if (!response.ok) return [];
+
+            const data = await response.json();
+            return data?.features || [];
+        }
+
+        function currentFeatures() {
+            const query = normalize(activeQuery);
+
+            return allFeatures.filter((feature) => {
+                const place = feature.properties || {};
+                const key = iconKey(place);
+                const matchesType = activeType === 'TODOS' || key === activeType;
+
+                const haystack = normalize([
+                    place.name,
+                    place.city,
+                    place.type
+                ].filter(Boolean).join(' '));
+
+                const matchesQuery = !query || haystack.includes(query);
+
+                return matchesType && matchesQuery;
+            });
+        }
+
+        function clearMarkers() {
+            markers.forEach(({ marker }) => marker.remove());
+            markers = [];
+            highlightedMarkerId = null;
+            if (popup) popup.remove();
+        }
+
+        function markerElement(feature) {
+            const place = feature.properties || {};
+            const key = iconKey(place);
+            const element = document.createElement('button');
+            element.type = 'button';
+            element.className = `vb-marker vb-marker--${key.toLowerCase()}`;
+            element.innerHTML = TYPE_ICONS[key] || TYPE_ICONS.OTRO;
+            element.setAttribute('aria-label', place.name || 'Lugar');
+
+            element.addEventListener('mouseenter', () => {
+                const coords = feature.geometry.coordinates;
+                if (popup) popup.setLngLat(coords).setHTML(popupHtml(place)).addTo(map);
+            });
+
+            element.addEventListener('mouseleave', () => {
+                if (highlightedMarkerId !== String(place.id) && popup) popup.remove();
+            });
+
+            element.addEventListener('click', () => {
+                if (place.url) window.location.href = place.url;
+            });
+
+            return element;
+        }
+
+        function renderMarkers() {
+            clearMarkers();
+
+            currentFeatures().forEach((feature) => {
+                const coords = feature.geometry.coordinates;
+                const element = markerElement(feature);
+                const marker = new mapboxgl.Marker({ element, anchor: 'bottom' })
+                    .setLngLat(coords)
+                    .addTo(map);
+
+                markers.push({
+                    id: String(feature.properties?.id || `${coords[0]}-${coords[1]}`),
+                    marker,
+                    element,
+                    feature
+                });
+            });
+        }
+
+        function fitToFeatures() {
+            const features = currentFeatures();
+            if (!features.length || !map) return;
+
+            if (features.length === 1) {
+                map.flyTo({
+                    center: features[0].geometry.coordinates,
+                    zoom: 13.5,
+                    essential: true
+                });
+                return;
             }
 
-            return await response.json();
-        }
-
-        function clearMarkers(markerArray) {
-            markerArray.forEach(marker => marker.remove());
-            markerArray.length = 0;
-            activeMarkerId = null;
-        }
-
-        function addPlaceMarker(mapInstance, markerArray, feature) {
-            const coords = feature.geometry.coordinates;
-            const place = feature.properties || {};
-
-            const upper = keyToUpper((place.iconKey || '').toString(), place.type);
-            const svg = typeSvg(upper);
-
-            const element = document.createElement('div');
-            element.className = 'vb-marker';
-            element.innerHTML = `
-                <div class="vb-marker__icon">${svg}</div>
-                <div class="vb-marker__name" title="${escapeAttr(place.name || '')}">${escapeAttr(place.name || 'Lugar')}</div>
-            `;
-
-            element.addEventListener('pointerenter', () => {
-                const markerId = String(place.id ?? `${coords[0]}-${coords[1]}`);
-
-                if (activeMarkerId === markerId) return;
-
-                activeMarkerId = markerId;
-                popup.setLngLat(coords).setHTML(renderMiniCard(place)).addTo(mapInstance);
-            });
-
-            element.addEventListener('pointerleave', () => {
-                const markerId = String(place.id ?? `${coords[0]}-${coords[1]}`);
-
-                if (activeMarkerId === markerId) {
-                    popup.remove();
-                    activeMarkerId = null;
-                }
-            });
-
-            element.addEventListener('click', (event) => {
-                event.preventDefault();
-                event.stopPropagation();
-
-                if (place.url) {
-                    window.location.href = place.url;
-                }
-            });
-
-            const marker = new mapboxgl.Marker({
-                element,
-                anchor: 'bottom'
-            }).setLngLat(coords).addTo(mapInstance);
-
-            markerArray.push(marker);
-        }
-
-        function computeBounds(features) {
             const bounds = new mapboxgl.LngLatBounds();
             features.forEach(feature => bounds.extend(feature.geometry.coordinates));
-            return bounds;
-        }
 
-        function setFilterLabel() {
-            const types = @json($labels);
-            const label = activeType ? (types[activeType] || activeType) : 'Todos';
+            const isDesktop = window.matchMedia('(min-width: 1024px)').matches;
 
-            const labelMain = document.getElementById('vbFilterLabel');
-            const labelFs = document.getElementById('vbFilterLabelFs');
-            const clearButton = document.getElementById('vbClearType');
-
-            if (labelMain) labelMain.textContent = label;
-            if (labelFs) labelFs.textContent = label;
-
-            if (clearButton) {
-                if (activeType) clearButton.classList.remove('hidden');
-                else clearButton.classList.add('hidden');
-            }
-        }
-
-        function applyTypeButtons() {
-            document.querySelectorAll('.vb-type-btn').forEach(button => {
-                const type = button.getAttribute('data-type');
-
-                if (activeType && type === activeType) {
-                    button.classList.add('is-active');
-                } else {
-                    button.classList.remove('is-active');
-                }
+            map.fitBounds(bounds, {
+                padding: isDesktop
+                    ? { top: 250, right: 430, bottom: 150, left: 120 }
+                    : { top: 250, right: 40, bottom: 300, left: 40 },
+                maxZoom: 14.5,
+                duration: 900,
+                essential: true
             });
         }
 
-        function filteredFeatures() {
-            if (!activeType) return allFeatures;
+        function scheduleFitToFeatures(delay = 120) {
+            if (fitTimer) {
+                clearTimeout(fitTimer);
+            }
 
-            return allFeatures.filter(feature => {
+            fitTimer = setTimeout(() => {
+                if (!map) return;
+
+                map.resize();
+                requestAnimationFrame(() => fitToFeatures());
+            }, delay);
+        }
+
+        function renderResults() {
+            const features = currentFeatures();
+            const list = document.getElementById('vbResultsList');
+            const empty = document.getElementById('vbEmptyState');
+            const count = document.getElementById('vbResultCount');
+            const label = document.getElementById('vbActiveFilterLabel');
+
+            if (count) count.textContent = features.length;
+
+            const filterLabel = activeType === 'TODOS' ? 'todos los lugares' : TYPE_LABELS[activeType].toLowerCase();
+            if (label) label.textContent = activeQuery ? `Buscando "${activeQuery}" en ${filterLabel}` : `Mostrando ${filterLabel}`;
+
+            if (!list || !empty) return;
+
+            if (!features.length) {
+                list.innerHTML = '';
+                empty.classList.remove('hidden');
+                return;
+            }
+
+            empty.classList.add('hidden');
+            list.innerHTML = features.slice(0, 40).map((feature) => {
                 const place = feature.properties || {};
-                const type = (place.type || '').toString().trim().toUpperCase();
-                const iconKey = (place.iconKey || '').toString().trim().toUpperCase();
+                const key = iconKey(place);
+                const price = priceText(place.price);
 
-                return type === activeType || iconKey === activeType;
+                return `
+                    <button type="button"
+                            class="vb-result-row flex w-full items-center gap-3 rounded-2xl p-3 text-left transition hover:bg-blue-50 dark:hover:bg-blue-500/10"
+                            data-place-id="${escapeHtml(place.id)}">
+                        <span class="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-300">
+                            ${TYPE_ICONS[key] || TYPE_ICONS.OTRO}
+                        </span>
+                        <span class="min-w-0 flex-1">
+                            <span class="block truncate text-sm font-extrabold text-gray-950 dark:text-slate-100">${escapeHtml(place.name || 'Lugar')}</span>
+                            <span class="mt-0.5 block truncate text-xs font-semibold text-gray-500 dark:text-slate-400">${escapeHtml(place.city || 'Ubicación')} ${price ? `· ${escapeHtml(price)}` : ''}</span>
+                        </span>
+                    </button>
+                `;
+            }).join('');
+
+            document.querySelectorAll('.vb-result-row').forEach((row) => {
+                row.addEventListener('click', () => {
+                    focusPlace(row.dataset.placeId);
+                });
             });
         }
 
-        function renderMarkers(mapInstance, markerArray) {
-            const features = filteredFeatures();
-            clearMarkers(markerArray);
-            features.forEach(feature => addPlaceMarker(mapInstance, markerArray, feature));
+        function focusPlace(placeId) {
+            const item = markers.find(marker => marker.id === String(placeId));
+            if (!item || !map) return;
+
+            markers.forEach(marker => marker.element.classList.remove('is-highlighted'));
+            item.element.classList.add('is-highlighted');
+            highlightedMarkerId = item.id;
+
+            const coords = item.feature.geometry.coordinates;
+            const place = item.feature.properties || {};
+
+            map.flyTo({ center: coords, zoom: Math.max(map.getZoom(), 15), essential: true });
+            if (popup) popup.setLngLat(coords).setHTML(popupHtml(place)).addTo(map);
         }
 
-        function fitToCurrent(mapInstance) {
-            const features = filteredFeatures();
-            if (!features.length) return;
-
-            const bounds = computeBounds(features);
-            mapInstance.fitBounds(bounds, { padding: 90, maxZoom: 15 });
+        function updateTypeButtons() {
+            document.querySelectorAll('.vb-filter-btn').forEach((button) => {
+                button.classList.toggle('is-active', button.dataset.type === activeType);
+            });
         }
 
-        function openFullscreen() {
-            const overlay = document.getElementById('vbMapOverlay');
-            overlay.classList.remove('hidden');
+        function refresh({ fit = true } = {}) {
+            updateTypeButtons();
+            renderMarkers();
+            renderResults();
+            if (fit) scheduleFitToFeatures();
+        }
 
-            if (!mapFs) {
-                mapFs = new mapboxgl.Map({
-                    container: 'mapFs',
-                    style: 'mapbox://styles/mapbox/streets-v12',
-                    center: map ? map.getCenter() : [-99.1332, 19.4326],
-                    zoom: map ? map.getZoom() : 11
+        function bindControls() {
+            document.querySelectorAll('.vb-filter-btn').forEach((button) => {
+                button.addEventListener('click', () => {
+                    activeType = button.dataset.type || 'TODOS';
+                    refresh();
                 });
+            });
 
-                mapFs.addControl(new mapboxgl.NavigationControl(), 'top-right');
+            document.getElementById('vbSearchInput')?.addEventListener('input', (event) => {
+                activeQuery = event.target.value || '';
+                refresh({ fit: false });
+                scheduleFitToFeatures(180);
+            });
 
-                mapFs.on('load', () => {
-                    renderMarkers(mapFs, markersFs);
-                    fitToCurrent(mapFs);
-                });
-            } else {
-                mapFs.resize();
-                renderMarkers(mapFs, markersFs);
-                fitToCurrent(mapFs);
-            }
+            document.getElementById('vbFitBtn')?.addEventListener('click', () => {
+                fitToFeatures();
+            });
         }
 
-        function closeFullscreen() {
-            const overlay = document.getElementById('vbMapOverlay');
-            overlay.classList.add('hidden');
-        }
+        function watchThemeChanges() {
+            if (!window.MutationObserver) return;
 
-        function setActiveType(typeKeyOrNull) {
-            activeType = typeKeyOrNull;
-            setFilterLabel();
-            applyTypeButtons();
+            let currentStyle = mapStyleUrl();
+            const observer = new MutationObserver(() => {
+                if (!map) return;
 
-            if (map) {
-                renderMarkers(map, markersMain);
-                fitToCurrent(map);
-            }
+                const nextStyle = mapStyleUrl();
+                if (nextStyle === currentStyle) return;
 
-            if (mapFs) {
-                renderMarkers(mapFs, markersFs);
-                fitToCurrent(mapFs);
-            }
+                currentStyle = nextStyle;
+                map.setStyle(nextStyle);
+                setTimeout(() => {
+                    map.resize();
+                    fitToFeatures();
+                }, 220);
+            });
+
+            observer.observe(document.documentElement, {
+                attributes: true,
+                attributeFilter: ['class']
+            });
         }
 
         document.addEventListener('DOMContentLoaded', async () => {
-            setFilterLabel();
+            bindControls();
+            updateTypeButtons();
 
             try {
-                if (!VB_MAPBOX_TOKEN) {
+                if (!VB_MAPBOX_TOKEN || typeof mapboxgl === 'undefined') {
                     document.getElementById('mapError')?.classList.remove('hidden');
                     return;
                 }
 
                 mapboxgl.accessToken = VB_MAPBOX_TOKEN;
 
+                popup = new mapboxgl.Popup({
+                    closeButton: false,
+                    closeOnClick: false,
+                    offset: 18,
+                    className: 'vb-popup'
+                });
+
                 map = new mapboxgl.Map({
-                    container: 'map',
-                    style: 'mapbox://styles/mapbox/streets-v12',
-                    center: [-99.1332, 19.4326],
+                    container: 'vbMap',
+                    style: mapStyleUrl(),
+                    center: [-100.3899, 20.5888],
                     zoom: 11
                 });
 
                 map.addControl(new mapboxgl.NavigationControl(), 'top-right');
+                map.addControl(new mapboxgl.GeolocateControl({
+                    positionOptions: { enableHighAccuracy: true },
+                    trackUserLocation: true,
+                    showUserHeading: true
+                }), 'top-right');
+
+                watchThemeChanges();
 
                 map.on('error', () => {
                     document.getElementById('mapError')?.classList.remove('hidden');
                 });
 
                 map.on('load', async () => {
-                    const data = await loadPlaces();
+                    map.resize();
+                    allFeatures = await loadPlaces();
 
-                    if (!data?.features?.length) {
+                    if (!allFeatures.length) {
                         document.getElementById('mapEmpty')?.classList.remove('hidden');
-                        return;
                     }
 
-                    allFeatures = data.features;
-                    renderMarkers(map, markersMain);
-                    fitToCurrent(map);
-                });
+                    refresh({ fit: false });
 
-                document.getElementById('vbFullscreenBtn')?.addEventListener('click', () => {
-                    if (!VB_MAPBOX_TOKEN) return;
-
-                    openFullscreen();
                     setTimeout(() => {
-                        if (mapFs) mapFs.resize();
-                    }, 50);
+                        map.resize();
+                        fitToFeatures();
+                    }, 250);
                 });
 
-                document.getElementById('vbExitFullscreen')?.addEventListener('click', closeFullscreen);
+                window.addEventListener('resize', () => {
+                    if (!map) return;
 
-                document.getElementById('vbClearType')?.addEventListener('click', () => {
-                    setActiveType(null);
-                });
-
-                document.querySelectorAll('.vb-type-btn').forEach(button => {
-                    button.addEventListener('click', () => {
-                        const type = button.getAttribute('data-type');
-
-                        if (activeType === type) setActiveType(null);
-                        else setActiveType(type);
-                    });
+                    map.resize();
+                    fitToFeatures();
                 });
             } catch (error) {
                 document.getElementById('mapError')?.classList.remove('hidden');
             }
         });
     </script>
-
-    <div class="h-20 sm:h-24"></div>
 </x-app-layout>

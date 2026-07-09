@@ -3,6 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Place;
+use App\Models\PlaceSubmission;
+use App\Services\FastApiService;
+use Illuminate\Support\Collection;
 
 class PlacesMapController extends Controller
 {
@@ -19,9 +22,102 @@ class PlacesMapController extends Controller
      * - iconKey normalizado para UI (pills + cards)
      * - photo_url para mini-card
      */
-    public function geojson()
+    private function normalizePlacesResponse($json): Collection
     {
-        // ✅ Lista de tipos válidos (según tu dropdown)
+        if (is_array($json) && array_key_exists('data', $json) && is_array($json['data'])) {
+            return collect($json['data']);
+        }
+
+        if (is_array($json)) {
+            return collect($json);
+        }
+
+        return collect();
+    }
+
+    private function normalizeType(string $typeOriginal): string
+    {
+        $type = mb_strtolower(trim($typeOriginal), 'UTF-8');
+        $type = str_replace(
+            ['á', 'é', 'í', 'ó', 'ú', 'ü', 'ñ', '_'],
+            ['a', 'e', 'i', 'o', 'u', 'u', 'n', ' '],
+            $type
+        );
+
+        $type = preg_replace('/\s+/', ' ', $type) ?: 'otro';
+
+        if (in_array($type, ['cafeteria', 'cafe'], true)) return 'cafeteria';
+        if (in_array($type, ['centrocomercial', 'centro comercial', 'mall'], true)) return 'centro comercial';
+
+        return $type;
+    }
+
+    private function normalizePhotoUrl(?string $photo): ?string
+    {
+        $photo = trim((string) $photo);
+
+        if ($photo === '') return null;
+
+        if (
+            str_starts_with($photo, 'http://') ||
+            str_starts_with($photo, 'https://') ||
+            str_starts_with($photo, '/') ||
+            str_starts_with($photo, 'data:')
+        ) {
+            return $photo;
+        }
+
+        if (str_starts_with($photo, 'storage/')) {
+            return asset($photo);
+        }
+
+        return asset('storage/' . ltrim($photo, '/'));
+    }
+
+    private function featureFromArray(array $place, array $validTypes, array $typeToMaki): ?array
+    {
+        $lat = $place['lat'] ?? $place['latitude'] ?? null;
+        $lng = $place['lng'] ?? $place['longitude'] ?? null;
+
+        if (!is_numeric($lat) || !is_numeric($lng)) {
+            return null;
+        }
+
+        $typeOriginal = trim((string) ($place['type'] ?? 'Otro')) ?: 'Otro';
+        $type = $this->normalizeType($typeOriginal);
+
+        if (!in_array($type, $validTypes, true)) {
+            $type = 'otro';
+        }
+
+        $id = $place['id'] ?? null;
+        $photo = $place['photo_url'] ?? $place['photo'] ?? null;
+
+        return [
+            'type' => 'Feature',
+            'geometry' => [
+                'type' => 'Point',
+                'coordinates' => [(float) $lng, (float) $lat],
+            ],
+            'properties' => [
+                'id' => $id ? 'api-' . $id : uniqid('api-', false),
+                'real_id' => $id,
+                'source' => 'api',
+                'name' => (string) ($place['name'] ?? 'Lugar'),
+                'type' => $typeOriginal,
+                'iconKey' => $type,
+                'city' => (string) ($place['city'] ?? ''),
+                'rating' => $place['rating'] ?? null,
+                'price' => $place['price'] ?? null,
+                'maki' => $typeToMaki[$type] ?? 'marker-15',
+                'photo_url' => $this->normalizePhotoUrl($photo),
+                'url' => $id ? route('places.show', $id) : null,
+            ],
+        ];
+    }
+
+    public function geojson(FastApiService $api)
+    {
         $validTypes = [
             'restaurante',
             'cafeteria',
@@ -35,7 +131,6 @@ class PlacesMapController extends Controller
             'otro',
         ];
 
-        // (se queda por si lo usas en capas mapbox, aunque ahorita ya usas HTML markers)
         $typeToMaki = [
             'restaurante'       => 'restaurant-15',
             'cafeteria'         => 'cafe-15',
@@ -49,49 +144,46 @@ class PlacesMapController extends Controller
             'otro'              => 'marker-15',
         ];
 
-        // Solo lugares con coordenadas
+        $geojson = [
+            'type' => 'FeatureCollection',
+            'features' => [],
+        ];
+
+        try {
+            $response = $api->get('/places');
+
+            if ($response->successful()) {
+                $this->normalizePlacesResponse($response->json())
+                    ->each(function ($place) use (&$geojson, $validTypes, $typeToMaki) {
+                        if (!is_array($place)) return;
+
+                        $feature = $this->featureFromArray($place, $validTypes, $typeToMaki);
+                        if ($feature) $geojson['features'][] = $feature;
+                    });
+            }
+        } catch (\Throwable $e) {
+            // Si la API no responde, mantenemos el mapa con datos locales.
+        }
+
         $places = Place::query()
             ->whereNotNull('lat')
             ->whereNotNull('lng')
             ->orderByDesc('created_at')
             ->get();
 
-        $geojson = [
-            'type' => 'FeatureCollection',
-            'features' => [],
-        ];
-
         foreach ($places as $place) {
-            // Tipo original (lo que verá el usuario)
             $typeOriginal = trim((string)($place->type ?? 'Otro'));
             if ($typeOriginal === '') $typeOriginal = 'Otro';
 
-            // ✅ Normalizar tipo: minúsculas + sin acentos + trim
-            $type = mb_strtolower($typeOriginal, 'UTF-8');
-            $type = trim($type);
+            $type = $this->normalizeType($typeOriginal);
 
-            // Reemplazo de acentos / ñ / ü
-            $type = str_replace(
-                ['á','é','í','ó','ú','ü','ñ'],
-                ['a','e','i','o','u','u','n'],
-                $type
-            );
-
-            // ✅ Normaliza casos comunes (por si guardaron variantes)
-            if ($type === 'cafeteria' || $type === 'cafe') $type = 'cafeteria';
-            if ($type === 'centrocomercial' || $type === 'centro_comercial') $type = 'centro comercial';
-
-            // ✅ si no está en lista válida, lo mandamos a "otro"
             if (!in_array($type, $validTypes, true)) {
                 $type = 'otro';
             }
 
             $maki = $typeToMaki[$type] ?? 'marker-15';
 
-            // Foto para mini-card (storage)
-            $photoUrl = $place->photo
-                ? asset('storage/' . ltrim((string)$place->photo, '/'))
-                : null;
+            $photoUrl = $this->normalizePhotoUrl((string) ($place->photo ?? ''));
 
             $geojson['features'][] = [
                 'type' => 'Feature',
@@ -100,21 +192,60 @@ class PlacesMapController extends Controller
                     'coordinates' => [(float)$place->lng, (float)$place->lat],
                 ],
                 'properties' => [
-                    'id'       => $place->id,
+                    'id'       => 'local-' . $place->id,
+                    'real_id'  => $place->id,
+                    'source'   => 'local',
                     'name'     => (string) $place->name,
-                    'type'     => $typeOriginal,        // para mostrar
-                    'iconKey'  => $type,                // para tu UI (pills + cards)
+                    'type'     => $typeOriginal,
+                    'iconKey'  => $type,
                     'city'     => (string) ($place->city ?? ''),
                     'rating'   => $place->rating ?? null,
                     'price'    => $place->price ?? null,
-
-                    // por si vuelves a usar capas symbol alguna vez
                     'maki'     => $maki,
-
-                    //  para mini-card con imagen
                     'photo_url'=> $photoUrl,
-
                     'url'      => route('places.show', $place->id),
+                ],
+            ];
+        }
+
+        $submissions = PlaceSubmission::with('photos')
+            ->whereNotNull('lat')
+            ->whereNotNull('lng')
+            ->orderByDesc('created_at')
+            ->get();
+
+        foreach ($submissions as $submission) {
+            $typeOriginal = trim((string)($submission->type ?? 'Otro')) ?: 'Otro';
+            $type = $this->normalizeType($typeOriginal);
+
+            if (!in_array($type, $validTypes, true)) {
+                $type = 'otro';
+            }
+
+            $photo = $submission->photos->first()?->path;
+
+            $geojson['features'][] = [
+                'type' => 'Feature',
+                'geometry' => [
+                    'type' => 'Point',
+                    'coordinates' => [(float) $submission->lng, (float) $submission->lat],
+                ],
+                'properties' => [
+                    'id' => 'submission-' . $submission->id,
+                    'real_id' => $submission->id,
+                    'source' => 'submission',
+                    'status' => (string) ($submission->status ?? 'pending'),
+                    'name' => (string) $submission->name,
+                    'type' => $typeOriginal,
+                    'iconKey' => $type,
+                    'city' => (string) ($submission->city ?? ''),
+                    'rating' => $submission->rating ?? null,
+                    'price' => $submission->price ?? null,
+                    'maki' => $typeToMaki[$type] ?? 'marker-15',
+                    'photo_url' => $this->normalizePhotoUrl($photo),
+                    'url' => $submission->user_id === auth()->id()
+                        ? route('place-submissions.show', $submission)
+                        : null,
                 ],
             ];
         }

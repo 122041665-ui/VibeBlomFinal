@@ -1,5 +1,6 @@
 from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, func
 from sqlalchemy.orm import relationship
+from app.core.config import settings
 from app.core.database import Base
 
 
@@ -18,5 +19,5 @@ class MemoryPhoto(Base):
     def url(self):
         if self.path and str(self.path).strip() != "":
             path = str(self.path).lstrip("/")
-            return f"http://127.0.0.1:8010/storage/{path}"
+            return f"{settings.API_PUBLIC_URL.rstrip('/')}/storage/{path}"
         return None

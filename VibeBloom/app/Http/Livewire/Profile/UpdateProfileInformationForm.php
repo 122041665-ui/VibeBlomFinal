@@ -18,6 +18,7 @@ class UpdateProfileInformationForm extends Component
     protected $rules = [
         'state.name' => 'required|string|max:255',
         'state.email' => 'required|email|max:255',
+        'state.profile_is_public' => 'nullable|boolean',
         'photo' => 'nullable|image|max:2048',
     ];
 
@@ -25,6 +26,7 @@ class UpdateProfileInformationForm extends Component
     {
         $this->user = Auth::user();
         $this->state = $this->user->withoutRelations()->toArray();
+        $this->state['profile_is_public'] = (bool) ($this->state['profile_is_public'] ?? true);
     }
 
     public function updateProfileInformation(UpdatesUserProfileInformation $updater)
@@ -34,6 +36,7 @@ class UpdateProfileInformationForm extends Component
         $data = [
             'name'  => $this->state['name'],
             'email' => $this->state['email'],
+            'profile_is_public' => (bool) ($this->state['profile_is_public'] ?? false),
         ];
 
         if ($this->photo) {
