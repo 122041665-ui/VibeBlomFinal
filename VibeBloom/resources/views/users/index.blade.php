@@ -33,7 +33,7 @@
                     </a>
                 </div>
 
-                <form method="GET" action="{{ route('users.index') }}" class="mt-5 grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_auto] gap-3">
+                <form method="GET" action="{{ Route::has('users.index') ? route('users.index') : url('/usuarios') }}" class="mt-5 grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_auto] gap-3">
                     <input type="search" name="q" value="{{ $query }}" class="{{ $input }}" placeholder="Buscar usuario">
                     <button class="{{ $btnPrimary }} inline-flex items-center justify-center gap-2">
                         <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" aria-hidden="true">

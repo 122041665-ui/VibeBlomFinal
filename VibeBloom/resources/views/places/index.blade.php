@@ -51,7 +51,7 @@
         $locIcon = '<svg class="w-4 h-4 text-blue-700 dark:text-blue-400 shrink-0" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 21s7-4.6 7-11a7 7 0 1 0-14 0c0 6.4 7 11 7 11Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M12 11a2 2 0 1 0 0-4a2 2 0 0 0 0 4Z" stroke="currentColor" stroke-width="1.8"/></svg>';
     @endphp
 
-    <div class="min-h-screen bg-[linear-gradient(180deg,#f8fafc_0%,#ffffff_42%,#eef2ff_100%)] dark:bg-[linear-gradient(180deg,#020617_0%,#0f172a_48%,#111827_100%)] relative overflow-hidden">
+    <div class="min-h-screen vb-soft-page relative overflow-hidden">
         <div class="{{ $container }}">
             @guest
                 <section class="relative mb-6 mt-2 rounded-[24px] border border-slate-200/80 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 shadow-sm overflow-hidden">
@@ -182,12 +182,12 @@
 
                         @if($isAuth)
                             <a href="{{ $href }}"
-                               class="group relative block bg-white dark:bg-slate-900 rounded-[28px] shadow-sm transition-all duration-300 ease-out overflow-hidden border border-gray-100 dark:border-slate-800 hover:-translate-y-1 hover:shadow-xl hover:border-blue-100 dark:hover:border-blue-500/30 focus:outline-none focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-500/30">
+                               class="group relative flex h-full flex-col bg-white dark:bg-slate-900 rounded-[28px] shadow-sm transition-all duration-300 ease-out overflow-hidden border border-gray-100 dark:border-slate-800 hover:-translate-y-1 hover:shadow-xl hover:border-blue-100 dark:hover:border-blue-500/30 focus:outline-none focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-500/30">
                         @else
                             <a href="#"
                                data-requires-auth
                                data-href="{{ $href }}"
-                               class="group relative block bg-white dark:bg-slate-900 rounded-[28px] shadow-sm transition-all duration-300 ease-out overflow-hidden border border-gray-100 dark:border-slate-800 hover:-translate-y-1 hover:shadow-xl hover:border-blue-100 dark:hover:border-blue-500/30 focus:outline-none focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-500/30">
+                               class="group relative flex h-full flex-col bg-white dark:bg-slate-900 rounded-[28px] shadow-sm transition-all duration-300 ease-out overflow-hidden border border-gray-100 dark:border-slate-800 hover:-translate-y-1 hover:shadow-xl hover:border-blue-100 dark:hover:border-blue-500/30 focus:outline-none focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-500/30">
                         @endif
 
                             @guest
@@ -202,16 +202,16 @@
                                 </div>
                             @endguest
 
-                            <div class="relative h-56 w-full overflow-hidden bg-gray-100 dark:bg-slate-800">
+                            <div class="relative aspect-[4/3] w-full overflow-hidden bg-gray-100 dark:bg-slate-800">
                                 <img src="{{ $initialPhoto }}"
-                                     class="h-56 w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.04]"
+                                     class="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.04]"
                                      alt="Foto de {{ $placeName }}"
                                      data-fallback="{{ $defaultPhoto }}"
                                      onerror="this.onerror=null; this.src=this.dataset.fallback;" />
                                 <div class="absolute inset-0 bg-gradient-to-t from-slate-950/45 via-slate-950/5 to-transparent"></div>
                             </div>
 
-                            <div class="p-5 space-y-4">
+                            <div class="flex flex-1 flex-col p-5 space-y-4">
                                 <div>
                                     <h2 class="text-xl font-bold leading-tight text-gray-900 dark:text-slate-100 transition-colors duration-300 group-hover:text-blue-600 dark:group-hover:text-blue-400">
                                         {{ $placeName }}
@@ -240,7 +240,7 @@
                                     </div>
                                 </div>
 
-                                <div class="pt-4 border-t border-gray-100 dark:border-slate-800 flex items-end justify-between gap-3">
+                                <div class="mt-auto pt-4 border-t border-gray-100 dark:border-slate-800 flex items-end justify-between gap-3">
                                     <div>
                                         <p class="{{ $hint }}">Precio aprox. por persona</p>
                                         <p class="text-gray-900 dark:text-slate-100 font-extrabold text-lg">

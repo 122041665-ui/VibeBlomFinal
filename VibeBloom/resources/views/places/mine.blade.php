@@ -862,7 +862,7 @@
                                 <p class="{{ $hint }}">Encuentra personas, revisa perfiles y descubre lugares publicados por otros usuarios.</p>
                             </div>
 
-                            <a href="{{ route('users.index') }}" class="{{ $btnPrimary }} inline-flex w-full sm:w-auto items-center justify-center gap-2 shrink-0">
+                            <a href="{{ Route::has('users.index') ? route('users.index') : url('/usuarios') }}" class="{{ $btnPrimary }} inline-flex w-full sm:w-auto items-center justify-center gap-2 shrink-0">
                                 <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                                     <path d="M10 11a4 4 0 1 0 0-8a4 4 0 0 0 0 8Z" stroke="currentColor" stroke-width="1.8"/>
                                     <path d="M3 21a7 7 0 0 1 14 0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>

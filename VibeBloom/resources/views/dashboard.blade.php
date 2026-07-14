@@ -85,14 +85,13 @@
         ];
     @endphp
 
-    <div class="min-h-screen bg-[linear-gradient(180deg,#f8fafc_0%,#ffffff_42%,#eef2ff_100%)] dark:bg-[linear-gradient(180deg,#020617_0%,#0f172a_48%,#111827_100%)] relative overflow-hidden">
-        <div class="pointer-events-none absolute inset-x-0 top-0 h-96 bg-[radial-gradient(circle_at_20%_10%,rgba(37,99,235,0.14),transparent_34%),radial-gradient(circle_at_82%_0%,rgba(14,165,233,0.10),transparent_32%)] dark:bg-[radial-gradient(circle_at_20%_10%,rgba(59,130,246,0.16),transparent_34%),radial-gradient(circle_at_82%_0%,rgba(14,165,233,0.12),transparent_32%)]"></div>
+    <div class="min-h-screen vb-soft-page relative overflow-hidden">
 
         <div class="{{ $container }} relative">
 
-            <section class="mb-7 mt-2 overflow-hidden rounded-[30px] border border-white/80 dark:border-slate-800 bg-white/88 dark:bg-slate-900/88 shadow-[0_22px_70px_rgba(15,23,42,0.10)] backdrop-blur">
+            <section class="mb-7 mt-2 overflow-hidden rounded-[30px] border border-white/80 dark:border-slate-800 bg-white/92 dark:bg-slate-900/92 shadow-[0_22px_70px_rgba(15,23,42,0.10)] backdrop-blur">
                 <div class="relative p-5 sm:p-7 lg:p-8">
-                    <div class="pointer-events-none absolute inset-0 bg-[linear-gradient(135deg,rgba(37,99,235,0.08),transparent_38%),radial-gradient(circle_at_88%_16%,rgba(14,165,233,0.14),transparent_26%)] dark:bg-[linear-gradient(135deg,rgba(59,130,246,0.12),transparent_38%),radial-gradient(circle_at_88%_16%,rgba(14,165,233,0.12),transparent_26%)]"></div>
+                    <div class="pointer-events-none absolute inset-x-0 top-0 h-1 bg-blue-600"></div>
 
                     <div class="relative flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
                         <div class="max-w-3xl">

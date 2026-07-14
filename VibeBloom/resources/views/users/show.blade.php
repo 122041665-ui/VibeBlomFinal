@@ -72,7 +72,7 @@
                                 </form>
                             @endif
 
-                            <a href="{{ route('users.index') }}" class="{{ $btnGhost }} inline-flex w-full items-center justify-center gap-2">
+                            <a href="{{ Route::has('users.index') ? route('users.index') : url('/usuarios') }}" class="{{ $btnGhost }} inline-flex w-full items-center justify-center gap-2">
                                 <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                                     <path d="M15 18l-6-6l6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                                 </svg>

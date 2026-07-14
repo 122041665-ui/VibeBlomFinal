@@ -86,13 +86,12 @@
         );
     @endphp
 
-    <div class="min-h-screen bg-[linear-gradient(180deg,#f8fafc_0%,#ffffff_42%,#eef2ff_100%)] dark:bg-[linear-gradient(180deg,#020617_0%,#0f172a_48%,#111827_100%)] relative overflow-hidden">
-        <div class="pointer-events-none absolute inset-x-0 top-0 h-96 bg-[radial-gradient(circle_at_20%_10%,rgba(37,99,235,0.14),transparent_34%),radial-gradient(circle_at_82%_0%,rgba(14,165,233,0.10),transparent_32%)] dark:bg-[radial-gradient(circle_at_20%_10%,rgba(59,130,246,0.16),transparent_34%),radial-gradient(circle_at_82%_0%,rgba(14,165,233,0.12),transparent_32%)]"></div>
+    <div class="min-h-screen vb-soft-page relative overflow-hidden">
 
         <div class="{{ $container }}">
 
             <div class="mb-6">
-                <div class="rounded-[30px] border border-white/80 dark:border-slate-800 bg-white/88 dark:bg-slate-900/88 backdrop-blur shadow-[0_22px_70px_rgba(15,23,42,0.10)] p-5 sm:p-6 lg:p-7">
+                <div class="rounded-[30px] border border-white/80 dark:border-slate-800 bg-white/92 dark:bg-slate-900/92 backdrop-blur shadow-[0_22px_70px_rgba(15,23,42,0.10)] p-5 sm:p-6 lg:p-7">
                     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                         <div>
                             <div class="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50/80 px-3 py-1.5 text-xs font-semibold text-blue-700 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-300">
@@ -251,7 +250,7 @@
                             @endphp
 
                             @if($placeId)
-                                <article class="group relative">
+                                <article class="group relative h-full">
                                     <div class="absolute top-3 right-3 z-20">
                                         <form action="{{ route('favorite.toggle', $placeId) }}"
                                               method="POST"
@@ -277,7 +276,7 @@
                                     </div>
 
                                     <a href="{{ route('places.show', $placeId) }}"
-                                       class="block bg-white dark:bg-slate-900 rounded-2xl shadow-sm transition-all duration-300 ease-out
+                                       class="flex h-full flex-col bg-white dark:bg-slate-900 rounded-2xl shadow-sm transition-all duration-300 ease-out
                                               overflow-hidden border border-gray-100 dark:border-slate-800
                                               hover:-translate-y-1 hover:shadow-xl hover:border-blue-100 dark:hover:border-blue-500/30">
 
@@ -334,15 +333,15 @@
                                             </div>
                                         @endif
 
-                                        <div class="relative h-48 w-full overflow-hidden bg-gray-100 dark:bg-slate-800">
+                                        <div class="relative aspect-[4/3] w-full overflow-hidden bg-gray-100 dark:bg-slate-800">
                                             <img src="{{ $initialPhoto }}"
-                                                 class="h-48 w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.04]"
+                                                 class="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.04]"
                                                  alt="Foto de {{ $placeName }}"
                                                  data-main-photo="{{ $placeId }}"
                                                  onerror="this.onerror=null;this.src='{{ $defaultPhoto }}';" />
                                         </div>
 
-                                        <div class="p-5 space-y-3">
+                                        <div class="flex flex-1 flex-col p-5 space-y-3">
                                             <div>
                                                 <h2 class="text-xl font-semibold leading-tight text-gray-900 dark:text-slate-100 transition-colors duration-300 group-hover:text-blue-600 dark:group-hover:text-blue-400">
                                                     {{ $placeName }}
@@ -367,7 +366,7 @@
                                                 </div>
                                             </div>
 
-                                            <div class="pt-1">
+                                            <div class="mt-auto pt-1">
                                                 <p class="{{ $hint }}">Precio aprox. por persona</p>
                                                 <p class="text-gray-900 dark:text-slate-100 font-bold text-lg">
                                                     MXN ${{ number_format((float)$placePrice, 2) }}

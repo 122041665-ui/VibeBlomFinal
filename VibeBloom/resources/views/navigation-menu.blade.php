@@ -6,10 +6,10 @@
         localStorage.setItem('theme', value ? 'dark' : 'light');
         document.documentElement.classList.toggle('dark', value);
      })"
-     class="bg-white/85 dark:bg-slate-950/85 backdrop-blur border-b border-gray-100 dark:border-slate-800 sticky top-0 z-50 transition-colors duration-300">
+     class="bg-white/88 dark:bg-slate-950/88 backdrop-blur border-b border-gray-100 dark:border-slate-800 sticky top-0 z-50 transition-colors duration-300">
 
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex justify-between h-20 items-center">
+        <div class="flex justify-between h-16 sm:h-[4.5rem] items-center">
             @guest
                 <div class="w-full flex items-center justify-center">
                     <a href="{{ route('dashboard') }}"
@@ -18,9 +18,9 @@
                         <img
                             src="{{ asset('images/Vibe.png') }}"
                             alt="VibeBloom"
-                            class="block h-[86px] sm:h-[96px] w-auto object-contain
-                                   -my-3 transition-all duration-300
-                                   drop-shadow-[0_8px_18px_rgba(15,23,42,0.16)]
+                            class="block h-16 sm:h-[4.5rem] w-auto object-contain
+                                   transition-all duration-300
+                                   drop-shadow-sm
                                    group-hover:opacity-95" />
                     </a>
                 </div>
@@ -33,14 +33,14 @@
                         <img
                             src="{{ asset('images/Vibe.png') }}"
                             alt="VibeBloom"
-                            class="block h-[95px] sm:h-[105px] min-w-[230px] sm:min-w-[260px] w-auto object-contain
-                                   -my-3 transition-all duration-300
-                                   drop-shadow-[0_6px_14px_rgba(0,0,0,0.20)]
+                            class="block h-14 sm:h-16 w-auto max-w-[176px] sm:max-w-[196px] object-contain
+                                   transition-all duration-300
+                                   drop-shadow-sm
                                    group-hover:opacity-95" />
                     </a>
                 </div>
 
-                <div class="hidden space-x-2 sm:ms-10 sm:flex items-center">
+                <div class="hidden space-x-1.5 sm:ms-6 sm:flex items-center">
 
                     <x-nav-link href="{{ route('dashboard') }}" :active="request()->routeIs('dashboard')"
                         class="px-3 py-2 rounded-xl text-sm font-semibold transition
@@ -64,7 +64,7 @@
                         Mapa
                     </x-nav-link>
 
-                    <x-nav-link href="{{ route('users.index') }}" :active="request()->routeIs('users.*')"
+                    <x-nav-link href="{{ Route::has('users.index') ? route('users.index') : url('/usuarios') }}" :active="request()->routeIs('users.*')"
                         class="px-3 py-2 rounded-xl text-sm font-semibold transition
                                hover:bg-blue-50 hover:text-blue-700
                                dark:hover:bg-slate-800 dark:hover:text-blue-400
@@ -79,8 +79,8 @@
             </div>
 
             <form action="{{ route('places.index') }}" method="GET"
-                  class="hidden xl:flex flex-1 max-w-xl mx-5">
-                <div class="w-full grid grid-cols-[minmax(140px,1.5fr)_112px_112px_88px_44px] items-center rounded-2xl border border-gray-200/90 dark:border-slate-700/90 bg-white/95 dark:bg-slate-900/95 shadow-sm overflow-hidden">
+                  class="hidden xl:flex flex-1 max-w-xl mx-4">
+                <div class="w-full grid grid-cols-[minmax(140px,1.5fr)_108px_108px_84px_42px] items-center rounded-xl border border-gray-200/90 dark:border-slate-700/90 bg-white/95 dark:bg-slate-900/95 shadow-sm overflow-hidden">
                     <label class="flex items-center gap-2 px-4 py-2.5 border-r border-gray-100 dark:border-slate-800 min-w-0">
                         <svg class="w-4 h-4 shrink-0 text-blue-600 dark:text-blue-400" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                             <circle cx="11" cy="11" r="6.75" stroke="currentColor" stroke-width="2"/>
@@ -135,7 +135,7 @@
                     </label>
 
                     <button type="submit"
-                            class="m-1.5 h-9 w-9 rounded-xl bg-blue-600 hover:bg-blue-700 text-white transition shadow-sm flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-500/30"
+                            class="m-1.5 h-[2.125rem] w-[2.125rem] rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition shadow-sm flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-500/30"
                             aria-label="Buscar"
                             title="Buscar">
                         <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -148,7 +148,7 @@
 
             @if(request()->filled('buscar') || request()->filled('city') || request()->filled('type') || request()->filled('max_price'))
                 <a href="{{ route('places.index') }}"
-                   class="hidden xl:inline-flex items-center justify-center rounded-xl border border-blue-100 dark:border-slate-700 bg-blue-50 dark:bg-slate-800 px-3 py-2 text-xs font-bold text-blue-700 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-slate-700 transition">
+                   class="hidden xl:inline-flex items-center justify-center rounded-lg border border-blue-100 dark:border-slate-700 bg-blue-50 dark:bg-slate-800 px-3 py-2 text-xs font-bold text-blue-700 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-slate-700 transition">
                     Limpiar
                 </a>
             @endif
@@ -458,7 +458,7 @@
                 Mapa
             </x-responsive-nav-link>
 
-            <x-responsive-nav-link href="{{ route('users.index') }}" :active="request()->routeIs('users.*')">
+            <x-responsive-nav-link href="{{ Route::has('users.index') ? route('users.index') : url('/usuarios') }}" :active="request()->routeIs('users.*')">
                 Comunidad
             </x-responsive-nav-link>
 
