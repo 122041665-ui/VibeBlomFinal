@@ -1,10 +1,26 @@
+import os
+import re
+
+from email_validator import EmailNotValidError, validate_email
 from flask import Blueprint, render_template, session, redirect, url_for, flash, request
-from app.services.api_client import api_delete, api_get, api_patch, api_put
+from app.services.api_client import api_delete, api_get, api_patch, api_post_files, api_put
 
 users_bp = Blueprint("users", __name__, url_prefix="/users")
 
 
 VALID_ROLES = ["user", "moderator", "admin"]
+ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/webp"}
+
+
+def _normalize_asset_url(value):
+    if not value:
+        return None
+    value = str(value).strip()
+    if value.startswith(("http://", "https://", "data:")):
+        return value
+    public_base = os.getenv("API_PUBLIC_URL", "http://127.0.0.1:8010").rstrip("/")
+    path = value if value.startswith("/") else f"/storage/{value.lstrip('/')}"
+    return f"{public_base}{path}"
 
 
 def admin_only():
@@ -25,7 +41,8 @@ def _auth_required_redirect():
     return None
 
 
-def _handle_common_response_errors(response, *, not_found_message=None, generic_message=None, redirect_endpoint="users.list_users"):
+def _handle_common_response_errors(response, *, not_found_message=None, generic_message=None, redirect_endpoint="users.list_users", redirect_values=None):
+    redirect_values = redirect_values or {}
     if response.status_code == 401:
         flash("Sesión expirada", "error")
         session.clear()
@@ -37,7 +54,7 @@ def _handle_common_response_errors(response, *, not_found_message=None, generic_
 
     if response.status_code == 404 and not_found_message:
         flash(not_found_message, "warning")
-        return redirect(url_for(redirect_endpoint))
+        return redirect(url_for(redirect_endpoint, **redirect_values))
 
     if generic_message and response.status_code >= 400:
         try:
@@ -45,7 +62,7 @@ def _handle_common_response_errors(response, *, not_found_message=None, generic_
         except Exception:
             detail = generic_message
         flash(detail, "error")
-        return redirect(url_for(redirect_endpoint))
+        return redirect(url_for(redirect_endpoint, **redirect_values))
 
     return None
 
@@ -61,7 +78,7 @@ def _normalize_users(raw_users):
                 "name": item.get("name"),
                 "email": item.get("email"),
                 "role": item.get("role"),
-                "profile_photo_url": item.get("profile_photo_url"),
+                "profile_photo_url": _normalize_asset_url(item.get("profile_photo_url")),
                 "photo": item.get("photo"),
                 "edit_url": url_for("users.edit_user_view", user_id=user_id) if user_id else "",
                 "delete_url": url_for("users.delete_user", user_id=user_id) if user_id else "",
@@ -141,6 +158,7 @@ def edit_user_view(user_id):
         return error_redirect
 
     user_data = response.json()
+    user_data["profile_photo_url"] = _normalize_asset_url(user_data.get("profile_photo_url"))
     return render_template("users_edit.html", user=user_data)
 
 
@@ -154,6 +172,7 @@ def update_user(user_id):
     email = (request.form.get("email") or "").strip()
     role = (request.form.get("role") or "").strip()
     password = (request.form.get("password") or "").strip()
+    photo = request.files.get("photo")
 
     if not name:
         flash("El nombre es obligatorio", "warning")
@@ -162,6 +181,30 @@ def update_user(user_id):
     if not email:
         flash("El correo es obligatorio", "warning")
         return redirect(url_for("users.edit_user_view", user_id=user_id))
+
+    try:
+        validate_email(email, check_deliverability=False)
+    except EmailNotValidError:
+        flash("El correo no tiene un formato válido", "warning")
+        return redirect(url_for("users.edit_user_view", user_id=user_id))
+
+    if password and (len(password) < 8 or not re.search(r"[A-Z]", password) or not re.search(r"[a-z]", password) or not re.search(r"\d", password)):
+        flash("La contraseña debe tener al menos 8 caracteres, una mayúscula, una minúscula y un número", "warning")
+        return redirect(url_for("users.edit_user_view", user_id=user_id))
+
+    if photo and photo.filename:
+        if photo.mimetype not in ALLOWED_IMAGE_TYPES:
+            flash("La foto debe ser JPG, PNG o WEBP", "warning")
+            return redirect(url_for("users.edit_user_view", user_id=user_id))
+        photo.stream.seek(0, 2)
+        photo_size = photo.stream.tell()
+        photo.stream.seek(0)
+        if photo_size == 0:
+            flash("La foto está vacía", "warning")
+            return redirect(url_for("users.edit_user_view", user_id=user_id))
+        if photo_size > 5 * 1024 * 1024:
+            flash("La foto debe pesar máximo 5 MB", "warning")
+            return redirect(url_for("users.edit_user_view", user_id=user_id))
 
     if role and role not in VALID_ROLES:
         flash("Rol inválido", "warning")
@@ -189,11 +232,26 @@ def update_user(user_id):
         not_found_message="Usuario no encontrado",
         generic_message="No se pudo actualizar el usuario",
         redirect_endpoint="users.edit_user_view",
+        redirect_values={"user_id": user_id},
     )
     if error_redirect:
         if response.status_code in [401, 403]:
             return error_redirect
         return redirect(url_for("users.edit_user_view", user_id=user_id))
+
+    if photo and photo.filename:
+        photo_response = api_post_files(
+            f"/users/{user_id}/profile-photo",
+            {"photo": (photo.filename, photo.stream, photo.mimetype)},
+        )
+        photo_error = _handle_common_response_errors(
+            photo_response,
+            generic_message="Los datos se guardaron, pero no se pudo actualizar la foto",
+            redirect_endpoint="users.edit_user_view",
+            redirect_values={"user_id": user_id},
+        )
+        if photo_error:
+            return redirect(url_for("users.edit_user_view", user_id=user_id))
 
     flash("Usuario actualizado correctamente", "success")
     return redirect(url_for("users.list_users"))

@@ -19,12 +19,6 @@
       <strong class="rv-stat-val">{{ reviews|length }}</strong>
     </div>
     <div class="rv-stat">
-      <span class="rv-stat-label">Con calificación</span>
-      <strong class="rv-stat-val">
-        {{ reviews | selectattr('rating') | list | length }}
-      </strong>
-    </div>
-    <div class="rv-stat">
       <span class="rv-stat-label">Acceso</span>
       <strong class="rv-stat-val">Staff</strong>
     </div>
@@ -63,7 +57,6 @@
             <th>#</th>
             <th>Usuario</th>
             <th>Lugar</th>
-            <th>Rating</th>
             <th>Reseña</th>
             <th>Fecha</th>
             <th class="rv-th-actions">Acciones</th>
@@ -87,19 +80,6 @@
 
             <td>
               <span class="rv-place-pill">{{ place_name }}</span>
-            </td>
-
-            <td>
-              {% if r.rating is not none %}
-              <div class="rv-stars">
-                {% for i in range(1, 6) %}
-                <span class="rv-star{% if i <= r.rating|int %} on{% endif %}">★</span>
-                {% endfor %}
-                <span class="rv-rating-num">{{ r.rating }}</span>
-              </div>
-              {% else %}
-              <span class="rv-muted-badge">N/D</span>
-              {% endif %}
             </td>
 
             <td>
@@ -161,15 +141,6 @@
           </div>
           <span class="rv-id">#{{ r.id }}</span>
         </div>
-
-        {% if r.rating is not none %}
-        <div class="rv-stars rv-stars--sm">
-          {% for i in range(1, 6) %}
-          <span class="rv-star{% if i <= r.rating|int %} on{% endif %}">★</span>
-          {% endfor %}
-          <span class="rv-rating-num">{{ r.rating }}</span>
-        </div>
-        {% endif %}
 
         <p class="rv-mcard-body">{{ body }}</p>
 

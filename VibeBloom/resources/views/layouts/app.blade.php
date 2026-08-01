@@ -71,16 +71,16 @@
                         <h3 class="text-sm font-extrabold text-gray-900 dark:text-slate-100">Información</h3>
                         <ul class="mt-4 space-y-3 text-sm text-gray-600 dark:text-slate-400">
                             <li>
-                                <a href="#" class="hover:text-blue-700 dark:hover:text-blue-400 transition">Acerca de la plataforma</a>
+                                <a href="{{ route('legal.about') }}" class="hover:text-blue-700 dark:hover:text-blue-400 transition">Acerca de la plataforma</a>
                             </li>
                             <li>
-                                <a href="#" class="hover:text-blue-700 dark:hover:text-blue-400 transition">Términos de uso</a>
+                                <a href="{{ route('terms.show') }}" class="hover:text-blue-700 dark:hover:text-blue-400 transition">Términos de uso</a>
                             </li>
                             <li>
-                                <a href="#" class="hover:text-blue-700 dark:hover:text-blue-400 transition">Condiciones del servicio</a>
+                                <a href="{{ route('legal.service-conditions') }}" class="hover:text-blue-700 dark:hover:text-blue-400 transition">Condiciones del servicio</a>
                             </li>
                             <li>
-                                <a href="#" class="hover:text-blue-700 dark:hover:text-blue-400 transition">Privacidad y datos</a>
+                                <a href="{{ route('policy.show') }}" class="hover:text-blue-700 dark:hover:text-blue-400 transition">Privacidad y datos</a>
                             </li>
                         </ul>
                     </div>
@@ -111,12 +111,6 @@
                                 </svg>
                             </a>
 
-                            <a href="#" aria-label="GitHub"
-                               class="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-gray-600 dark:text-slate-300 hover:border-blue-200 hover:text-blue-700 dark:hover:border-blue-500/30 dark:hover:text-blue-400 transition">
-                                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                                    <path d="M12 3.75a8.25 8.25 0 0 0-2.6 16.08c.41.07.56-.18.56-.4v-1.38c-2.27.49-2.75-1.1-2.75-1.1c-.37-.94-.91-1.2-.91-1.2c-.74-.5.06-.49.06-.49c.82.06 1.25.85 1.25.85c.73 1.25 1.92.89 2.38.68c.08-.53.29-.89.52-1.1c-1.81-.2-3.72-.9-3.72-4.04c0-.9.32-1.63.84-2.2c-.08-.2-.36-1.04.08-2.17c0 0 .68-.22 2.25.84a7.8 7.8 0 0 1 4.08 0c1.57-1.06 2.25-.84 2.25-.84c.44 1.13.16 1.97.08 2.17c.52.57.84 1.3.84 2.2c0 3.14-1.91 3.84-3.73 4.04c.3.25.56.75.56 1.52v2.25c0 .22.15.48.57.4A8.25 8.25 0 0 0 12 3.75Z" fill="currentColor"/>
-                                </svg>
-                            </a>
                         </div>
 
                         <p class="mt-4 text-sm leading-6 text-gray-600 dark:text-slate-400">

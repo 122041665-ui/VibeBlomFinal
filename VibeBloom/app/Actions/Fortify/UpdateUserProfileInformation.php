@@ -17,8 +17,16 @@ class UpdateUserProfileInformation implements UpdatesUserProfileInformation
         Validator::make($input, [
             'name'  => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
-            'photo' => ['nullable', 'image', 'max:2048'],
+            'photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
             'profile_is_public' => ['nullable', 'boolean'],
+        ], [
+            'name.required' => 'Escribe tu nombre.',
+            'email.required' => 'Escribe tu correo electrónico.',
+            'email.email' => 'Escribe un correo electrónico válido.',
+            'email.unique' => 'Este correo electrónico ya está registrado.',
+            'photo.image' => 'La foto seleccionada debe ser una imagen válida.',
+            'photo.mimes' => 'La foto debe ser JPG, PNG o WEBP.',
+            'photo.max' => 'La foto debe pesar como máximo 5 MB.',
         ])->validateWithBag('updateProfileInformation');
 
         if (!empty($input['photo'])) {
@@ -38,6 +46,9 @@ class UpdateUserProfileInformation implements UpdatesUserProfileInformation
     {
         if ($photo instanceof TemporaryUploadedFile) {
 
+            $photoContents = $photo->get();
+            $photoName = $photo->getClientOriginalName();
+
             if ($user->profile_photo_path) {
                 Storage::disk('public')->delete($user->profile_photo_path);
             }
@@ -55,9 +66,15 @@ class UpdateUserProfileInformation implements UpdatesUserProfileInformation
 
             if (is_string($token) && trim($token) !== '') {
                 try {
-                    Http::withToken($token)
-                        ->attach('photo', fopen($photo->getRealPath(), 'r'), $photo->getClientOriginalName())
+                    $response = Http::withToken($token)
+                        ->attach('photo', $photoContents, $photoName)
                         ->post(rtrim(config('services.fastapi.url'), '/') . '/users/me/profile-photo');
+
+                    if ($response->successful() && is_string($response->json('profile_photo_url'))) {
+                        $user->forceFill([
+                            'external_profile_photo_url' => $response->json('profile_photo_url'),
+                        ])->save();
+                    }
                 } catch (\Throwable $e) {
                     report($e);
                 }

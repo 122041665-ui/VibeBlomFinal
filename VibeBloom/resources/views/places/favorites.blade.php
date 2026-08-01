@@ -63,10 +63,10 @@
         ];
 
         $defaultPhoto = asset('images/vibebloom.png');
-        $resolvePhotoUrl = function ($value) use ($defaultPhoto) {
+        $resolvePhotoUrl = function ($value) {
             $value = trim((string) $value);
 
-            if ($value === '') return $defaultPhoto;
+            if ($value === '') return null;
             if (str_starts_with($value, 'http://') || str_starts_with($value, 'https://') || str_starts_with($value, '//') || str_starts_with($value, 'data:')) return $value;
             if (str_starts_with($value, '/storage/')) return asset(ltrim($value, '/'));
             if (str_starts_with($value, 'storage/')) return asset($value);
@@ -89,6 +89,7 @@
     <div class="min-h-screen vb-soft-page relative overflow-hidden">
 
         <div class="{{ $container }}">
+            <x-flash-messages />
 
             <div class="mb-6">
                 <div class="rounded-[30px] border border-white/80 dark:border-slate-800 bg-white/92 dark:bg-slate-900/92 backdrop-blur shadow-[0_22px_70px_rgba(15,23,42,0.10)] p-5 sm:p-6 lg:p-7">
@@ -269,7 +270,7 @@
                                                 <span class="pointer-events-none absolute -inset-1 rounded-full bg-blue-500/15 opacity-0 group-hover/heart:opacity-100 transition"></span>
 
                                                 <svg class="relative w-7 h-7 text-blue-600 dark:text-blue-400" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                                                    <path d="M12 20s-7-4.4-9.3-8.5C.7 8.2 2.2 5.3 6 4.8c2-.3 3.7.7 4.7 2 1-1.3 2.7-2.3 4.7-2c3.8.5 5.3 3.4 3.3 6.7C19 15.6 12 20 12 20Z"/>
+                                                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78Z"/>
                                                 </svg>
                                             </button>
                                         </form>

@@ -48,7 +48,7 @@ def toggle_favorite(
         db.delete(favorite)
         db.commit()
         return {
-            "message": "Favorito eliminado",
+            "message": "Lugar eliminado de tus favoritos.",
             "is_favorite": False,
             "place_id": payload.place_id
         }
@@ -63,7 +63,7 @@ def toggle_favorite(
     db.refresh(new_favorite)
 
     return {
-        "message": "Favorito agregado",
+        "message": "Lugar guardado en tus favoritos.",
         "is_favorite": True,
         "favorite": {
             "id": new_favorite.id,

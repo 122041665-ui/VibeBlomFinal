@@ -50,7 +50,7 @@
                         class="hidden"
                         wire:model="photo"
                         x-ref="photo"
-                        accept="image/*"
+                        accept="image/jpeg,image/png,image/webp"
                         x-on:change="
                             photoName = $refs.photo.files[0]?.name || null;
                             const reader = new FileReader();
@@ -73,7 +73,7 @@
                     </div>
 
                     <p class="{{ $hint }}">
-                        {{ __('Sube una foto cuadrada para que se vea correctamente en tu perfil.') }}
+                        {{ __('Sube una foto JPG, PNG o WEBP de máximo 5 MB. Se mostrará recortada sin deformarse.') }}
                     </p>
 
                     <div class="mt-4" x-show="!photoPreview">

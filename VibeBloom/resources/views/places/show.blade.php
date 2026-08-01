@@ -27,10 +27,10 @@
         $textarea = $fieldBase;
         $defaultPhoto = asset('images/vibebloom.png');
         $defaultUserPhoto = asset('images/vibebloom.png');
-        $resolvePhotoUrl = function ($value) use ($defaultPhoto) {
+        $resolvePhotoUrl = function ($value) {
             $value = trim((string) $value);
 
-            if ($value === '') return $defaultPhoto;
+            if ($value === '') return null;
             if (str_starts_with($value, 'http://') || str_starts_with($value, 'https://') || str_starts_with($value, '//') || str_starts_with($value, 'data:')) return $value;
             if (str_starts_with($value, '/storage/')) return asset(ltrim($value, '/'));
             if (str_starts_with($value, 'storage/')) return asset($value);
@@ -103,7 +103,8 @@
             if (!$value) return 'Sin fecha';
 
             try {
-                return \Illuminate\Support\Carbon::parse($value)->locale('es')->diffForHumans();
+                $date = \Illuminate\Support\Carbon::parse($value)->locale('es');
+                return $date->translatedFormat('d M Y, H:i').' · '.$date->diffForHumans();
             } catch (\Throwable $e) {
                 try {
                     return \Illuminate\Support\Carbon::createFromFormat('Y-m-d H:i:s', (string) $value)->locale('es')->diffForHumans();
@@ -266,6 +267,7 @@
         <div class="pointer-events-none absolute inset-x-0 top-0 h-96 bg-[radial-gradient(circle_at_20%_10%,rgba(37,99,235,0.16),transparent_34%),radial-gradient(circle_at_80%_0%,rgba(14,165,233,0.12),transparent_32%)] dark:bg-[radial-gradient(circle_at_20%_10%,rgba(59,130,246,0.18),transparent_34%),radial-gradient(circle_at_80%_0%,rgba(14,165,233,0.14),transparent_32%)]"></div>
 
         <div class="{{ $container }} relative">
+            <x-flash-messages />
 
             <section class="mb-6">
                 <div class="rounded-[28px] border border-white/80 dark:border-slate-800 bg-white/88 dark:bg-slate-900/88 backdrop-blur shadow-[0_22px_70px_rgba(15,23,42,0.10)] overflow-hidden">
@@ -393,16 +395,16 @@
                                                 aria-label="{{ $isFavorite ? 'Quitar de favoritos' : 'Agregar a favoritos' }}">
                                                 @if ($isFavorite)
                                                     <svg class="w-5 h-5 text-blue-600 dark:text-blue-400" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                                                        <path d="M12 21s-7-4.4-9.3-8.5C.7 8.2 2.2 5.3 6 4.8c2-.3 3.7.7 4.7 2 1-1.3 2.7-2.3 4.7-2c3.8.5 5.3 3.4 3.3 6.7C19 16.6 12 21 12 21Z"/>
+                                                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78Z"/>
                                                     </svg>
                                                 @else
-                                                    <svg class="w-5 h-5 text-blue-600 dark:text-blue-400" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                                                        <path d="M12 20s-7-4.4-9.3-8.5C.7 8.2 2.2 5.3 6 4.8c2-.3 3.7.7 4.7 2 1-1.3 2.7-2.3 4.7-2c3.8.5 5.3 3.4 3.3 6.7C19 15.6 12 20 12 20Z" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+                                                    <svg class="w-5 h-5 text-gray-500 group-hover:text-blue-600 dark:text-slate-400 dark:group-hover:text-blue-400" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78Z" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
                                                     </svg>
                                                 @endif
 
                                                 <span class="text-sm font-semibold text-gray-700 dark:text-slate-200">
-                                                    {{ $isFavorite ? 'Guardado' : 'Guardar' }}
+                                                    {{ $isFavorite ? 'En favoritos' : 'Guardar en favoritos' }}
                                                 </span>
                                             </button>
                                         </form>
@@ -459,6 +461,8 @@
                                         <textarea
                                             name="body"
                                             rows="4"
+                                            minlength="5"
+                                            maxlength="1000"
                                             class="{{ $textarea }}"
                                             placeholder="Escribe una reseña útil y clara sobre este lugar…"
                                             required
@@ -567,6 +571,8 @@
                                                         <textarea
                                                             name="body"
                                                             rows="2"
+                                                            minlength="2"
+                                                            maxlength="1000"
                                                             class="mt-3 {{ $textarea }}"
                                                             placeholder="Escribe una respuesta clara y útil…"
                                                             required
@@ -596,7 +602,8 @@
 
                                                     $replyUserName = $resolveUserName($replyUser, $replyUserId ? 'Usuario #'.$replyUserId : 'Usuario no disponible');
                                                     $replyUserPhoto = $resolveUserPhoto($replyUser);
-                                                    $replyTimeText = $resolveDisplayDate($replyCreatedAt, $replyUpdatedAt);
+                                                    // Respuestas antiguas no guardaban fecha; usamos la fecha de la reseña como referencia legible.
+                                                    $replyTimeText = $resolveDisplayDate($replyCreatedAt ?: $reviewCreatedAt, $replyUpdatedAt);
                                                     $replyWasEdited = $replyCreatedAt && $replyUpdatedAt && $replyCreatedAt !== $replyUpdatedAt;
                                                 @endphp
 
@@ -802,18 +809,7 @@
                                     <p class="text-sm text-gray-600 dark:text-slate-300 mt-1">Sigue los pasos conforme avanzas.</p>
                                 </div>
 
-                                <button
-                                    type="button"
-                                    id="btnPlayRouteVoice"
-                                    class="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold shadow-sm transition focus:outline-none focus:ring-2 focus:ring-blue-200 whitespace-nowrap"
-                                >
-                                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                                        <path d="M11 5L6.5 9H3v6h3.5L11 19V5Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
-                                        <path d="M15 9.5a4 4 0 0 1 0 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-                                        <path d="M17.5 7a7.5 7.5 0 0 1 0 10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-                                    </svg>
-                                    Escuchar paso
-                                </button>
+                                <span class="inline-flex items-center rounded-full bg-emerald-50 dark:bg-emerald-500/10 px-3 py-1.5 text-xs font-bold text-emerald-700 dark:text-emerald-300">Ubicación en tiempo real</span>
                             </div>
                         </div>
 
@@ -885,7 +881,7 @@
         let lastUserLngLat = null;
         let lastKnownHeading = 0;
         let navigationMode = false;
-        let autoVoiceEnabled = true;
+        let autoVoiceEnabled = false;
         let spokenStepKeys = new Set();
         let rerouteInProgress = false;
         let lastRerouteAt = 0;
@@ -1341,7 +1337,7 @@
             const url =
                 `https://api.mapbox.com/directions/v5/mapbox/driving/` +
                 `${fromLngLat[0]},${fromLngLat[1]};${toLngLat[0]},${toLngLat[1]}` +
-                `?geometries=geojson&overview=full&steps=true&language=es&banner_instructions=true&voice_instructions=true&access_token=${MAPBOX_TOKEN}`;
+                `?geometries=geojson&overview=full&steps=true&language=es&banner_instructions=true&access_token=${MAPBOX_TOKEN}`;
 
             const res = await fetch(url);
             const data = await res.json();
@@ -1520,8 +1516,6 @@
                 { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
             );
         });
-
-        btnPlayRouteVoice?.addEventListener('click', playRouteVoice);
 
         document.getElementById('closeRouteModal')?.addEventListener('click', closeRouteModal);
         routeModal?.addEventListener('click', (e) => {

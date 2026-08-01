@@ -175,10 +175,11 @@
 
     .approval-photo-card img {
         width: 100%;
-        height: 180px;
-        object-fit: cover;
+        height: 320px;
+        object-fit: contain;
         display: block;
-        background: #e2e8f0;
+        background: #0f172a;
+        cursor: zoom-in;
     }
 
     .approval-photo-empty {
@@ -345,6 +346,24 @@
         line-height: 1.7;
     }
 
+    .vb-dialog {
+        width: min(92vw, 520px);
+        border: 0;
+        border-radius: 26px;
+        padding: 0;
+        box-shadow: 0 30px 90px rgba(15, 23, 42, .3);
+    }
+    .vb-dialog::backdrop { background: rgba(15, 23, 42, .68); backdrop-filter: blur(4px); }
+    .vb-dialog-body { padding: 28px; text-align: center; }
+    .vb-dialog-icon { width: 64px; height: 64px; margin: 0 auto 16px; border-radius: 20px; display: grid; place-items: center; background: #ecfdf5; color: #059669; font-size: 30px; }
+    .vb-dialog h3 { margin: 0; color: #0f172a; font-size: 1.35rem; }
+    .vb-dialog p { color: #64748b; line-height: 1.65; }
+    .vb-dialog-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 22px; }
+    .photo-lightbox { width: min(96vw, 1100px); height: min(92vh, 820px); border: 0; padding: 12px; border-radius: 24px; background: #0f172a; }
+    .photo-lightbox::backdrop { background: rgba(2, 6, 23, .88); }
+    .photo-lightbox img { width: 100%; height: calc(100% - 52px); object-fit: contain; display: block; }
+    .photo-lightbox button { float: right; margin-bottom: 10px; border: 0; border-radius: 999px; padding: 8px 14px; background: #fff; color: #0f172a; font-weight: 800; cursor: pointer; }
+
     @media (max-width: 1100px) {
         .approval-detail-grid {
             grid-template-columns: 1fr;
@@ -387,8 +406,6 @@
 {% set approval_created = approval.created_at or approval.submitted_at or approval.requested_at or 'No disponible' %}
 {% set approval_updated = approval.updated_at or approval.reviewed_at or approval.modified_at or 'No disponible' %}
 {% set approval_photos = approval.photos if approval.photos is defined and approval.photos else [] %}
-{% set approval_latitude = approval.latitude if approval.latitude is defined and approval.latitude is not none else approval.lat if approval.lat is defined and approval.lat is not none else None %}
-{% set approval_longitude = approval.longitude if approval.longitude is defined and approval.longitude is not none else approval.lng if approval.lng is defined and approval.lng is not none else None %}
 
 <div class="approval-detail-page">
     <div class="approval-detail-grid">
@@ -473,6 +490,7 @@
                             {% for photo in approval_photos %}
                                 <div class="approval-photo-card">
                                     <img
+                                        class="approval-photo-zoom"
                                         src="{{ photo.url if photo.url is defined else photo.photo_url if photo.photo_url is defined else photo.path if photo.path is defined else photo }}"
                                         alt="Foto {{ loop.index }} de la solicitud">
                                 </div>
@@ -527,31 +545,17 @@
                         <span>Correo del usuario</span>
                         <strong>{{ approval_email }}</strong>
                     </div>
-                    <div class="approval-meta-item">
-                        <span>Coordenadas</span>
-                        <strong>
-                            {% if approval_latitude is not none and approval_longitude is not none %}
-                                {{ approval_latitude }}, {{ approval_longitude }}
-                            {% else %}
-                                No disponibles
-                            {% endif %}
-                        </strong>
-                    </div>
-                </div>
-
-                <div class="approval-note-box">
-                    Esta vista permite revisar la información cargada antes de tomar una decisión administrativa dentro del panel.
                 </div>
 
                 <div class="approval-side-actions">
                     {% if approval_status == 'pending' %}
                         <div class="approval-form-stack">
-                            <form action="{{ url_for('approvals.approve_place', place_id=approval.id) }}" method="POST">
-                                <button type="submit" class="approval-btn approval-btn-success">Aprobar solicitud</button>
+                            <form id="approveRequestForm" action="{{ url_for('approvals.approve_place', place_id=approval.id) }}" method="POST">
+                                <button type="button" id="openApproveDialog" class="approval-btn approval-btn-success">Aprobar solicitud</button>
                             </form>
 
-                            <form action="{{ url_for('approvals.reject_place', place_id=approval.id) }}" method="POST" class="approval-reject-form">
-                                <textarea name="reason" class="approval-textarea" placeholder="Motivo del rechazo (opcional)"></textarea>
+                            <form action="{{ url_for('approvals.reject_place', place_id=approval.id) }}" method="POST" class="approval-reject-form" novalidate>
+                                <textarea name="reason" class="approval-textarea" minlength="10" maxlength="500" required placeholder="Explica claramente el motivo del rechazo (obligatorio)"></textarea>
                                 <button type="submit" class="approval-btn approval-btn-danger">Rechazar solicitud</button>
                             </form>
                         </div>
@@ -564,10 +568,45 @@
                     {% endif %}
 
                     <a href="{{ url_for('approvals.list_approvals') }}" class="approval-btn approval-btn-primary">Volver a aprobaciones</a>
-                    <a href="javascript:history.back()" class="approval-btn approval-btn-secondary">Regresar</a>
                 </div>
             </div>
         </aside>
     </div>
 </div>
+
+<dialog id="approveDialog" class="vb-dialog">
+    <div class="vb-dialog-body">
+        <div class="vb-dialog-icon">✓</div>
+        <h3>¿Aprobar {{ approval_name }}?</h3>
+        <p>El lugar se publicará en VibeBloom y el usuario recibirá la confirmación correspondiente.</p>
+        <div class="vb-dialog-actions">
+            <button type="button" class="approval-btn approval-btn-secondary" id="cancelApprove">Cancelar</button>
+            <button type="button" class="approval-btn approval-btn-success" id="confirmApprove">Sí, aprobar</button>
+        </div>
+    </div>
+</dialog>
+
+<dialog id="photoLightbox" class="photo-lightbox">
+    <button type="button" id="closePhotoLightbox">Cerrar</button>
+    <img id="photoLightboxImage" alt="Vista ampliada de la solicitud">
+</dialog>
+
+<script>
+    const approveDialog = document.getElementById('approveDialog');
+    document.getElementById('openApproveDialog')?.addEventListener('click', () => approveDialog.showModal());
+    document.getElementById('cancelApprove')?.addEventListener('click', () => approveDialog.close());
+    document.getElementById('confirmApprove')?.addEventListener('click', () => {
+        document.getElementById('approveRequestForm')?.submit();
+    });
+
+    const lightbox = document.getElementById('photoLightbox');
+    const lightboxImage = document.getElementById('photoLightboxImage');
+    document.querySelectorAll('.approval-photo-zoom').forEach((photo) => {
+        photo.addEventListener('click', () => {
+            lightboxImage.src = photo.src;
+            lightbox.showModal();
+        });
+    });
+    document.getElementById('closePhotoLightbox')?.addEventListener('click', () => lightbox.close());
+</script>
 {% endblock %}

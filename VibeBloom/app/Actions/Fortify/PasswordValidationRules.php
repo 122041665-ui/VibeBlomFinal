@@ -18,7 +18,8 @@ trait PasswordValidationRules
             'string',
             'confirmed',
             Password::min(8)
-                ->mixedCase(),
+                ->mixedCase()
+                ->numbers(),
         ];
     }
 }

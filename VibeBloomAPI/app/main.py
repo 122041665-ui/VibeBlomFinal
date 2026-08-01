@@ -12,12 +12,12 @@ from app.models import User, Place, Review, Favorite, Memory, ReviewReply, Memor
 from app.routers.auth import router as auth_router
 from app.routers.users import router as users_router
 from app.routers.places import router as places_router
-from app.routers.admin import router as admin_router
 from app.routers.approvals import router as approvals_router
 from app.routers.favorites import router as favorites_router
 from app.routers.memories import router as memories_router
 from app.routers.reports import router as reports_router
 from app.routers.reviews import router as reviews_router
+from app.routers.review_replies import router as review_replies_router
 from app.routers.dashboard import router as dashboard_router
 
 Base.metadata.create_all(bind=engine)
@@ -48,15 +48,15 @@ app.mount("/storage", StaticFiles(directory=str(STORAGE_DIR)), name="storage")
 app.include_router(auth_router)
 app.include_router(users_router)
 app.include_router(places_router)
-app.include_router(admin_router)
 app.include_router(approvals_router)
 app.include_router(favorites_router)
 app.include_router(memories_router)
 app.include_router(reports_router)
 app.include_router(reviews_router)
+app.include_router(review_replies_router)
 app.include_router(dashboard_router)
 
 
 @app.get("/")
 def root():
-    return {"message": "VibeBloom funcionando correctamente"}   
+    return {"message": "VibeBloom funcionando correctamente"}

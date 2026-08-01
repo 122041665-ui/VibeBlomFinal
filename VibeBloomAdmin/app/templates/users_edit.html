@@ -314,8 +314,17 @@
     </div>
 
     {# Form #}
-    <form method="POST" class="us-edit-body">
+    <form method="POST" enctype="multipart/form-data" class="us-edit-body" novalidate>
       <div class="us-edit-grid">
+
+        <div class="us-edit-field us-edit-field-full">
+          <label for="photo" class="us-edit-label">Foto de perfil</label>
+          {% if user.profile_photo_url %}
+            <img src="{{ user.profile_photo_url }}" alt="Foto actual" style="width:96px;height:96px;object-fit:cover;border-radius:18px;border:1px solid #e2e8f0">
+          {% endif %}
+          <input id="photo" name="photo" type="file" class="us-edit-input" accept="image/jpeg,image/png,image/webp">
+          <p class="us-edit-hint">JPG, PNG o WEBP. Máximo 5 MB. Déjalo vacío para conservar la foto actual.</p>
+        </div>
 
         <div class="us-edit-field">
           <label for="name" class="us-edit-label">Nombre</label>
@@ -343,10 +352,11 @@
           <div class="us-edit-pwd-wrap">
             <input id="password" name="password" type="password"
               class="us-edit-input us-edit-pwd-input"
+              minlength="8" pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}"
               placeholder="Dejar vacío para conservar la actual">
             <button type="button" class="us-edit-pwd-toggle" id="pwdToggle">Ver</button>
           </div>
-          <p class="us-edit-hint">Solo completa este campo si deseas cambiar la contraseña.</p>
+          <p class="us-edit-hint">Solo complétalo para cambiarla. Mínimo 8 caracteres, una mayúscula, una minúscula y un número.</p>
         </div>
 
       </div>

@@ -15,6 +15,7 @@ return [
 
     'features' => [
         Features::profilePhotos(),   // ACTIVADO ✔
+        Features::termsAndPrivacyPolicy(),
         Features::accountDeletion(),
     ],
 

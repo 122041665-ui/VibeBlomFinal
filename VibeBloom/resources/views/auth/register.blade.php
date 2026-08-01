@@ -118,7 +118,7 @@
                             </svg>
                         </button>
                     </div>
-                    <p class="{{ $hint }}">Mínimo 8 caracteres, con al menos una mayúscula.</p>
+                    <p class="{{ $hint }}">Mínimo 8 caracteres, con mayúscula, minúscula y número.</p>
                 </div>
 
                 <div>
@@ -154,6 +154,16 @@
                     <p class="{{ $hint }}">Debe coincidir exactamente con la contraseña anterior.</p>
                 </div>
 
+                <label class="flex items-start gap-3 rounded-2xl border border-gray-200 bg-gray-50 p-4 text-sm text-gray-700">
+                    <input type="checkbox" name="terms" value="1" required @checked(old('terms')) class="mt-0.5 rounded border-gray-300 text-blue-600 focus:ring-blue-200">
+                    <span>
+                        Acepto los <a href="{{ route('terms.show') }}" data-legal-document data-title="Términos de uso" class="font-bold text-blue-700 underline">Términos de uso</a>, las
+                        <a href="{{ route('legal.service-conditions') }}" data-legal-document data-title="Condiciones del servicio" class="font-bold text-blue-700 underline">Condiciones del servicio</a> y el
+                        <a href="{{ route('policy.show') }}" data-legal-document data-title="Aviso de privacidad" class="font-bold text-blue-700 underline">Aviso de privacidad</a>.
+                        <span class="mt-1 block text-xs text-gray-500">Debes leerlos y aceptarlos para crear tu cuenta.</span>
+                    </span>
+                </label>
+
                 <div class="pt-2 space-y-3">
                     <button type="submit" class="{{ $btnPrimary }}">
                         Crear cuenta
@@ -178,8 +188,67 @@
         <div class="h-28 sm:h-32 lg:h-40"></div>
     </div>
 
+    <div id="legalDocumentModal"
+         class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/60 p-3 sm:p-6"
+         role="dialog"
+         aria-modal="true"
+         aria-labelledby="legalDocumentTitle">
+        <div class="flex h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
+            <div class="flex items-center justify-between gap-4 border-b border-gray-200 px-4 py-3 sm:px-5">
+                <h2 id="legalDocumentTitle" class="text-base font-extrabold text-gray-900">Documento legal</h2>
+                <button type="button"
+                        id="closeLegalDocument"
+                        class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gray-100 text-2xl leading-none text-gray-700 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-300"
+                        aria-label="Cerrar documento">&times;</button>
+            </div>
+            <iframe id="legalDocumentFrame"
+                    class="min-h-0 flex-1 w-full bg-white"
+                    title="Documento legal"></iframe>
+        </div>
+    </div>
+
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            const legalModal = document.getElementById('legalDocumentModal');
+            const legalFrame = document.getElementById('legalDocumentFrame');
+            const legalTitle = document.getElementById('legalDocumentTitle');
+            const closeLegalButton = document.getElementById('closeLegalDocument');
+            let legalTrigger = null;
+
+            function closeLegalDocument() {
+                if (!legalModal) return;
+
+                legalModal.classList.add('hidden');
+                legalModal.classList.remove('flex');
+                document.body.classList.remove('overflow-hidden');
+                legalFrame.removeAttribute('src');
+                legalTrigger?.focus();
+            }
+
+            document.querySelectorAll('[data-legal-document]').forEach((link) => {
+                link.addEventListener('click', (event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    legalTrigger = link;
+                    legalTitle.textContent = link.dataset.title || 'Documento legal';
+                    legalFrame.src = link.href;
+                    legalModal.classList.remove('hidden');
+                    legalModal.classList.add('flex');
+                    document.body.classList.add('overflow-hidden');
+                    closeLegalButton.focus();
+                });
+            });
+
+            closeLegalButton?.addEventListener('click', closeLegalDocument);
+            legalModal?.addEventListener('click', (event) => {
+                if (event.target === legalModal) closeLegalDocument();
+            });
+            document.addEventListener('keydown', (event) => {
+                if (event.key === 'Escape' && !legalModal?.classList.contains('hidden')) {
+                    closeLegalDocument();
+                }
+            });
+
             function setupToggle(inputId, buttonId, eyeId, eyeOffId, showLabel, hideLabel) {
                 const input = document.getElementById(inputId);
                 const button = document.getElementById(buttonId);

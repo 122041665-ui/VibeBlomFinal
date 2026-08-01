@@ -7,8 +7,16 @@ auth_bp = Blueprint("auth", __name__)
 @auth_bp.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
-        email = request.form.get("email")
-        password = request.form.get("password")
+        email = (request.form.get("email") or "").strip()
+        password = request.form.get("password") or ""
+
+        if not email:
+            flash("Escribe tu correo electrónico", "error")
+            return render_template("login.html")
+
+        if not password:
+            flash("Escribe tu contraseña", "error")
+            return render_template("login.html")
 
         try:
             response = api_post("/auth/login", {

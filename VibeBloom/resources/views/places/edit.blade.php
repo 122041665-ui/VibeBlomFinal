@@ -36,6 +36,7 @@
         $placeLat = is_array($place) ? ($place['lat'] ?? null) : ($place->lat ?? null);
         $placeLng = is_array($place) ? ($place['lng'] ?? null) : ($place->lng ?? null);
         $placePhoto = is_array($place) ? ($place['photo'] ?? null) : ($place->photo ?? null);
+        $placePhotoUrl = is_array($place) ? ($place['photo_url'] ?? null) : ($place->photo_url ?? null);
         $placePhotos = is_array($place) ? ($place['photos'] ?? []) : ($place->photos ?? []);
         $placePhotosUrls = is_array($place) ? ($place['photos_urls'] ?? []) : ($place->photos_urls ?? []);
 
@@ -44,10 +45,12 @@
 
         $normalizedPhotos = [];
 
-        if (!empty($placePhoto)) {
+        if (!empty($placePhotoUrl)) {
+            $normalizedPhotos[] = $placePhotoUrl;
+        } elseif (!empty($placePhoto)) {
             $normalizedPhotos[] = str_starts_with($placePhoto, 'http')
                 ? $placePhoto
-                : asset('storage/' . ltrim($placePhoto, '/'));
+                : rtrim(config('services.fastapi.public_url', config('services.fastapi.url')), '/') . '/storage/' . ltrim($placePhoto, '/');
         }
 
         if (is_array($placePhotosUrls)) {
@@ -69,7 +72,11 @@
                         ?? $photoItem->photo_url
                         ?? (!empty($photoItem->path) ? asset('storage/' . ltrim($photoItem->path, '/')) : null);
                 } else {
-                    $url = is_string($photoItem) ? asset('storage/' . ltrim($photoItem, '/')) : null;
+                    $url = is_string($photoItem)
+                        ? (str_starts_with($photoItem, 'http')
+                            ? $photoItem
+                            : rtrim(config('services.fastapi.public_url', config('services.fastapi.url')), '/') . '/storage/' . ltrim($photoItem, '/'))
+                        : null;
                 }
 
                 if (!empty($url)) {
@@ -85,6 +92,7 @@
         <div class="pointer-events-none absolute inset-x-0 top-0 h-96 bg-[radial-gradient(circle_at_20%_10%,rgba(37,99,235,0.14),transparent_34%),radial-gradient(circle_at_82%_0%,rgba(14,165,233,0.10),transparent_32%)] dark:bg-[radial-gradient(circle_at_20%_10%,rgba(59,130,246,0.16),transparent_34%),radial-gradient(circle_at_82%_0%,rgba(14,165,233,0.12),transparent_32%)]"></div>
 
         <div class="{{ $container }}">
+            <x-flash-messages />
 
             <div class="mb-6">
                 <div class="rounded-[30px] border border-white/80 dark:border-slate-800 bg-white/88 dark:bg-slate-900/88 backdrop-blur shadow-[0_22px_70px_rgba(15,23,42,0.10)] p-5 sm:p-6 lg:p-7">
@@ -167,7 +175,7 @@
                                         <label class="{{ $labelClass }}">Calificación</label>
 
                                         @php $currentRating = old('rating', $placeRating); @endphp
-                                        <input type="hidden" name="rating" id="rating" value="{{ $currentRating }}">
+                                        <input type="hidden" name="rating" id="rating" value="{{ $currentRating }}" required min="1" max="5">
 
                                         <div class="{{ $field }} flex items-center justify-between">
                                             <div id="starRating" class="flex items-center gap-1 select-none">
@@ -267,7 +275,7 @@
                                 <div>
                                     <label class="{{ $labelClass }}">Cambiar fotos</label>
 
-                                    <input type="file" id="photos" name="photos[]" accept="image/*" multiple class="{{ $fileHidden }}">
+                                    <input type="file" id="photos" name="photos[]" accept="image/jpeg,image/png,image/webp" multiple class="{{ $fileHidden }}">
 
                                     <label for="photos" class="{{ $fileFake }}">
                                         <span class="text-gray-700 dark:text-slate-200 font-medium">Seleccionar fotos</span>
@@ -280,8 +288,9 @@
 
                                 <div>
                                     <label class="{{ $labelClass }}">Descripción</label>
-                                    <textarea name="description" rows="4" class="{{ $field }}"
+                                    <textarea name="description" rows="4" required minlength="20" maxlength="1000" class="{{ $field }}"
                                               placeholder="Describe el ambiente, etc.">{{ old('description', $placeDescription) }}</textarea>
+                                    <p class="{{ $hintClass }}">Entre 20 y 1000 caracteres. El contenido se revisará antes de publicarse.</p>
                                 </div>
 
                                 <div class="flex justify-end xl:hidden">

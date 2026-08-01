@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import select
+from datetime import datetime
 
 from app.core.database import get_db
 from app.core.security import get_current_user
@@ -29,7 +30,8 @@ def create_review_reply(
     reply = ReviewReply(
         review_id=payload.review_id,
         user_id=current_user.id,
-        body=payload.body
+        body=payload.body,
+        created_at=datetime.now()
     )
 
     db.add(reply)

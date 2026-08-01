@@ -1,4 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from pathlib import Path
+from uuid import uuid4
+
+from fastapi import APIRouter, Depends, File, HTTPException, status, UploadFile
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
@@ -11,6 +14,9 @@ from app.models.review_reply import ReviewReply
 from app.schemas.place import PlaceCreate, PlaceResponse, PlaceUpdate
 
 router = APIRouter(prefix="/places", tags=["Places"])
+BASE_DIR = Path(__file__).resolve().parents[2]
+PLACE_STORAGE_DIR = BASE_DIR / "storage" / "places"
+ALLOWED_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
 
 
 def is_admin(user: User) -> bool:
@@ -50,6 +56,25 @@ def get_place_or_404(db: Session, place_id: int) -> Place:
             detail="Lugar no encontrado",
         )
     return place
+
+
+def save_place_photo(file: UploadFile) -> str:
+    extension = Path(file.filename or "").suffix.lower()
+    if extension not in ALLOWED_IMAGE_EXTENSIONS:
+        raise HTTPException(status_code=422, detail="Formato de imagen no permitido")
+    if file.content_type not in {"image/jpeg", "image/png", "image/webp"}:
+        raise HTTPException(status_code=422, detail="El archivo debe ser una imagen JPG, PNG o WEBP")
+
+    contents = file.file.read()
+    if not contents:
+        raise HTTPException(status_code=422, detail="La imagen está vacía")
+    if len(contents) > 5 * 1024 * 1024:
+        raise HTTPException(status_code=422, detail="Cada imagen debe pesar máximo 5 MB")
+
+    PLACE_STORAGE_DIR.mkdir(parents=True, exist_ok=True)
+    filename = f"{uuid4().hex}{extension}"
+    (PLACE_STORAGE_DIR / filename).write_bytes(contents)
+    return f"places/{filename}"
 
 
 @router.get("", response_model=list[PlaceResponse])
@@ -95,7 +120,7 @@ def create_place(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    data = payload.model_dump()
+    data = payload.model_dump(exclude={"photo_url", "photos_urls", "price_range"})
     data["user_id"] = current_user.id
 
     place = Place(**data)
@@ -129,7 +154,7 @@ def update_place(
             detail="No autorizado",
         )
 
-    data = payload.model_dump(exclude_unset=True)
+    data = payload.model_dump(exclude_unset=True, exclude={"price_range"})
     data.pop("user_id", None)
 
     for key, value in data.items():
@@ -147,6 +172,27 @@ def update_place(
         )
 
     return updated_place
+
+
+@router.post("/{place_id}/photos", response_model=PlaceResponse)
+def replace_place_photos(
+    place_id: int,
+    photos: list[UploadFile] = File(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    place = get_place_or_404(db, place_id)
+    if not can_manage_place(current_user, place):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No autorizado")
+    if not 1 <= len(photos) <= 3:
+        raise HTTPException(status_code=422, detail="Selecciona entre 1 y 3 fotos")
+
+    saved_photos = [save_place_photo(photo) for photo in photos]
+    place.photo = saved_photos[0]
+    place.photos = saved_photos
+    db.commit()
+
+    return get_place_with_relations(db, place.id)
 
 
 @router.delete("/{place_id}", status_code=status.HTTP_200_OK)

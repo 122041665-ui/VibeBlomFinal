@@ -20,4 +20,4 @@ RUN composer install
 
 EXPOSE 8000
 
-CMD ["sh", "-c", "if [ -f .env ] && [ -n \"$FASTAPI_URL\" ]; then sed -i \"s#^FASTAPI_URL=.*#FASTAPI_URL=$FASTAPI_URL#\" .env; fi && php artisan config:clear && php artisan cache:clear && php artisan route:clear && php artisan view:clear && php artisan serve --host=0.0.0.0 --port=8000"]
+CMD ["sh", "-c", "if [ -f .env ] && [ -n \"$FASTAPI_URL\" ]; then sed -i \"s#^FASTAPI_URL=.*#FASTAPI_URL=$FASTAPI_URL#\" .env; fi && php artisan config:clear && php artisan cache:clear && php artisan route:clear && php artisan view:clear && php artisan migrate --force && php artisan storage:link || true; php artisan serve --host=0.0.0.0 --port=8000"]

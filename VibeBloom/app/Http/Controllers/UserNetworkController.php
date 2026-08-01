@@ -17,6 +17,9 @@ use Illuminate\View\View;
 
 class UserNetworkController extends Controller
 {
+    private array $activePlatformUserIds = [];
+    private bool $platformUsersAuthoritative = false;
+
     private function getApiToken(): ?string
     {
         $token = session('access_token');
@@ -69,11 +72,13 @@ class UserNetworkController extends Controller
         }
 
         try {
-            $response = $api->get('/users', $token);
+            $response = $api->get('/users/community', $token);
 
             if (!$response->successful()) {
                 return collect();
             }
+
+            $this->platformUsersAuthoritative = true;
 
             return $this->normalizeList($response->json())->filter(fn ($user) => is_array($user))->values();
         } catch (\Throwable $e) {
@@ -133,7 +138,17 @@ class UserNetworkController extends Controller
     {
         $apiPlaces = $apiPlaces ?: $this->fetchApiPlaces($api);
 
-        $users = $this->fetchApiUsers($api)
+        $platformUsers = $this->fetchApiUsers($api);
+
+        $this->activePlatformUserIds = $platformUsers
+            ->pluck('id')
+            ->filter(fn ($id) => is_numeric($id))
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
+
+        $users = $platformUsers
             ->merge($this->extractUsersFromPlaces($apiPlaces))
             ->filter(fn ($user) => is_array($user) && !empty($user['email']))
             ->unique(fn ($user) => mb_strtolower((string) $user['email']))
@@ -234,20 +249,38 @@ class UserNetworkController extends Controller
 
     public function index(Request $request, FastApiService $api): View
     {
-        $query = trim((string) $request->query('q', ''));
+        $validated = $request->validate([
+            'q' => ['nullable', 'string', 'max:100'],
+        ], [
+            'q.max' => 'La búsqueda no puede superar 100 caracteres.',
+        ]);
+        $query = preg_replace('/\s+/u', ' ', trim((string) ($validated['q'] ?? ''))) ?: '';
+        $escapedQuery = str_replace(['%', '_', '\\'], '', mb_strtolower($query, 'UTF-8'));
+        $tokens = collect(preg_split('/\s+/u', $escapedQuery, -1, PREG_SPLIT_NO_EMPTY))->take(6);
         $authUser = $request->user();
         $apiPlaces = $this->syncPlatformUsers($api);
         $platformPlaceCounts = $this->platformPlaceCounts($apiPlaces);
 
         $users = User::query()
             ->withCount(['followers', 'following', 'places'])
+            ->when(
+                $this->platformUsersAuthoritative,
+                fn ($q) => $q->whereIn('platform_user_id', $this->activePlatformUserIds)
+            )
             ->when($authUser, fn ($q) => $q->where('id', '!=', $authUser->id))
             ->where('profile_is_public', true)
-            ->when($query !== '', function ($q) use ($query) {
-                $q->where(function ($inner) use ($query) {
-                    $inner->where('name', 'like', "%{$query}%")
-                        ->orWhere('email', 'like', "%{$query}%");
+            ->when($query !== '', function ($q) use ($escapedQuery, $tokens) {
+                $tokens->each(function ($token) use ($q) {
+                    $q->where(function ($inner) use ($token) {
+                        $inner->whereRaw('LOWER(name) LIKE ?', ["%{$token}%"])
+                            ->orWhereRaw('LOWER(email) LIKE ?', ["%{$token}%"]);
+                    });
                 });
+
+                $q->orderByRaw(
+                    'CASE WHEN LOWER(name) = ? OR LOWER(email) = ? THEN 0 WHEN LOWER(name) LIKE ? THEN 1 ELSE 2 END',
+                    [$escapedQuery, $escapedQuery, $escapedQuery.'%']
+                );
             })
             ->orderByDesc('followers_count')
             ->orderBy('name')

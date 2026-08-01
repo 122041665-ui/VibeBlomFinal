@@ -83,7 +83,11 @@
 
             <td>
               <div class="us-user">
-                <div class="us-avatar">{{ uname[:1]|upper }}</div>
+                <div class="us-avatar">
+                  {% if u.profile_photo_url %}
+                    <img src="{{ u.profile_photo_url }}" alt="Foto de {{ uname }}" loading="lazy" style="width:100%;height:100%;object-fit:cover;border-radius:inherit">
+                  {% else %}{{ uname[:1]|upper }}{% endif %}
+                </div>
                 <span class="us-uname">{{ uname }}</span>
               </div>
             </td>
@@ -103,6 +107,9 @@
             </td>
 
             <td>
+              {% if u.id == 3 %}
+                <span class="us-role-badge us-role-admin">Protegido</span>
+              {% else %}
               <form method="POST"
                     action="{{ url_for('users.update_user_role', user_id=u.id) }}"
                     class="us-role-form"
@@ -116,9 +123,13 @@
                   <button type="submit" class="us-role-btn">Guardar</button>
                 </div>
               </form>
+              {% endif %}
             </td>
 
             <td>
+              {% if u.id == 3 %}
+                <span class="us-role-badge us-role-admin">Administrador principal</span>
+              {% else %}
               <div class="us-row-actions">
                 <a href="{{ u.edit_url }}" class="us-action-btn us-action-edit" title="Editar usuario">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
@@ -141,6 +152,7 @@
                   Eliminar
                 </button>
               </div>
+              {% endif %}
             </td>
 
           </tr>
@@ -163,7 +175,11 @@
 
         <div class="us-mcard-top">
           <div class="us-user">
-            <div class="us-avatar">{{ uname[:1]|upper }}</div>
+            <div class="us-avatar">
+              {% if u.profile_photo_url %}
+                <img src="{{ u.profile_photo_url }}" alt="Foto de {{ uname }}" loading="lazy" style="width:100%;height:100%;object-fit:cover;border-radius:inherit">
+              {% else %}{{ uname[:1]|upper }}{% endif %}
+            </div>
             <div class="us-mcard-meta">
               <span class="us-uname">{{ uname }}</span>
               <span class="us-email">{{ uemail }}</span>
@@ -182,6 +198,9 @@
           {% endif %}
         </div>
 
+        {% if u.id == 3 %}
+        <div class="us-role-badge us-role-admin">Cuenta protegida</div>
+        {% else %}
         <form method="POST"
               action="{{ url_for('users.update_user_role', user_id=u.id) }}"
               class="us-role-form us-mcard-role-form">
@@ -194,9 +213,13 @@
             <button type="submit" class="us-role-btn">Guardar rol</button>
           </div>
         </form>
+        {% endif %}
 
         <div class="us-mcard-foot">
           <div class="us-row-actions">
+            {% if u.id == 3 %}
+            <span class="us-role-badge us-role-admin">Administrador principal</span>
+            {% else %}
             <a href="{{ u.edit_url }}" class="us-action-btn us-action-edit">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
@@ -217,6 +240,7 @@
               </svg>
               Eliminar
             </button>
+            {% endif %}
           </div>
         </div>
 

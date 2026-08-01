@@ -122,6 +122,10 @@ def update_review(review_id):
         flash("El contenido de la reseña es obligatorio.", "error")
         return redirect(url_for("reviews.edit_review_view", review_id=review_id))
 
+    if len(body) < 5 or len(body) > 1000:
+        flash("La reseña debe tener entre 5 y 1000 caracteres.", "error")
+        return redirect(url_for("reviews.edit_review_view", review_id=review_id))
+
     response = api_put(f"/reviews/{review_id}", {"body": body})
 
     auth_redirect = _handle_auth_errors(response)

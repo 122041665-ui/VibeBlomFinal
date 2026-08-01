@@ -98,6 +98,9 @@
                 </div>
             @endguest
 
+            <x-place-search />
+
+            <div data-place-results aria-live="polite">
             @if ($places->count() > 0)
                 <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-5">
                     <div>
@@ -287,6 +290,7 @@
                 @if (method_exists($places, 'links'))
                     {{ $places->links() }}
                 @endif
+            </div>
             </div>
 
             <div class="h-28 sm:h-32 lg:h-40"></div>

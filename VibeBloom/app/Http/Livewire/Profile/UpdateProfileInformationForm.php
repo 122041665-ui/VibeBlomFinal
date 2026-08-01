@@ -5,6 +5,7 @@ namespace App\Http\Livewire\Profile;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Http;
 use Laravel\Fortify\Contracts\UpdatesUserProfileInformation;
 
 class UpdateProfileInformationForm extends Component
@@ -19,7 +20,16 @@ class UpdateProfileInformationForm extends Component
         'state.name' => 'required|string|max:255',
         'state.email' => 'required|email|max:255',
         'state.profile_is_public' => 'nullable|boolean',
-        'photo' => 'nullable|image|max:2048',
+        'photo' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
+    ];
+
+    protected $messages = [
+        'state.name.required' => 'Escribe tu nombre.',
+        'state.email.required' => 'Escribe tu correo electrónico.',
+        'state.email.email' => 'Escribe un correo electrónico válido.',
+        'photo.image' => 'La foto seleccionada debe ser una imagen válida.',
+        'photo.mimes' => 'La foto debe ser JPG, PNG o WEBP.',
+        'photo.max' => 'La foto debe pesar como máximo 5 MB.',
     ];
 
     public function mount()
@@ -52,6 +62,21 @@ class UpdateProfileInformationForm extends Component
     public function deleteProfilePhoto()
     {
         $this->user->deleteProfilePhoto();
+        $this->user->forceFill(['external_profile_photo_url' => null])->save();
+
+        $token = session('access_token')
+            ?? data_get(session('user'), 'access_token')
+            ?? data_get(session('api'), 'access_token')
+            ?? data_get(session('api_user'), 'access_token');
+
+        if (is_string($token) && trim($token) !== '') {
+            try {
+                Http::withToken($token)
+                    ->delete(rtrim(config('services.fastapi.url'), '/') . '/users/me/profile-photo');
+            } catch (\Throwable $e) {
+                report($e);
+            }
+        }
 
         $this->emit('refresh-navigation-menu');
     }

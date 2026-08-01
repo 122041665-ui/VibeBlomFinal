@@ -1,9 +1,10 @@
+import os
 from pathlib import Path
 from typing import Optional
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, File, HTTPException, status, UploadFile
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -14,7 +15,7 @@ from app.schemas.user import UserCreate, UserResponse
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
-ROOT_ADMIN_ID = 1
+ROOT_ADMIN_ID = int(os.getenv("ROOT_ADMIN_ID", "3"))
 BASE_DIR = Path(__file__).resolve().parents[2]
 PROFILE_STORAGE_DIR = BASE_DIR / "storage" / "profile-photos"
 
@@ -24,10 +25,10 @@ class RoleUpdate(BaseModel):
 
 
 class UserUpdate(BaseModel):
-    name: Optional[str] = None
-    email: Optional[str] = None
+    name: Optional[str] = Field(default=None, min_length=1, max_length=255)
+    email: Optional[EmailStr] = None
     role: Optional[str] = None
-    password: Optional[str] = None
+    password: Optional[str] = Field(default=None, min_length=8, max_length=255)
 
 
 VALID_ROLES = ["user", "moderator", "admin"]
@@ -50,6 +51,16 @@ def my_profile(current_user: User = Depends(get_current_user)):
     return current_user
 
 
+@router.get("/community", response_model=list[UserResponse])
+def community_users(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Return active platform users to any authenticated community member."""
+    result = db.execute(select(User).order_by(User.name, User.id))
+    return result.scalars().all()
+
+
 @router.post("/me/profile-photo", response_model=UserResponse)
 def update_my_profile_photo(
     photo: UploadFile = File(...),
@@ -58,20 +69,88 @@ def update_my_profile_photo(
 ):
     extension = Path(photo.filename or "").suffix.lower()
     if extension not in [".jpg", ".jpeg", ".png", ".webp"]:
-        extension = ".jpg"
+        raise HTTPException(status_code=422, detail="Formato de imagen no permitido")
+    if photo.content_type not in {"image/jpeg", "image/png", "image/webp"}:
+        raise HTTPException(status_code=422, detail="El archivo debe ser una imagen JPG, PNG o WEBP")
+
+    contents = photo.file.read()
+    if not contents:
+        raise HTTPException(status_code=422, detail="La foto está vacía")
+    if len(contents) > 5 * 1024 * 1024:
+        raise HTTPException(status_code=422, detail="La foto debe pesar máximo 5 MB")
 
     PROFILE_STORAGE_DIR.mkdir(parents=True, exist_ok=True)
     filename = f"{uuid4().hex}{extension}"
     destination = PROFILE_STORAGE_DIR / filename
 
     with destination.open("wb") as buffer:
-        buffer.write(photo.file.read())
+        buffer.write(contents)
+
+    old_path = current_user.profile_photo_path
 
     current_user.profile_photo_path = f"profile-photos/{filename}"
     db.commit()
     db.refresh(current_user)
 
+    if old_path and str(old_path).startswith("profile-photos/"):
+        old_file = BASE_DIR / "storage" / str(old_path)
+        if old_file.is_file() and old_file != destination:
+            old_file.unlink()
+
     return current_user
+
+
+@router.delete("/me/profile-photo", status_code=204)
+def delete_my_profile_photo(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    old_path = current_user.profile_photo_path
+    current_user.profile_photo_path = None
+    db.commit()
+
+    if old_path and str(old_path).startswith("profile-photos/"):
+        old_file = BASE_DIR / "storage" / str(old_path)
+        if old_file.is_file():
+            old_file.unlink()
+
+
+@router.post("/{user_id}/profile-photo", response_model=UserResponse)
+def update_user_profile_photo(
+    user_id: int,
+    photo: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    user = get_user_or_404(db, user_id)
+
+    extension = Path(photo.filename or "").suffix.lower()
+    if extension not in [".jpg", ".jpeg", ".png", ".webp"]:
+        raise HTTPException(status_code=422, detail="Formato de imagen no permitido")
+    if photo.content_type not in {"image/jpeg", "image/png", "image/webp"}:
+        raise HTTPException(status_code=422, detail="El archivo debe ser una imagen JPG, PNG o WEBP")
+
+    contents = photo.file.read()
+    if not contents:
+        raise HTTPException(status_code=422, detail="La foto está vacía")
+    if len(contents) > 5 * 1024 * 1024:
+        raise HTTPException(status_code=422, detail="La foto debe pesar máximo 5 MB")
+
+    PROFILE_STORAGE_DIR.mkdir(parents=True, exist_ok=True)
+    filename = f"{uuid4().hex}{extension}"
+    destination = PROFILE_STORAGE_DIR / filename
+    destination.write_bytes(contents)
+    old_path = user.profile_photo_path
+    user.profile_photo_path = f"profile-photos/{filename}"
+    db.commit()
+    db.refresh(user)
+
+    if old_path and str(old_path).startswith("profile-photos/"):
+        old_file = BASE_DIR / "storage" / str(old_path)
+        if old_file.is_file() and old_file != destination:
+            old_file.unlink()
+
+    return user
 
 
 @router.get("", response_model=list[UserResponse])

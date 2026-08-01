@@ -30,6 +30,16 @@ def api_post(path: str, json_data: dict):
     )
 
 
+def api_post_files(path: str, files, data=None):
+    return requests.post(
+        f"{FASTAPI_URL}{path}",
+        files=files,
+        data=data or {},
+        headers=get_auth_headers(),
+        timeout=30,
+    )
+
+
 def api_put(path: str, json_data: dict):
     return requests.put(
         f"{FASTAPI_URL}{path}",

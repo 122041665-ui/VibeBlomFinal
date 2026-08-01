@@ -66,10 +66,10 @@
         ];
 
         $defaultPhoto = asset('images/vibebloom.png');
-        $resolvePhotoUrl = function ($value) use ($defaultPhoto) {
+        $resolvePhotoUrl = function ($value) {
             $value = trim((string) $value);
 
-            if ($value === '') return $defaultPhoto;
+            if ($value === '') return null;
             if (str_starts_with($value, 'http://') || str_starts_with($value, 'https://') || str_starts_with($value, '//') || str_starts_with($value, 'data:')) return $value;
             if (str_starts_with($value, '/storage/')) return asset(ltrim($value, '/'));
             if (str_starts_with($value, 'storage/')) return asset($value);
@@ -82,7 +82,14 @@
         $profileUser = auth()->user();
         $profileApiPlaces = collect($places ?? []);
         $profileCreatedPlaces = collect($profileCreatedPlaces ?? []);
-        $profilePlaces = $profileApiPlaces->concat($profileCreatedPlaces)->values();
+        $profilePlaces = $profileApiPlaces
+            ->concat($profileCreatedPlaces)
+            ->unique(function ($place) {
+                $name = is_array($place) ? ($place['name'] ?? '') : ($place->name ?? '');
+                $city = is_array($place) ? ($place['city'] ?? '') : ($place->city ?? '');
+                return mb_strtolower(trim((string) $name).'|'.trim((string) $city));
+            })
+            ->values();
         $placesCount = $profilePlaces->count();
         $profileFavoritePlaces = collect($profileFavoritePlaces ?? []);
 
@@ -155,6 +162,7 @@
         <div class="pointer-events-none absolute inset-x-0 top-0 h-96 bg-[radial-gradient(circle_at_20%_10%,rgba(37,99,235,0.14),transparent_34%),radial-gradient(circle_at_82%_0%,rgba(14,165,233,0.10),transparent_32%)] dark:bg-[radial-gradient(circle_at_20%_10%,rgba(59,130,246,0.16),transparent_34%),radial-gradient(circle_at_82%_0%,rgba(14,165,233,0.12),transparent_32%)]"></div>
 
         <div class="{{ $container }}" data-profile-tabs>
+            <x-flash-messages />
             <div class="grid grid-cols-1 lg:grid-cols-[300px_minmax(0,1fr)] gap-6 items-start">
                 <aside class="space-y-4">
                     <section class="{{ $card }} overflow-hidden p-0">
@@ -589,7 +597,7 @@
                                         $placeType = is_array($place) ? ($place['type'] ?? 'OTRO') : ($place->type ?? 'OTRO');
                                         $placePhoto = is_array($place) ? ($place['photo'] ?? null) : ($place->photo ?? null);
                                         $placePhotoUrl = is_array($place) ? ($place['photo_url'] ?? null) : ($place->photo_url ?? null);
-                                        $photo = $resolvePhotoUrl($placePhotoUrl ?: $placePhoto);
+                                        $photo = $resolvePhotoUrl($placePhotoUrl ?: $placePhoto) ?: $defaultPhoto;
                                     @endphp
 
                                     @if ($placeId)
@@ -628,7 +636,7 @@
                                     Solicitudes
                                 </div>
                                 <h2 class="mt-3 text-2xl font-extrabold text-gray-900 dark:text-slate-100">Mis aprobaciones</h2>
-                                <p class="{{ $hint }}">Solicitudes pendientes de revisión enviadas por ti.</p>
+                                <p class="{{ $hint }}">Historial de solicitudes pendientes, aprobadas y rechazadas.</p>
                             </div>
 
                             <a href="{{ route('places.create') }}" class="{{ $btnPrimary }} inline-flex items-center justify-center gap-2 shrink-0">
@@ -652,7 +660,7 @@
                                     Aún no tienes solicitudes
                                 </p>
                                 <p class="mt-2 max-w-xl mx-auto text-sm leading-6 text-gray-600 dark:text-slate-400">
-                                    Cuando propongas un lugar y siga pendiente de revisión, aparecerá aquí sin salir de tu perfil.
+                                    Cuando propongas un lugar, aquí podrás seguir todo su historial de revisión.
                                 </p>
 
                                 <div class="mt-6 flex items-center justify-center">
@@ -705,6 +713,12 @@
                                                     </span>
                                                 </div>
 
+                                                @if(in_array($submissionStatus, ['rejected', 'rechazado'], true) && $submission->rejection_reason)
+                                                    <div class="mt-4 rounded-2xl border border-red-100 bg-red-50 p-3 text-sm text-red-800 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-200">
+                                                        <span class="font-extrabold">Motivo:</span> {{ $submission->rejection_reason }}
+                                                    </div>
+                                                @endif
+
                                                 <div class="mt-4 grid grid-cols-2 gap-3 text-sm">
                                                     <div class="rounded-2xl bg-slate-50 dark:bg-slate-950/40 border border-gray-100 dark:border-slate-800 p-3">
                                                         <p class="text-xs font-semibold text-gray-500 dark:text-slate-400">Precio</p>
@@ -739,11 +753,6 @@
                                 @endforeach
                             </div>
 
-                            <div class="flex justify-end">
-                                <a href="{{ route('place-submissions.index') }}" class="{{ $btnGhost }} inline-flex items-center justify-center">
-                                    Ver mis aprobaciones
-                                </a>
-                            </div>
                         @endif
                     </section>
 
@@ -986,11 +995,15 @@
 
             buttons.forEach(button => {
                 button.addEventListener('click', () => {
-                    showProfileTab(button.dataset.profileTabButton);
+                    const tab = button.dataset.profileTabButton;
+                    showProfileTab(tab);
+                    history.replaceState(null, '', `#${tab}`);
                 });
             });
 
-            showProfileTab('places');
+            const requestedTab = window.location.hash.replace('#', '');
+            const validTab = panels.some(panel => panel.dataset.profilePanel === requestedTab);
+            showProfileTab(validTab ? requestedTab : 'places');
         }
 
         if (document.readyState === 'loading') {

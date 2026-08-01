@@ -41,20 +41,21 @@ class ReviewDetailResponse(BaseModel):
 
 
 class PlaceBase(BaseModel):
-    name: str
-    city: str
-    type: Optional[str] = None
-    rating: Optional[int] = 0
-    address: Optional[str] = None
-    reference: Optional[str] = None
-    lat: Optional[float] = None
-    lng: Optional[float] = None
-    price: float
+    name: str = Field(min_length=1, max_length=255)
+    city: str = Field(min_length=1, max_length=255)
+    type: Optional[str] = Field(default=None, max_length=255)
+    rating: Optional[int] = Field(default=0, ge=0, le=5)
+    address: Optional[str] = Field(default=None, max_length=255)
+    reference: Optional[str] = Field(default=None, max_length=500)
+    lat: Optional[float] = Field(default=None, ge=-90, le=90)
+    lng: Optional[float] = Field(default=None, ge=-180, le=180)
+    price: float = Field(ge=0)
     photo: Optional[str] = None
     photo_url: Optional[str] = None
-    photos: Optional[str] = None
+    photos: Optional[list[str]] = None
+    photos_urls: list[str] = Field(default_factory=list)
     description: Optional[str] = None
-    price_range: Optional[float] = None
+    price_range: Optional[float] = Field(default=None, ge=0)
 
     @model_validator(mode="after")
     def sync_price_fields(self):
@@ -76,18 +77,18 @@ class PlaceCreate(PlaceBase):
 
 
 class PlaceUpdate(BaseModel):
-    name: Optional[str] = None
-    city: Optional[str] = None
-    type: Optional[str] = None
-    rating: Optional[int] = None
-    address: Optional[str] = None
-    reference: Optional[str] = None
-    lat: Optional[float] = None
-    lng: Optional[float] = None
-    price: Optional[float] = None
-    price_range: Optional[float] = None
+    name: Optional[str] = Field(default=None, min_length=1, max_length=255)
+    city: Optional[str] = Field(default=None, min_length=1, max_length=255)
+    type: Optional[str] = Field(default=None, max_length=255)
+    rating: Optional[int] = Field(default=None, ge=0, le=5)
+    address: Optional[str] = Field(default=None, max_length=255)
+    reference: Optional[str] = Field(default=None, max_length=500)
+    lat: Optional[float] = Field(default=None, ge=-90, le=90)
+    lng: Optional[float] = Field(default=None, ge=-180, le=180)
+    price: Optional[float] = Field(default=None, ge=0)
+    price_range: Optional[float] = Field(default=None, ge=0)
     photo: Optional[str] = None
-    photos: Optional[str] = None
+    photos: Optional[list[str]] = None
     description: Optional[str] = None
 
     @model_validator(mode="before")

@@ -54,7 +54,7 @@
             @else
                 <section class="space-y-3">
                     @foreach ($notifications as $notification)
-                        <a href="{{ $notification->url ?: '#' }}" class="group block {{ $card }} p-4 transition hover:-translate-y-0.5 hover:border-blue-100 hover:shadow-lg dark:hover:border-blue-500/30">
+                        <a href="{{ route('notifications.open', $notification) }}" class="group block {{ $card }} p-4 transition hover:-translate-y-0.5 hover:border-blue-100 hover:shadow-lg dark:hover:border-blue-500/30">
                             <div class="flex items-start gap-4">
                                 <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl {{ $notification->read_at ? 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-300' : 'bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300' }}">
                                     <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" aria-hidden="true">

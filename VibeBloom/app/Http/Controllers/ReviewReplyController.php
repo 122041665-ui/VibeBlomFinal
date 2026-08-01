@@ -5,14 +5,26 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Services\FastApiService;
 use App\Models\UserNotification;
+use App\Services\AI\ContentModerator;
 
 class ReviewReplyController extends Controller
 {
-    public function store(Request $request, $place, $review, FastApiService $api)
+    public function store(Request $request, $place, $review, FastApiService $api, ContentModerator $moderator)
     {
         $data = $request->validate([
-            'body' => 'required|string|max:2000',
+            'body' => ['required', 'string', 'min:2', 'max:1000'],
+        ], [
+            'body.required' => 'Escribe una respuesta antes de publicarla.',
+            'body.min' => 'La respuesta debe tener al menos 2 caracteres.',
+            'body.max' => 'La respuesta no puede superar 1000 caracteres.',
         ]);
+
+        $moderation = $moderator->review($data['body'], 'respuesta a reseña');
+        if (!$moderation['allowed']) {
+            return back()->withInput()->withErrors([
+                'body' => 'La respuesta debe cambiarse porque infringe las normas: '.($moderation['reason'] ?? 'contenido no permitido.'),
+            ]);
+        }
 
         $token = session('access_token');
 

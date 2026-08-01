@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 from typing import Any
 from uuid import uuid4
@@ -8,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from app.core.security import get_current_user
 from app.core.database import get_db
-from app.core.security import require_admin
+from app.core.security import require_staff
 from app.models.user import User
 
 router = APIRouter(prefix="/approvals", tags=["Approvals"])
@@ -35,6 +36,7 @@ APPROVAL_CANDIDATE_COLUMNS = [
     "lng",
     "description",
     "status",
+    "rejection_reason",
     "sent_to_flask",
     "sent_to_flask_at",
     "created_at",
@@ -52,6 +54,11 @@ PLACE_CANDIDATE_COLUMNS = [
     "latitude",
     "longitude",
     "photo",
+    "photos",
+    "rating",
+    "reference",
+    "lat",
+    "lng",
     "user_id",
     "status",
     "created_at",
@@ -160,6 +167,7 @@ def map_approval_row(row: dict[str, Any]) -> dict[str, Any]:
         "latitude": row.get("lat"),
         "longitude": row.get("lng"),
         "status": row.get("status") or "pending",
+        "rejection_reason": row.get("rejection_reason"),
         "sent_to_flask": row.get("sent_to_flask"),
         "sent_to_flask_at": row.get("sent_to_flask_at"),
         "created_at": row.get("created_at"),
@@ -231,7 +239,15 @@ def attach_approval_photos(db: Session, approval: dict[str, Any]) -> dict[str, A
 def save_approval_photo(file: UploadFile) -> str:
     extension = Path(file.filename or "").suffix.lower()
     if extension not in [".jpg", ".jpeg", ".png", ".webp"]:
-        extension = ".jpg"
+        raise HTTPException(status_code=422, detail="Formato de imagen no permitido")
+    if file.content_type not in {"image/jpeg", "image/png", "image/webp"}:
+        raise HTTPException(status_code=422, detail="El archivo debe ser una imagen JPG, PNG o WEBP")
+
+    contents = file.file.read()
+    if not contents:
+        raise HTTPException(status_code=422, detail="La imagen está vacía")
+    if len(contents) > 5 * 1024 * 1024:
+        raise HTTPException(status_code=422, detail="Cada imagen debe pesar máximo 5 MB")
 
     SUBMISSION_STORAGE_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -239,7 +255,7 @@ def save_approval_photo(file: UploadFile) -> str:
     destination = SUBMISSION_STORAGE_DIR / filename
 
     with destination.open("wb") as buffer:
-        buffer.write(file.file.read())
+        buffer.write(contents)
 
     return f"place-submissions/{filename}"
 
@@ -301,6 +317,23 @@ def create_approval(
     current_user: User = Depends(get_current_user),
 ):
     require_table(db, APPROVAL_TABLE)
+
+    name = name.strip()
+    city = city.strip()
+    if not name or len(name) > 255:
+        raise HTTPException(status_code=422, detail="El nombre es obligatorio y debe tener máximo 255 caracteres.")
+    if not city or len(city) > 255:
+        raise HTTPException(status_code=422, detail="La ciudad es obligatoria y debe tener máximo 255 caracteres.")
+    if not 0 <= rating <= 5:
+        raise HTTPException(status_code=422, detail="La calificación debe estar entre 0 y 5.")
+    if price < 0:
+        raise HTTPException(status_code=422, detail="El precio no puede ser negativo.")
+    if lat is not None and not -90 <= lat <= 90:
+        raise HTTPException(status_code=422, detail="La latitud debe estar entre -90 y 90.")
+    if lng is not None and not -180 <= lng <= 180:
+        raise HTTPException(status_code=422, detail="La longitud debe estar entre -180 y 180.")
+    if address is not None and len(address) > 255:
+        raise HTTPException(status_code=422, detail="La dirección debe tener máximo 255 caracteres.")
 
     if not photos:
         raise HTTPException(
@@ -386,7 +419,7 @@ def create_approval(
 @router.get("")
 def list_approvals(
     db: Session = Depends(get_db),
-    _: dict = Depends(require_admin)
+    _: User = Depends(require_staff)
 ):
     require_table(db, APPROVAL_TABLE)
 
@@ -444,11 +477,28 @@ def list_approvals(
 # =========================================================
 # DETALLE
 # =========================================================
+@router.get("/mine")
+def list_my_approvals(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    require_table(db, APPROVAL_TABLE)
+    query_sql = build_approval_base_query(
+        db,
+        "WHERE ps.user_id = :user_id ORDER BY ps.id DESC",
+    )
+    rows = db.execute(text(query_sql), {"user_id": current_user.id}).fetchall()
+    return [
+        attach_approval_photos(db, map_approval_row(dict(row._mapping)))
+        for row in rows
+    ]
+
+
 @router.get("/{approval_id}")
 def get_approval_detail(
     approval_id: int,
     db: Session = Depends(get_db),
-    _: dict = Depends(require_admin)
+    _: User = Depends(require_staff)
 ):
     approval_row = get_approval_or_404(db, approval_id)
     approval = map_approval_row(approval_row)
@@ -464,7 +514,7 @@ def get_approval_detail(
 def approve_approval(
     approval_id: int,
     db: Session = Depends(get_db),
-    admin_user: dict = Depends(require_admin)
+    admin_user: User = Depends(require_staff)
 ):
     approval = get_approval_or_404(db, approval_id)
     approval_photos = get_approval_photos(db, approval_id)
@@ -492,6 +542,10 @@ def approve_approval(
         "latitude": approval.get("lat"),
         "longitude": approval.get("lng"),
         "photo": approval_photos[0] if approval_photos else None,
+        "photos": approval_photos,
+        "rating": approval.get("rating"),
+        "lat": approval.get("lat"),
+        "lng": approval.get("lng"),
         "user_id": approval.get("user_id"),
         "status": "approved",
     }
@@ -510,7 +564,7 @@ def approve_approval(
                 continue
             columns_to_insert.append(col)
             values_to_insert.append(f":{col}")
-            insert_data[col] = value
+            insert_data[col] = json.dumps(value) if col == "photos" else value
 
     if not columns_to_insert:
         raise HTTPException(
@@ -541,6 +595,36 @@ def approve_approval(
             """
             db.execute(text(update_sql), update_params)
 
+        if table_exists(db, "user_notifications") and approval.get("user_id"):
+            notification_columns = get_existing_columns(db, "user_notifications", [
+                "user_id", "actor_id", "type", "title", "body", "url", "data", "created_at", "updated_at"
+            ])
+            notification_values = {
+                "user_id": approval.get("user_id"),
+                "actor_id": getattr(admin_user, "id", None),
+                "type": "approval_approved",
+                "title": "Lugar aprobado exitosamente",
+                "body": f"Tu lugar '{approval.get('name') or 'Sin nombre'}' fue aprobado y ya está publicado.",
+                "url": f"/mi-perfil#approvals",
+                "data": json.dumps({"place_submission_id": approval_id, "place_id": place_id}, ensure_ascii=False),
+            }
+            insert_columns = []
+            insert_values = []
+            insert_params = {}
+            for column in notification_columns:
+                insert_columns.append(column)
+                if column in ["created_at", "updated_at"]:
+                    insert_values.append("NOW()")
+                else:
+                    insert_values.append(f":notification_{column}")
+                    insert_params[f"notification_{column}"] = notification_values.get(column)
+
+            if "user_id" in insert_columns and "type" in insert_columns:
+                db.execute(text(
+                    f"INSERT INTO user_notifications ({', '.join(insert_columns)}) "
+                    f"VALUES ({', '.join(insert_values)})"
+                ), insert_params)
+
         db.commit()
 
         return {
@@ -565,17 +649,25 @@ def reject_approval(
     approval_id: int,
     payload: dict = Body(default={}),
     db: Session = Depends(get_db),
-    admin_user: dict = Depends(require_admin)
+    admin_user: User = Depends(require_staff)
 ):
-    get_approval_or_404(db, approval_id)
+    approval = get_approval_or_404(db, approval_id)
 
     reason = (payload.get("reason") or "").strip()
+    if len(reason) < 10 or len(reason) > 500:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="El motivo del rechazo debe tener entre 10 y 500 caracteres."
+        )
 
     update_fields = []
     params = {"approval_id": approval_id}
 
     if column_exists(db, APPROVAL_TABLE, "status"):
         update_fields.append("status = 'rejected'")
+    if column_exists(db, APPROVAL_TABLE, "rejection_reason"):
+        update_fields.append("rejection_reason = :reason")
+        params["reason"] = reason
 
     if not update_fields:
         raise HTTPException(
@@ -590,6 +682,36 @@ def reject_approval(
             WHERE id = :approval_id
         """
         db.execute(text(update_sql), params)
+
+        if table_exists(db, "user_notifications") and approval.get("user_id"):
+            notification_columns = get_existing_columns(db, "user_notifications", [
+                "user_id", "actor_id", "type", "title", "body", "url", "data", "created_at", "updated_at"
+            ])
+            notification_values = {
+                "user_id": approval.get("user_id"),
+                "actor_id": getattr(admin_user, "id", None),
+                "type": "approval_rejected",
+                "title": "Tu publicación fue rechazada",
+                "body": f"La solicitud para '{approval.get('name') or 'tu lugar'}' fue rechazada. Motivo: {reason}",
+                "url": f"/mis-aprobaciones/{approval_id}",
+                "data": json.dumps({"place_submission_id": approval_id, "reason": reason}, ensure_ascii=False),
+            }
+            insert_columns = []
+            insert_values = []
+            insert_params = {}
+            for column in notification_columns:
+                insert_columns.append(column)
+                if column in ["created_at", "updated_at"]:
+                    insert_values.append("NOW()")
+                else:
+                    insert_values.append(f":notification_{column}")
+                    insert_params[f"notification_{column}"] = notification_values.get(column)
+
+            if "user_id" in insert_columns and "type" in insert_columns:
+                db.execute(text(
+                    f"INSERT INTO user_notifications ({', '.join(insert_columns)}) "
+                    f"VALUES ({', '.join(insert_values)})"
+                ), insert_params)
         db.commit()
 
         return {

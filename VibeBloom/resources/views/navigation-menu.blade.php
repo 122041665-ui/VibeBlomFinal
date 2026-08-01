@@ -78,8 +78,10 @@
                 </div>
             </div>
 
+            <div class="flex-1"></div>
+            {{-- La búsqueda vive en Inicio para mantener la navegación clara. --}}
             <form action="{{ route('places.index') }}" method="GET"
-                  class="hidden xl:flex flex-1 max-w-xl mx-4">
+                  class="hidden">
                 <div class="w-full grid grid-cols-[minmax(140px,1.5fr)_108px_108px_84px_42px] items-center rounded-xl border border-gray-200/90 dark:border-slate-700/90 bg-white/95 dark:bg-slate-900/95 shadow-sm overflow-hidden">
                     <label class="flex items-center gap-2 px-4 py-2.5 border-r border-gray-100 dark:border-slate-800 min-w-0">
                         <svg class="w-4 h-4 shrink-0 text-blue-600 dark:text-blue-400" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -146,7 +148,7 @@
                 </div>
             </form>
 
-            @if(request()->filled('buscar') || request()->filled('city') || request()->filled('type') || request()->filled('max_price'))
+            @if(false)
                 <a href="{{ route('places.index') }}"
                    class="hidden xl:inline-flex items-center justify-center rounded-lg border border-blue-100 dark:border-slate-700 bg-blue-50 dark:bg-slate-800 px-3 py-2 text-xs font-bold text-blue-700 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-slate-700 transition">
                     Limpiar
@@ -209,7 +211,7 @@
 
                                 <div class="max-h-96 overflow-y-auto p-2">
                                     @forelse ($navNotifications as $notification)
-                                        <a href="{{ $notification->url ?: route('notifications.index') }}"
+                                        <a href="{{ route('notifications.open', $notification) }}"
                                            class="group flex gap-3 rounded-2xl p-3 transition hover:bg-blue-50 dark:hover:bg-slate-800">
                                             <span class="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl {{ $notification->read_at ? 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-300' : 'bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300' }}">
                                                 <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -381,7 +383,7 @@
         <div class="px-4 py-4 space-y-2">
 
             <form action="{{ route('places.index') }}" method="GET"
-                  class="rounded-2xl border border-gray-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900 p-3 space-y-3 shadow-sm">
+                  class="hidden">
                 <label class="block">
                     <span class="text-xs font-extrabold uppercase text-gray-500 dark:text-slate-400">Buscar</span>
                     <input type="text"

@@ -3,7 +3,12 @@ from sqlalchemy.orm import Session
 from sqlalchemy import select
 
 from app.core.database import get_db
-from app.core.security import verify_password, create_access_token, hash_password
+from app.core.security import (
+    create_access_token,
+    hash_password,
+    password_needs_rehash,
+    verify_password,
+)
 from app.models.user import User
 from app.schemas.user import UserLogin, TokenResponse, UserCreate, UserResponse
 
@@ -43,6 +48,12 @@ def login(payload: UserLogin, db: Session = Depends(get_db)):
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Credenciales inválidas"
         )
+
+    # Migra de forma transparente los SHA-256 heredados después de validar
+    # correctamente la contraseña. Las cuentas nuevas ya nacen con bcrypt.
+    if password_needs_rehash(user.password):
+        user.password = hash_password(payload.password)
+        db.commit()
 
     token = create_access_token({
         "sub": str(user.id),

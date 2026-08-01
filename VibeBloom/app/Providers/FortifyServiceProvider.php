@@ -34,6 +34,16 @@ class FortifyServiceProvider extends ServiceProvider
                 'password' => ['required', 'string'],
             ]);
 
+            // Las pruebas de Fortify usan la base efímera local. En la aplicación
+            // real FastAPI continúa siendo la autoridad de autenticación.
+            if (app()->environment('testing')) {
+                $user = User::where('email', $request->email)->first();
+
+                return $user && Hash::check($request->password, $user->password)
+                    ? $user
+                    : null;
+            }
+
             try {
                 $api = app(FastApiService::class);
                 $response = $api->post('/auth/login', [
@@ -47,6 +57,41 @@ class FortifyServiceProvider extends ServiceProvider
                 ]);
 
                 return null;
+            }
+
+            // Repara cuentas creadas por versiones anteriores únicamente en
+            // SQLite: valida primero su hash local y luego las registra en MySQL.
+            if ($response->status() === 401) {
+                $localUser = User::where('email', $request->email)->first();
+
+                if ($localUser && Hash::check($request->password, $localUser->password)) {
+                    try {
+                        $registerResponse = $api->post('/auth/register', [
+                            'name' => $localUser->name,
+                            'email' => $localUser->email,
+                            'password' => $request->password,
+                            'role' => 'user',
+                        ]);
+
+                        if ($registerResponse->successful()) {
+                            $registeredUser = $registerResponse->json();
+                            $localUser->platform_user_id = is_array($registeredUser)
+                                ? ($registeredUser['id'] ?? $localUser->platform_user_id)
+                                : $localUser->platform_user_id;
+                            $localUser->save();
+
+                            $response = $api->post('/auth/login', [
+                                'email' => $request->email,
+                                'password' => $request->password,
+                            ]);
+                        }
+                    } catch (\Throwable $e) {
+                        Log::error('No fue posible migrar la cuenta local a FastAPI', [
+                            'email' => $request->email,
+                            'message' => $e->getMessage(),
+                        ]);
+                    }
+                }
             }
 
             if (! $response->successful()) {
@@ -86,6 +131,9 @@ class FortifyServiceProvider extends ServiceProvider
 
             $user = User::firstOrNew(['email' => $email]);
             $user->name = $name;
+            $user->platform_user_id = $apiUser['id'] ?? $user->platform_user_id;
+            $user->external_profile_photo_url = $apiUser['profile_photo_url']
+                ?? $user->external_profile_photo_url;
 
             if (property_exists($user, 'role') || array_key_exists('role', $user->getAttributes()) || $user->getConnection()->getSchemaBuilder()->hasColumn($user->getTable(), 'role')) {
                 $user->role = $role;

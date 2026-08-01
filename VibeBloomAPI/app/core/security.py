@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta, timezone
+from hmac import compare_digest
 from hashlib import sha256
 from typing import Optional
 from jose import jwt, JWTError
@@ -13,10 +14,24 @@ from app.core.database import get_db
 from app.models.user import User
 
 security = HTTPBearer()
+_BCRYPT_ROUNDS = 12
 
 
 def hash_password(password: str) -> str:
-    return sha256(password.encode("utf-8")).hexdigest()
+    """Genera un hash bcrypt con un salt aleatorio incluido en el resultado."""
+    return bcrypt.hashpw(
+        password.encode("utf-8"),
+        bcrypt.gensalt(rounds=_BCRYPT_ROUNDS),
+    ).decode("utf-8")
+
+
+def password_needs_rehash(hashed_password: str) -> bool:
+    """Indica si un hash heredado SHA-256 debe migrarse a bcrypt."""
+    if not hashed_password:
+        return False
+
+    value = str(hashed_password).strip()
+    return not value.startswith(("$2y$", "$2b$"))
 
 
 def verify_password(password: str, hashed_password: str) -> bool:
@@ -39,8 +54,13 @@ def verify_password(password: str, hashed_password: str) -> bool:
         except Exception:
             return False
 
-    # Soporte para SHA-256 hexadecimal
-    return hash_password(password) == hashed_password
+    # Compatibilidad temporal con cuentas creadas antes de usar bcrypt.
+    # Se compara sin filtrar información por tiempo y se migra al iniciar sesión.
+    if len(hashed_password) == 64:
+        legacy_hash = sha256(password.encode("utf-8")).hexdigest()
+        return compare_digest(legacy_hash, hashed_password.lower())
+
+    return False
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:

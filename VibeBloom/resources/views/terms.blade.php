@@ -9,6 +9,10 @@
 
             <div class="w-full sm:max-w-2xl mt-6 p-6 bg-white/92 dark:bg-slate-900/92 shadow-[0_22px_70px_rgba(15,23,42,0.10)] overflow-hidden rounded-[28px] border border-white/80 dark:border-slate-800 backdrop-blur prose">
                 {!! $terms !!}
+
+                <div class="not-prose mt-8 border-t border-gray-100 pt-6">
+                    <a href="{{ auth()->check() ? route('dashboard') : route('home') }}" class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-blue-700"><span aria-hidden="true">←</span> Volver a Inicio</a>
+                </div>
             </div>
         </div>
     </div>

@@ -44,6 +44,7 @@ return [
 
     'fastapi' => [
         'url' => env('FASTAPI_URL', 'http://127.0.0.1:8010'),
+        'public_url' => env('API_PUBLIC_URL', env('VITE_API_URL', 'http://127.0.0.1:8010')),
     ],
 
 ];

@@ -18,18 +18,18 @@
                 <div>
                     <div class="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50/80 px-3 py-1.5 text-xs font-semibold text-blue-700 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-300">
                         <span class="inline-block h-2 w-2 rounded-full bg-blue-500"></span>
-                        Solicitud enviada
+                        Solicitud
                     </div>
                     <h1 class="mt-4 text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">Revisar solicitud</h1>
-                    <p class="{{ $hint }}">Vista previa de la información enviada a aprobación.</p>
+                    <p class="{{ $hint }}">Consulta los datos y el estado de tu solicitud.</p>
                 </div>
 
-                <a href="{{ route('place-submissions.index') }}" class="{{ $btnGhost }}">
+                <a href="{{ route('places.mine') }}#approvals" class="{{ $btnGhost }}">
                     <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none"
                          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M15 18l-6-6 6-6" />
                     </svg>
-                    Volver
+                    Volver al perfil
                 </a>
             </div>
 
@@ -85,6 +85,13 @@
                                 {{ $statusText }}
                             </span>
                         </div>
+
+                        @if($placeSubmission->status === 'rejected' && $placeSubmission->rejection_reason)
+                            <div class="mt-6 rounded-2xl border border-red-200 bg-red-50 p-4 dark:border-red-500/20 dark:bg-red-500/10">
+                                <p class="text-xs font-extrabold uppercase tracking-wide text-red-700 dark:text-red-300">Motivo del rechazo</p>
+                                <p class="mt-2 text-sm leading-6 text-red-800 dark:text-red-200">{{ $placeSubmission->rejection_reason }}</p>
+                            </div>
+                        @endif
 
                         <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
@@ -177,30 +184,6 @@
                                 </p>
                             </div>
 
-                            <div class="rounded-2xl border border-gray-200 dark:border-slate-700 p-4">
-                                <p class="{{ $label }}">
-                                    Envío a revisión
-                                </p>
-
-                                <p class="mt-2 text-base font-semibold text-gray-900 dark:text-white">
-                                    {{ $placeSubmission->sent_to_flask ? 'Simulado correctamente' : 'Pendiente' }}
-                                </p>
-
-                                <p class="mt-1 text-sm text-gray-500 dark:text-slate-400">
-                                    {{ $placeSubmission->sent_to_flask_at ? $placeSubmission->sent_to_flask_at->format('d/m/Y H:i') : 'Sin fecha' }}
-                                </p>
-                            </div>
-
-                            @if(!is_null($placeSubmission->lat) && !is_null($placeSubmission->lng))
-                                <div class="rounded-2xl border border-gray-200 dark:border-slate-700 p-4">
-                                    <p class="{{ $label }}">Coordenadas</p>
-
-                                    <div class="mt-2 space-y-1 text-sm text-gray-700 dark:text-slate-200">
-                                        <p><span class="font-semibold">Lat:</span> {{ $placeSubmission->lat }}</p>
-                                        <p><span class="font-semibold">Lng:</span> {{ $placeSubmission->lng }}</p>
-                                    </div>
-                                </div>
-                            @endif
                         </div>
 
                         <form action="{{ route('place-submissions.destroy', $placeSubmission) }}"

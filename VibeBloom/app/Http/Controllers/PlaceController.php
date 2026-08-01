@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\PlaceSubmission;
+use App\Models\MexicanState;
 use App\Models\UserNotification;
 use App\Services\FastApiService;
+use App\Services\AI\ContentModerator;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -200,10 +202,76 @@ class PlaceController extends Controller
 
         return PlaceSubmission::with('photos')
             ->where('user_id', auth()->id())
-            ->whereIn('status', ['pending', 'pendiente'])
             ->latest()
             ->take(12)
             ->get();
+    }
+
+    private function syncProfileSubmissionStatuses(FastApiService $api): void
+    {
+        $token = $this->getApiToken();
+
+        if (!auth()->check() || !$token) {
+            return;
+        }
+
+        try {
+            $response = $api->get('/approvals/mine', $token);
+            if (!$response->successful() || !is_array($response->json())) {
+                return;
+            }
+
+            foreach ($response->json() as $remote) {
+                if (!is_array($remote) || empty($remote['id'])) {
+                    continue;
+                }
+
+                $submission = PlaceSubmission::query()
+                    ->where('user_id', auth()->id())
+                    ->where(function ($query) use ($remote) {
+                        $query->where('platform_submission_id', $remote['id'])
+                            ->orWhere(function ($fallback) use ($remote) {
+                                $fallback->whereNull('platform_submission_id')
+                                    ->where('name', $remote['name'] ?? '')
+                                    ->where('city', $remote['city'] ?? '');
+                            });
+                    })
+                    ->latest()
+                    ->first();
+
+                if (!$submission) {
+                    continue;
+                }
+
+                $oldStatus = strtolower((string) $submission->status);
+                $newStatus = strtolower((string) ($remote['status'] ?? $oldStatus));
+
+                $submission->forceFill([
+                    'platform_submission_id' => (int) $remote['id'],
+                    'status' => $newStatus,
+                    'rejection_reason' => $remote['rejection_reason'] ?? null,
+                ])->save();
+
+                if ($oldStatus === $newStatus || !in_array($newStatus, ['approved', 'rejected'], true)) {
+                    continue;
+                }
+
+                $approved = $newStatus === 'approved';
+                UserNotification::sendTo(
+                    user: auth()->id(),
+                    type: $approved ? 'approval_approved' : 'approval_rejected',
+                    title: $approved ? 'Lugar aprobado exitosamente' : 'Solicitud rechazada',
+                    body: $approved
+                        ? "Tu lugar '{$submission->name}' fue aprobado y ya está publicado."
+                        : "Tu solicitud para '{$submission->name}' fue rechazada."
+                            .($submission->rejection_reason ? " Motivo: {$submission->rejection_reason}" : ''),
+                    url: route('places.mine').'#approvals',
+                    data: ['place_submission_id' => $submission->id]
+                );
+            }
+        } catch (\Throwable $exception) {
+            report($exception);
+        }
     }
 
     private function fetchProfileCreatedPlaces(): Collection
@@ -214,6 +282,7 @@ class PlaceController extends Controller
 
         return PlaceSubmission::with('photos')
             ->where('user_id', auth()->id())
+            ->whereIn('status', ['approved', 'aprobado', 'published', 'publicado'])
             ->latest()
             ->get();
     }
@@ -316,6 +385,40 @@ class PlaceController extends Controller
         ]);
     }
 
+    private function searchTokens(string $query): array
+    {
+        $stopWords = [
+            'A', 'AL', 'CON', 'DE', 'DEL', 'EL', 'EN', 'LA', 'LAS', 'LOS',
+            'PARA', 'POR', 'QUE', 'UN', 'UNA', 'Y',
+        ];
+
+        preg_match_all('/[A-Z0-9]+/u', $query, $matches);
+
+        return collect($matches[0] ?? [])
+            ->filter(fn (string $token) => mb_strlen($token, 'UTF-8') >= 2)
+            ->reject(fn (string $token) => in_array($token, $stopWords, true))
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    private function fieldMatchesToken(string $field, string $token): bool
+    {
+        preg_match_all('/[A-Z0-9]+/u', $field, $matches);
+
+        foreach ($matches[0] ?? [] as $word) {
+            if ($word === $token) {
+                return true;
+            }
+
+            if (mb_strlen($token, 'UTF-8') >= 3 && str_starts_with($word, $token)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private function normalizeType(?string $type): string
     {
         $type = $this->normalizeText($type);
@@ -359,18 +462,19 @@ class PlaceController extends Controller
 
     private function applyFilters(Collection $places, Request $request): Collection
     {
-        $buscar = trim((string) $request->query('buscar', ''));
+        $buscar = mb_substr(trim((string) $request->query('buscar', '')), 0, 100, 'UTF-8');
         $city = trim((string) $request->query('city', ''));
         $type = trim((string) $request->query('type', ''));
         $maxPriceRaw = trim((string) $request->query('max_price', ''));
         $maxPrice = $maxPriceRaw === '' ? null : str_replace([',', '$', 'MXN', 'mxn', ' '], '', $maxPriceRaw);
 
         $buscarNorm = $this->normalizeText($buscar);
+        $searchTokens = $this->searchTokens($buscarNorm);
         $cityNorm = $this->normalizeText($city);
         $typeNorm = $this->normalizeType($type);
         $hasValidMaxPrice = $maxPrice !== null && is_numeric($maxPrice) && (float) $maxPrice >= 0;
 
-        return $places->filter(function ($place) use ($buscarNorm, $cityNorm, $typeNorm, $type, $maxPrice, $hasValidMaxPrice) {
+        return $places->filter(function ($place) use ($buscarNorm, $searchTokens, $cityNorm, $typeNorm, $type, $maxPrice, $hasValidMaxPrice) {
             $placeName = (string) $this->placeValue($place, 'name', '');
             $placeCity = (string) $this->placeValue($place, 'city', '');
             $placeType = (string) $this->placeValue($place, 'type', 'OTRO');
@@ -387,13 +491,24 @@ class PlaceController extends Controller
             $placeReferenceNorm = $this->normalizeText($placeReference);
 
             if ($buscarNorm !== '') {
-                $matchesBuscar =
-                    str_contains($placeNameNorm, $buscarNorm) ||
-                    str_contains($placeCityNorm, $buscarNorm) ||
-                    str_contains($placeTypeNorm, $buscarNorm) ||
-                    str_contains($placeDescriptionNorm, $buscarNorm) ||
-                    str_contains($placeAddressNorm, $buscarNorm) ||
-                    str_contains($placeReferenceNorm, $buscarNorm);
+                if ($searchTokens === []) {
+                    return false;
+                }
+
+                $searchableFields = [
+                    $placeNameNorm,
+                    $placeCityNorm,
+                    $placeTypeNorm,
+                    $placeDescriptionNorm,
+                    $placeAddressNorm,
+                    $placeReferenceNorm,
+                ];
+
+                $matchesBuscar = collect($searchTokens)->every(
+                    fn (string $token) => collect($searchableFields)->contains(
+                        fn (string $field) => $this->fieldMatchesToken($field, $token)
+                    )
+                );
 
                 if (!$matchesBuscar) {
                     return false;
@@ -446,6 +561,7 @@ class PlaceController extends Controller
 
     public function myPlaces(Request $request, FastApiService $api): View|RedirectResponse
     {
+        $this->syncProfileSubmissionStatuses($api);
         $data = $this->fetchMyPlaces($api);
         $data['places'] = $this->applyFilters($data['places'], $request);
 
@@ -468,10 +584,12 @@ class PlaceController extends Controller
 
     public function create(): View
     {
-        return view('places.create');
+        return view('places.create', [
+            'states' => MexicanState::query()->orderBy('name')->get(['name', 'code']),
+        ]);
     }
 
-    public function store(Request $request, FastApiService $api): RedirectResponse
+    public function store(Request $request, FastApiService $api, ContentModerator $moderator): RedirectResponse
     {
         $token = $this->getApiToken();
 
@@ -483,24 +601,51 @@ class PlaceController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'city' => ['required', 'string', 'max:255'],
             'type' => ['nullable', 'string', 'max:255'],
-            'rating' => ['nullable', 'numeric'],
+            'rating' => ['required', 'integer', 'between:1,5'],
             'address' => ['nullable', 'string', 'max:255'],
             'reference' => ['nullable', 'string', 'max:255'],
-            'lat' => ['nullable', 'numeric'],
-            'lng' => ['nullable', 'numeric'],
-            'price' => ['required', 'numeric'],
-            'photo' => ['nullable', 'string', 'max:255'],
-            'photos' => ['nullable'],
-            'description' => ['nullable', 'string'],
+            'lat' => ['nullable', 'numeric', 'between:-90,90'],
+            'lng' => ['nullable', 'numeric', 'between:-180,180'],
+            'price' => ['required', 'numeric', 'min:0'],
+            'photos' => ['nullable', 'array', 'min:1', 'max:3'],
+            'photos.*' => ['image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+            'description' => ['required', 'string', 'min:20', 'max:1000'],
         ]);
 
+        $moderation = $moderator->review($payload['description'], 'descripción de lugar');
+        if (!$moderation['allowed']) {
+            return back()->withInput()->withErrors([
+                'description' => 'La descripción debe cambiarse porque infringe las normas: '.($moderation['reason'] ?? 'contenido no permitido.'),
+            ]);
+        }
+
         try {
+            $photos = $request->file('photos', []);
+            unset($payload['photos']);
+
             $response = $api->post('/places', $payload, $token);
 
             if (!$response->successful()) {
                 return back()
                     ->withInput()
                     ->with('error', 'No se pudo guardar el lugar.');
+            }
+
+            $createdPlaceId = (int) $response->json('id');
+            if (!empty($photos) && $createdPlaceId > 0) {
+                $photoResponse = $api->postMultipart(
+                    "/places/{$createdPlaceId}/photos",
+                    [],
+                    $photos,
+                    $token,
+                    'photos'
+                );
+
+                if (!$photoResponse->successful()) {
+                    return redirect()
+                        ->route('places.mine')
+                        ->with('error', 'El lugar se creó, pero no fue posible guardar sus fotos.');
+                }
             }
 
             UserNotification::sendTo(
@@ -557,7 +702,7 @@ class PlaceController extends Controller
         }
     }
 
-    public function update(Request $request, int $place, FastApiService $api): RedirectResponse
+    public function update(Request $request, int $place, FastApiService $api, ContentModerator $moderator): RedirectResponse
     {
         $token = $this->getApiToken();
 
@@ -569,24 +714,50 @@ class PlaceController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'city' => ['required', 'string', 'max:255'],
             'type' => ['nullable', 'string', 'max:255'],
-            'rating' => ['nullable', 'numeric'],
+            'rating' => ['required', 'integer', 'between:1,5'],
             'address' => ['nullable', 'string', 'max:255'],
             'reference' => ['nullable', 'string', 'max:255'],
-            'lat' => ['nullable', 'numeric'],
-            'lng' => ['nullable', 'numeric'],
-            'price' => ['required', 'numeric'],
-            'photo' => ['nullable', 'string', 'max:255'],
-            'photos' => ['nullable'],
-            'description' => ['nullable', 'string'],
+            'lat' => ['nullable', 'numeric', 'between:-90,90'],
+            'lng' => ['nullable', 'numeric', 'between:-180,180'],
+            'price' => ['required', 'numeric', 'min:0'],
+            'photos' => ['nullable', 'array', 'min:1', 'max:3'],
+            'photos.*' => ['image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+            'description' => ['required', 'string', 'min:20', 'max:1000'],
         ]);
 
+        $moderation = $moderator->review($payload['description'], 'descripción de lugar');
+        if (!$moderation['allowed']) {
+            return back()->withInput()->withErrors([
+                'description' => 'La descripción debe cambiarse porque infringe las normas: '.($moderation['reason'] ?? 'contenido no permitido.'),
+            ]);
+        }
+
         try {
+            $photos = $request->file('photos', []);
+            unset($payload['photos']);
+
             $response = $api->put("/places/{$place}", $payload, $token);
 
             if (!$response->successful()) {
                 return back()
                     ->withInput()
                     ->with('error', 'No se pudo actualizar el lugar.');
+            }
+
+            if (!empty($photos)) {
+                $photoResponse = $api->postMultipart(
+                    "/places/{$place}/photos",
+                    [],
+                    $photos,
+                    $token,
+                    'photos'
+                );
+
+                if (!$photoResponse->successful()) {
+                    return back()
+                        ->withInput()
+                        ->with('error', 'Los datos se actualizaron, pero no fue posible guardar las fotos.');
+                }
             }
 
             return redirect()

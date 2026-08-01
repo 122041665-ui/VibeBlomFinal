@@ -21,6 +21,8 @@ services:
       ACCESS_TOKEN_EXPIRE_MINUTES: 60
       ALGORITHM: HS256
       API_PUBLIC_URL: http://127.0.0.1:8010
+    volumes:
+      - ./VibeBloomAPI/storage:/app/storage
 
   admin:
     build: ./VibeBloomAdmin
@@ -55,6 +57,8 @@ services:
       APP_ENV: local
       APP_DEBUG: "true"
       APP_URL: http://127.0.0.1:8000
+      APP_LOCALE: es
+      APP_FALLBACK_LOCALE: es
 
       SESSION_DRIVER: file
       CACHE_STORE: file
@@ -62,4 +66,9 @@ services:
 
       FASTAPI_URL: http://api:8010
       API_URL: http://api:8010
+      API_PUBLIC_URL: http://127.0.0.1:8010
       VITE_API_URL: http://127.0.0.1:8010
+    volumes:
+      # Laravel conserva autenticación local; los datos de negocio viven en la API/MySQL.
+      - ./VibeBloom/database/database.sqlite:/app/database/database.sqlite
+      - ./VibeBloom/storage/app/public:/app/storage/app/public

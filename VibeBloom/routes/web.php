@@ -30,6 +30,36 @@ Route::get('/', [PlaceController::class, 'index'])->name('home');
 */
 Route::get('/places', [PlaceController::class, 'index'])->name('places.index');
 
+$legalPages = [
+    'about' => [
+        'title' => 'Acerca de VibeBloom',
+        'sections' => [
+            ['title' => 'Nuestra plataforma', 'body' => 'VibeBloom es una comunidad para descubrir lugares, compartir experiencias y organizar sitios favoritos. Los lugares enviados por usuarios pasan por revisión antes de mostrarse públicamente.'],
+            ['title' => 'Contenido de la comunidad', 'body' => 'Las fotografías, descripciones, reseñas y respuestas pertenecen a quienes las publican. Usamos moderación automática y revisión administrativa para mantener una experiencia útil y respetuosa.'],
+        ],
+    ],
+    'service-conditions' => [
+        'title' => 'Condiciones del servicio',
+        'sections' => [
+            ['title' => 'Uso responsable', 'body' => 'Debes proporcionar información veraz, respetar a otros usuarios y abstenerte de publicar contenido ilegal, ofensivo, discriminatorio, engañoso o que vulnere derechos de terceros.'],
+            ['title' => 'Disponibilidad', 'body' => 'Procuramos mantener el servicio disponible y actualizado, pero las rutas, precios, horarios y datos de establecimientos pueden cambiar. Verifica información sensible directamente con el lugar.'],
+            ['title' => 'Moderación y cuenta', 'body' => 'VibeBloom puede rechazar, ocultar o retirar contenido que incumpla estas condiciones y restringir cuentas ante usos abusivos o riesgos para la comunidad.'],
+        ],
+    ],
+    'data-privacy' => [
+        'title' => 'Privacidad y datos',
+        'sections' => [
+            ['title' => 'Datos que tratamos', 'body' => 'Tratamos datos de registro, foto de perfil, contenido publicado, favoritos e interacciones necesarias para operar la cuenta. La ubicación se utiliza en el navegador para mapas e indicaciones cuando otorgas permiso.'],
+            ['title' => 'Finalidad y conservación', 'body' => 'Usamos los datos para autenticarte, mostrar tus publicaciones, personalizar funciones, prevenir abuso y mejorar la plataforma. Los conservamos mientras la cuenta esté activa o exista una obligación legítima.'],
+            ['title' => 'Tus decisiones', 'body' => 'Puedes actualizar tu perfil, retirar contenido propio y eliminar tu cuenta desde la configuración. No vendas datos sensibles ni publiques información personal de terceros sin autorización.'],
+        ],
+    ],
+];
+
+foreach ($legalPages as $slug => $page) {
+    Route::get('/'.$slug, fn () => view('legal', $page))->name('legal.'.$slug);
+}
+
 /*
 |--------------------------------------------------------------------------
 | PRUEBA DE CORREO (solo local)
@@ -69,6 +99,7 @@ Route::middleware([
     |--------------------------------------------------------------------------
     */
     Route::get('/notificaciones', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::get('/notificaciones/{notification}/abrir', [NotificationController::class, 'open'])->name('notifications.open');
     Route::post('/notificaciones/marcar-leidas', [NotificationController::class, 'markAllRead'])->name('notifications.read-all');
 
     /*

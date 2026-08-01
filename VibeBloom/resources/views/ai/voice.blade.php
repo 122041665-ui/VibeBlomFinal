@@ -40,6 +40,7 @@
     <div class="min-h-screen vb-soft-page relative overflow-hidden">
 
         <div class="{{ $container }} relative">
+            <x-flash-messages />
             <section class="mb-6 overflow-hidden rounded-[30px] border border-white/80 dark:border-slate-800 bg-white/92 dark:bg-slate-900/92 shadow-[0_22px_70px_rgba(15,23,42,0.10)] backdrop-blur">
                 <div class="relative p-5 sm:p-7 lg:p-8">
                     <div class="pointer-events-none absolute inset-x-0 top-0 h-1 bg-blue-600"></div>

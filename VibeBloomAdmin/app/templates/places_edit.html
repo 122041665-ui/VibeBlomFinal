@@ -264,7 +264,7 @@
         <div class="pl-edit-meta-val">#{{ place.id }}</div>
       </div>
       <div class="pl-edit-meta-item">
-        <span class="pl-edit-meta-label">Tipo (fijo)</span>
+        <span class="pl-edit-meta-label">Tipo actual</span>
         <div class="pl-edit-meta-val">
           <span class="pl-type-badge">{{ (place.type or 'OTRO')|replace('_', ' ')|title }}</span>
         </div>
@@ -275,8 +275,23 @@
       </div>
     </div>
 
-    <form method="POST" class="pl-edit-body">
+    <form method="POST" enctype="multipart/form-data" class="pl-edit-body" novalidate>
       <div class="pl-edit-grid">
+
+        <div class="pl-edit-field pl-edit-field-full">
+          <label for="photos" class="pl-edit-label">Fotos del lugar</label>
+          {% if place.photos_urls %}
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px">
+              {% for photo_url in place.photos_urls %}
+                <img src="{{ photo_url }}" alt="Foto del lugar" loading="lazy" style="width:100%;height:120px;object-fit:cover;border-radius:14px;border:1px solid #e2e8f0">
+              {% endfor %}
+            </div>
+          {% elif place.photo_url %}
+            <img src="{{ place.photo_url }}" alt="Foto del lugar" style="width:180px;height:120px;object-fit:cover;border-radius:14px;border:1px solid #e2e8f0">
+          {% endif %}
+          <input id="photos" name="photos" type="file" class="pl-edit-input" accept="image/jpeg,image/png,image/webp" multiple>
+          <p class="pl-edit-hint">Selecciona de 1 a 3 fotos para reemplazar las actuales. Máximo 5 MB por foto.</p>
+        </div>
 
         <div class="pl-edit-field">
           <label for="name" class="pl-edit-label">Nombre</label>
@@ -285,17 +300,23 @@
         </div>
 
         <div class="pl-edit-field">
-          <label for="city" class="pl-edit-label">Ciudad</label>
-          <input id="city" name="city" type="text" class="pl-edit-input"
-            value="{{ place.city or '' }}" placeholder="Ciudad">
+          <label for="city" class="pl-edit-label">Estado</label>
+          <select id="city" name="city" class="pl-edit-input" required>
+            <option value="">Selecciona un estado</option>
+            {% for state in mexican_states %}
+              <option value="{{ state }}" {% if place.city == state %}selected{% endif %}>{{ state }}</option>
+            {% endfor %}
+          </select>
         </div>
 
         <div class="pl-edit-field">
-          <label for="type_display" class="pl-edit-label">Tipo</label>
-          <input id="type_display" type="text" class="pl-edit-input"
-            value="{{ (place.type or 'OTRO')|replace('_', ' ')|title }}" readonly>
-          <input type="hidden" name="type" value="{{ place.type or 'OTRO' }}">
-          <p class="pl-edit-hint">El tipo no se puede cambiar para mantener consistencia.</p>
+          <label for="type" class="pl-edit-label">Tipo</label>
+          <select id="type" name="type" class="pl-edit-input" required>
+            <option value="">Selecciona un tipo</option>
+            {% for place_type in place_types %}
+              <option value="{{ place_type }}" {% if (place.type or '')|lower == place_type|lower %}selected{% endif %}>{{ place_type }}</option>
+            {% endfor %}
+          </select>
         </div>
 
         <div class="pl-edit-field">
@@ -305,14 +326,14 @@
             <input id="price_range" name="price_range" type="number" step="0.01" min="0"
               class="pl-edit-input pl-edit-price-input"
               value="{{ place.price_range if place.price_range is not none else (place.price if place.price is not none else '') }}"
-              placeholder="0.00">
+              placeholder="0.00" required>
           </div>
         </div>
 
         <div class="pl-edit-field pl-edit-field-full">
           <label for="description" class="pl-edit-label">Descripción</label>
           <textarea id="description" name="description" class="pl-edit-textarea"
-            placeholder="Descripción del lugar…">{{ place.description or '' }}</textarea>
+            placeholder="Descripción del lugar…" required minlength="20" maxlength="1000">{{ place.description or '' }}</textarea>
         </div>
 
       </div>

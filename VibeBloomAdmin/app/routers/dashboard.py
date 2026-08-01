@@ -1,6 +1,16 @@
-from urllib.parse import urlencode
+from io import BytesIO
+from datetime import datetime
 
-from flask import Blueprint, render_template, session, redirect, url_for, flash, jsonify, request
+from flask import Blueprint, render_template, session, redirect, url_for, flash, jsonify, request, send_file
+from openpyxl import Workbook
+from openpyxl.utils import get_column_letter
+from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import landscape, letter
+from reportlab.lib.enums import TA_CENTER
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import inch
+from reportlab.platypus import SimpleDocTemplate, Spacer, Table, TableStyle, Paragraph
 from app.services.api_client import api_get
 
 dashboard_bp = Blueprint("dashboard", __name__, url_prefix="/dashboard")
@@ -197,9 +207,23 @@ def report_data():
     })
 
 
-def build_export_query():
+def fetch_report_for_export():
     filters = get_report_filters()
-    return urlencode(filters)
+    data, response, error = safe_api_json(
+        "/admin/dashboard/report-data",
+        default={},
+        params=filters,
+    )
+
+    if error == "unauthorized":
+        session.clear()
+
+    return filters, data, error
+
+
+def export_filename(filters: dict, extension: str) -> str:
+    module = filters.get("module", "reporte")
+    return f"vibebloom_{module}.{extension}"
 
 
 @dashboard_bp.route("/export/pdf")
@@ -207,8 +231,72 @@ def export_pdf():
     if "access_token" not in session:
         return redirect(url_for("auth.login"))
 
-    query_string = build_export_query()
-    return redirect(f"/api/admin/dashboard/export/pdf?{query_string}")
+    filters, data, error = fetch_report_for_export()
+    if error:
+        flash("No se pudo generar el reporte PDF", "error")
+        return redirect(url_for("dashboard.dashboard"))
+
+    headers = data.get("headers") or DEFAULT_REPORT_HEADERS
+    rows = data.get("rows") or []
+    styles = getSampleStyleSheet()
+    cell_style = ParagraphStyle("ReportCell", parent=styles["BodyText"], fontSize=7, leading=9, textColor=colors.HexColor("#334155"))
+    header_style = ParagraphStyle("ReportHeader", parent=cell_style, textColor=colors.white, fontName="Helvetica-Bold", alignment=TA_CENTER)
+    table_data = [[Paragraph(str(header).replace("_", " ").title(), header_style) for header in headers]]
+    table_data.extend([
+        [Paragraph(str(row.get(header, "") if row.get(header) is not None else ""), cell_style) for header in headers]
+        for row in rows
+    ])
+
+    output = BytesIO()
+    document = SimpleDocTemplate(
+        output,
+        pagesize=landscape(letter),
+        rightMargin=0.35 * inch,
+        leftMargin=0.35 * inch,
+        topMargin=0.35 * inch,
+        bottomMargin=0.35 * inch,
+    )
+    generated_at = datetime.now().strftime("%d/%m/%Y %H:%M")
+    date_range = f"{filters.get('start_date') or 'Inicio'} — {filters.get('end_date') or 'Actualidad'}"
+    story = [
+        Paragraph("VIBEBLOOM · REPORTE ADMINISTRATIVO", ParagraphStyle("Brand", parent=styles["Title"], textColor=colors.HexColor("#1D4ED8"), fontSize=20, leading=24)),
+        Paragraph(f"{data.get('module_label', 'Reporte')} · {data.get('scope_label', filters.get('scope', 'all'))}", styles["Heading2"]),
+        Paragraph(f"Periodo: {date_range} &nbsp;&nbsp;|&nbsp;&nbsp; Generado: {generated_at} &nbsp;&nbsp;|&nbsp;&nbsp; Registros: {len(rows)}", styles["Normal"]),
+        Spacer(1, 0.2 * inch),
+    ]
+    table = Table(table_data, repeatRows=1)
+    table.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#2563EB")),
+        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+        ("FONTSIZE", (0, 0), (-1, -1), 7),
+        ("GRID", (0, 0), (-1, -1), 0.25, colors.HexColor("#CBD5E1")),
+        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#F8FAFC")]),
+        ("LEFTPADDING", (0, 0), (-1, -1), 4),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 4),
+        ("TOPPADDING", (0, 0), (-1, -1), 6),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+    ]))
+    story.append(table)
+
+    def add_page_number(canvas, doc):
+        canvas.saveState()
+        canvas.setFont("Helvetica", 8)
+        canvas.setFillColor(colors.HexColor("#64748B"))
+        canvas.drawString(doc.leftMargin, 0.2 * inch, "VibeBloom · Información administrativa")
+        canvas.drawRightString(landscape(letter)[0] - doc.rightMargin, 0.2 * inch, f"Página {doc.page}")
+        canvas.restoreState()
+
+    document.build(story, onFirstPage=add_page_number, onLaterPages=add_page_number)
+    output.seek(0)
+
+    return send_file(
+        output,
+        mimetype="application/pdf",
+        as_attachment=True,
+        download_name=export_filename(filters, "pdf"),
+    )
 
 
 @dashboard_bp.route("/export/xls")
@@ -216,5 +304,58 @@ def export_xls():
     if "access_token" not in session:
         return redirect(url_for("auth.login"))
 
-    query_string = build_export_query()
-    return redirect(f"/api/admin/dashboard/export/xls?{query_string}")
+    filters, data, error = fetch_report_for_export()
+    if error:
+        flash("No se pudo generar el reporte Excel", "error")
+        return redirect(url_for("dashboard.dashboard"))
+
+    headers = data.get("headers") or DEFAULT_REPORT_HEADERS
+    rows = data.get("rows") or []
+    workbook = Workbook()
+    worksheet = workbook.active
+    worksheet.title = "Reporte VibeBloom"
+    last_column = max(1, len(headers))
+    worksheet.merge_cells(start_row=1, start_column=1, end_row=1, end_column=last_column)
+    worksheet["A1"] = "VIBEBLOOM · REPORTE ADMINISTRATIVO"
+    worksheet["A1"].font = Font(size=18, bold=True, color="FFFFFF")
+    worksheet["A1"].fill = PatternFill(fill_type="solid", fgColor="1D4ED8")
+    worksheet["A1"].alignment = Alignment(horizontal="left", vertical="center")
+    worksheet.row_dimensions[1].height = 34
+    worksheet.merge_cells(start_row=2, start_column=1, end_row=2, end_column=last_column)
+    worksheet["A2"] = f"{data.get('module_label', 'Reporte')} · {data.get('scope_label', filters.get('scope', 'all'))} · {len(rows)} registros · {datetime.now().strftime('%d/%m/%Y %H:%M')}"
+    worksheet["A2"].font = Font(italic=True, color="475569")
+    worksheet.append([])
+    worksheet.append([str(header).replace("_", " ").title() for header in headers])
+
+    for row in rows:
+        worksheet.append([row.get(header, "") for header in headers])
+
+    header_row = 4
+    thin_border = Border(bottom=Side(style="thin", color="CBD5E1"))
+    for cell in worksheet[header_row]:
+        cell.font = Font(bold=True, color="FFFFFF")
+        cell.fill = PatternFill(fill_type="solid", fgColor="2563EB")
+        cell.alignment = Alignment(horizontal="center", vertical="center")
+
+    for row in worksheet.iter_rows(min_row=header_row + 1):
+        for cell in row:
+            cell.alignment = Alignment(vertical="top", wrap_text=True)
+            cell.border = thin_border
+
+    worksheet.freeze_panes = "A5"
+    worksheet.auto_filter.ref = f"A{header_row}:{worksheet.cell(header_row, last_column).coordinate}"
+    for column_index in range(1, last_column + 1):
+        values = [worksheet.cell(row=row_index, column=column_index).value for row_index in range(header_row, worksheet.max_row + 1)]
+        max_length = max((len(str(value or "")) for value in values), default=10)
+        worksheet.column_dimensions[get_column_letter(column_index)].width = min(max(max_length + 2, 12), 45)
+
+    output = BytesIO()
+    workbook.save(output)
+    output.seek(0)
+
+    return send_file(
+        output,
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        as_attachment=True,
+        download_name=export_filename(filters, "xlsx"),
+    )

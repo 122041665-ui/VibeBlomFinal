@@ -8,6 +8,7 @@ class PlaceSubmission extends Model
 {
     protected $fillable = [
         'user_id',
+        'platform_submission_id',
         'name',
         'type',
         'rating',
@@ -19,6 +20,7 @@ class PlaceSubmission extends Model
         'lng',
         'description',
         'status',
+        'rejection_reason',
         'sent_to_flask',
         'sent_to_flask_at',
     ];

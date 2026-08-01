@@ -48,7 +48,7 @@
                                 Agregar un nuevo lugar
                             </h1>
                             <p class="text-sm text-gray-600 dark:text-slate-400 mt-2">
-                                Completa los datos para enviar tu lugar a revisión.
+                                Completa los datos. Un administrador revisará la solicitud antes de publicarla.
                             </p>
                         </div>
 
@@ -63,19 +63,12 @@
                 </div>
             </div>
 
-            @if ($errors->any())
-                <div class="mb-6 max-w-7xl mx-auto rounded-2xl border border-red-200 dark:border-red-500/30 bg-red-50 dark:bg-red-500/10 p-4 text-sm text-red-700 dark:text-red-300 shadow-sm">
-                    <p class="font-semibold">Corrige lo siguiente:</p>
-                    <ul class="mt-2 list-disc pl-5 space-y-1">
-                        @foreach ($errors->all() as $error)
-                            <li>{{ $error }}</li>
-                        @endforeach
-                    </ul>
-                </div>
-            @endif
+            <x-flash-messages />
 
-            <form action="{{ route('place-submissions.store') }}" method="POST" enctype="multipart/form-data" id="placeForm">
+            <form action="{{ route('place-submissions.store') }}" method="POST" enctype="multipart/form-data" id="placeForm" novalidate>
                 @csrf
+
+                <div id="clientValidationErrors" class="mb-5 hidden rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-800" role="alert"></div>
 
                 <div class="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
                     <div class="xl:col-span-7">
@@ -135,7 +128,7 @@
                                         <label class="{{ $label }}">Calificación</label>
 
                                         @php $currentRating = old('rating', 0); @endphp
-                                        <input type="hidden" name="rating" id="rating" value="{{ $currentRating }}">
+                                        <input type="hidden" name="rating" id="rating" value="{{ $currentRating }}" required min="1" max="5">
 
                                         <div class="{{ $fieldBase }} flex items-center justify-between">
                                             <div id="starRating" class="flex items-center gap-1 select-none">
@@ -152,10 +145,10 @@
                                                 @endfor
                                             </div>
 
-                                            <span id="ratingText" class="text-sm font-semibold text-gray-600 dark:text-slate-300"></span>
+                                            <span id="ratingText" class="text-sm font-semibold text-gray-600 dark:text-slate-300">Selecciona una opción</span>
                                         </div>
 
-                                        <p class="{{ $hint }}">5 = imperdible, 3 = bien, 1 = no volvería.</p>
+                                        <p id="ratingError" class="{{ $hint }}">Obligatorio · 5 = imperdible, 3 = bien, 1 = no volvería.</p>
                                     </div>
                                 </div>
 
@@ -185,10 +178,10 @@
                                     <input type="file"
                                            id="photos"
                                            name="photos[]"
-                                           accept="image/*"
+                                           accept="image/jpeg,image/png,image/webp"
                                            multiple
                                            required
-                                           oninvalid="this.setCustomValidity('Sube al menos 1 foto (máx. 3)')"
+                                           oninvalid="showPhotoRequiredAlert(this)"
                                            oninput="this.setCustomValidity('')"
                                            class="{{ $fileHidden }}">
 
@@ -197,7 +190,8 @@
                                         <span id="filesText" class="text-gray-500 dark:text-slate-400 text-sm">0/3</span>
                                     </label>
 
-                                    <p class="{{ $hint }}">Puedes subir de 1 a 3 fotos. Vista previa abajo. Puedes eliminar cualquiera antes de enviarlo.</p>
+                                    <p class="{{ $hint }}">Obligatorio: 1 a 3 fotos JPG, PNG o WEBP, máximo 5 MB cada una.</p>
+                                    <p id="photosError" class="mt-2 hidden text-sm font-semibold text-red-600 dark:text-red-400" role="alert"></p>
 
                                     <div id="photoPreview" class="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-3"></div>
                                 </div>
@@ -206,8 +200,15 @@
                                     <label class="{{ $label }}">Descripción</label>
                                     <textarea name="description"
                                               rows="4"
+                                              required
+                                              minlength="20"
+                                              maxlength="1000"
                                               class="{{ $fieldBase }}"
                                               placeholder="Describe el ambiente, lo que lo hace especial, etc.">{{ old('description') }}</textarea>
+                                    <div class="mt-2 flex items-center justify-between gap-3">
+                                        <p class="{{ $hint }} !mt-0">Obligatoria, entre 20 y 1000 caracteres. Se revisará antes de enviarse.</p>
+                                        <span id="descriptionCount" class="text-xs font-semibold text-gray-500 dark:text-slate-400">0/1000</span>
+                                    </div>
                                 </div>
 
                                 <div class="flex justify-end xl:hidden">
@@ -224,7 +225,7 @@
                             <div class="flex items-start justify-between gap-3">
                                 <div>
                                     <h2 class="text-lg font-extrabold text-gray-900 dark:text-slate-100">Ubicación del lugar</h2>
-                                    <p class="{{ $hint }}">Selecciona la ciudad, ajusta la dirección y coloca el marcador en el mapa.</p>
+                                    <p class="{{ $hint }}">Selecciona el estado, escribe la dirección y coloca el marcador en el mapa.</p>
                                 </div>
 
                                 <span class="{{ $pill }}">
@@ -233,25 +234,26 @@
                             </div>
 
                             <div class="relative mt-4">
-                                <label class="text-sm {{ $label }}">Ciudad</label>
+                                <label class="text-sm {{ $label }}">Estado</label>
 
-                                <input type="text"
+                                <select
                                        id="cityInput"
                                        name="city"
-                                       value="{{ old('city','') }}"
                                        required
-                                       autocomplete="off"
-                                       class="{{ $fieldBase }}"
-                                       placeholder="Escribe una ciudad (Ej. Querétaro, CDMX...)">
+                                       class="{{ $fieldBase }}">
+                                    <option value="">Selecciona un estado</option>
+                                    @foreach ($states as $state)
+                                        <option value="{{ $state->name }}" data-code="{{ $state->code }}" @selected(old('city') === $state->name)>
+                                            {{ $state->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
 
                                 <input type="hidden" id="cityPlaceId" name="city_place_id" value="{{ old('city_place_id','') }}">
 
-                                <div id="cityDropdown"
-                                     class="hidden absolute z-30 mt-2 w-full bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-2xl shadow-lg overflow-hidden">
-                                    <div id="cityList" class="max-h-64 overflow-auto"></div>
-                                </div>
+                                <div id="cityDropdown" class="hidden"><div id="cityList"></div></div>
 
-                                <p class="{{ $hint }}">Solo se aceptan ciudades reales seleccionadas desde la lista.</p>
+                                <p class="{{ $hint }}">Catálogo oficial de las 32 entidades federativas de México.</p>
                             </div>
 
                             <div id="map" class="w-full h-80 mt-4 rounded-2xl border border-gray-200 dark:border-slate-700 shadow-sm bg-white dark:bg-slate-950 overflow-hidden"></div>
@@ -304,24 +306,12 @@
         </span>
     </a>
 
-    <div id="approvalToast"
-         class="fixed top-5 right-5 z-[9999] hidden items-center gap-3 rounded-2xl border border-green-200 dark:border-green-500/30 bg-white dark:bg-slate-900 px-4 py-3 shadow-lg">
-        <div class="flex h-10 w-10 items-center justify-center rounded-full bg-green-100 dark:bg-green-500/10 text-green-600 dark:text-green-400">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none"
-                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M20 6L9 17l-5-5"/>
-            </svg>
-        </div>
-        <div>
-            <p class="text-sm font-semibold text-gray-900 dark:text-slate-100">Aprobación enviada</p>
-            <p class="text-xs text-gray-500 dark:text-slate-400">Tu lugar fue enviado correctamente para revisión.</p>
-        </div>
-    </div>
-
     <script src="https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.js"></script>
 
     <script>
         const MAPBOX_TOKEN = @json(config('services.mapbox.token'));
+        const SHOULD_RESTORE_PHOTOS = @json($errors->any() || session('error'));
+        const PHOTO_DRAFT_KEY = 'new-place-photos';
 
         if (!MAPBOX_TOKEN) {
             console.error('Mapbox token no configurado: config("services.mapbox.token")');
@@ -348,13 +338,15 @@
         const photosInput = document.getElementById('photos');
         const previewContainer = document.getElementById('photoPreview');
         const filesText = document.getElementById('filesText');
+        const photosError = document.getElementById('photosError');
+        const descriptionInput = document.querySelector('textarea[name="description"]');
+        const descriptionCount = document.getElementById('descriptionCount');
 
         const ratingInput = document.getElementById('rating');
         const ratingText = document.getElementById('ratingText');
         const starButtons = document.querySelectorAll('.star-btn');
 
         const placeForm = document.getElementById('placeForm');
-        const approvalToast = document.getElementById('approvalToast');
 
         const mapContainer = document.getElementById('map');
         let map = null;
@@ -363,8 +355,57 @@
         let cityFeature = null;
         let cityTimer = null;
         let addrTimer = null;
-        let isSubmittingApproved = false;
         let selectedFiles = Array.from(photosInput.files || []);
+
+        function openPhotoDraftDb() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open('vibebloom-form-drafts', 1);
+                request.onupgradeneeded = () => request.result.createObjectStore('drafts');
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject(request.error);
+            });
+        }
+
+        async function savePhotoDraft() {
+            try {
+                const db = await openPhotoDraftDb();
+                const transaction = db.transaction('drafts', 'readwrite');
+                transaction.objectStore('drafts').put(selectedFiles, PHOTO_DRAFT_KEY);
+                transaction.oncomplete = () => db.close();
+            } catch (_) {}
+        }
+
+        async function restorePhotoDraft() {
+            try {
+                const db = await openPhotoDraftDb();
+                const request = db.transaction('drafts').objectStore('drafts').get(PHOTO_DRAFT_KEY);
+                request.onsuccess = () => {
+                    if (SHOULD_RESTORE_PHOTOS && Array.isArray(request.result)) {
+                        selectedFiles = request.result;
+                        syncInputFiles();
+                        renderPhotoPreview();
+                    }
+                    db.close();
+                };
+            } catch (_) {}
+        }
+
+        async function clearPhotoDraft() {
+            try {
+                const db = await openPhotoDraftDb();
+                const transaction = db.transaction('drafts', 'readwrite');
+                transaction.objectStore('drafts').delete(PHOTO_DRAFT_KEY);
+                transaction.oncomplete = () => db.close();
+            } catch (_) {}
+        }
+
+        function showPhotoRequiredAlert(input) {
+            input.setCustomValidity('Agrega al menos una foto del lugar.');
+            photosError.textContent = 'Agrega al menos una foto antes de enviar la solicitud.';
+            photosError.classList.remove('hidden');
+            document.querySelector('label[for="photos"]')?.classList.add('border-red-400', 'ring-2', 'ring-red-100');
+            document.querySelector('label[for="photos"]')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
 
         function setMarker(lng, lat, flyZoom = 16) {
             latInput.value = lat;
@@ -445,6 +486,7 @@
                         selectedFiles.splice(index, 1);
                         syncInputFiles();
                         renderPhotoPreview();
+                        savePhotoDraft();
                     });
 
                     card.appendChild(img);
@@ -458,19 +500,40 @@
         photosInput.addEventListener('change', () => {
             let files = Array.from(photosInput.files || []);
 
+            photosError.classList.add('hidden');
+            photosError.textContent = '';
+            document.querySelector('label[for="photos"]')?.classList.remove('border-red-400', 'ring-2', 'ring-red-100');
+
             if (files.length > 3) {
-                alert('Solo puedes subir hasta 3 fotos. Se tomarán las primeras 3.');
+                photosError.textContent = 'Solo puedes subir hasta 3 fotos. Se conservaron las primeras 3.';
+                photosError.classList.remove('hidden');
                 files = files.slice(0, 3);
+            }
+
+            const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+            const invalid = files.find(file => !allowedTypes.includes(file.type) || file.size > 5 * 1024 * 1024);
+            if (invalid) {
+                photosError.textContent = `“${invalid.name}” no es válida. Usa JPG, PNG o WEBP de máximo 5 MB.`;
+                photosError.classList.remove('hidden');
+                files = files.filter(file => allowedTypes.includes(file.type) && file.size <= 5 * 1024 * 1024);
             }
 
             selectedFiles = files;
             syncInputFiles();
             renderPhotoPreview();
+            savePhotoDraft();
             photosInput.setCustomValidity('');
         });
 
         syncInputFiles();
         renderPhotoPreview();
+        if (SHOULD_RESTORE_PHOTOS) restorePhotoDraft(); else clearPhotoDraft();
+
+        function updateDescriptionCount() {
+            descriptionCount.textContent = `${descriptionInput.value.length}/1000`;
+        }
+        descriptionInput.addEventListener('input', updateDescriptionCount);
+        updateDescriptionCount();
 
         function setStars(value) {
             const currentValue = Math.max(0, Math.min(5, parseInt(value || 0, 10)));
@@ -491,12 +554,14 @@
                 }
             });
 
-            ratingText.textContent = currentValue >= 1 ? `${currentValue}/5` : '';
+            ratingText.textContent = currentValue >= 1 ? `${currentValue}/5` : 'Selecciona una opción';
         }
 
         starButtons.forEach(btn => {
             btn.addEventListener('click', () => {
                 ratingInput.value = btn.dataset.value;
+                ratingInput.setCustomValidity('');
+                document.getElementById('ratingError')?.classList.remove('text-red-600', 'dark:text-red-400', 'font-semibold');
                 setStars(ratingInput.value);
             });
 
@@ -508,6 +573,17 @@
         });
 
         setStars(ratingInput.value);
+
+        placeForm?.addEventListener('submit', (event) => {
+            if (Number(ratingInput.value) < 1) {
+                event.preventDefault();
+                ratingInput.setCustomValidity('Selecciona de 1 a 5 estrellas.');
+                const error = document.getElementById('ratingError');
+                error?.classList.add('text-red-600', 'dark:text-red-400', 'font-semibold');
+                error?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                starButtons[0]?.focus();
+            }
+        });
 
         if (canUseMapbox) {
             map = new mapboxgl.Map({
@@ -639,22 +715,25 @@
             openDD(cityDropdown);
         }
 
-        cityInput.addEventListener('focus', () => updateCityMatches());
+        async function selectState() {
+            const option = cityInput.options[cityInput.selectedIndex];
+            cityPlaceId.value = option?.dataset?.code || '';
+            cityInput.setCustomValidity(cityInput.value ? '' : 'Selecciona un estado.');
+            cityFeature = cityInput.value ? { text: cityInput.value, place_name: cityInput.value } : null;
 
-        cityInput.addEventListener('input', () => {
-            invalidateCitySelection();
-            cityInput.setCustomValidity('');
-            clearTimeout(cityTimer);
-            cityTimer = setTimeout(updateCityMatches, 220);
-        });
-
-        cityInput.addEventListener('blur', () => {
-            if (!cityPlaceId.value) {
-                cityInput.setCustomValidity('Selecciona una ciudad de la lista.');
-            } else {
-                cityInput.setCustomValidity('');
+            if (!cityInput.value) return;
+            const data = await geocode(`${cityInput.value}, México`, { types: 'region', limit: '1' });
+            const feature = data?.features?.[0];
+            if (feature?.center) {
+                cityFeature = feature;
+                if (map) map.flyTo({ center: feature.center, zoom: 7, essential: true });
             }
-        });
+        }
+
+        cityInput.addEventListener('change', selectState);
+        if (cityInput.value) {
+            selectState();
+        }
 
         async function updateAddressMatches() {
             const address = (addressInput.value || '').trim();
@@ -717,7 +796,7 @@
 
             if (!cityFeature || !cityPlaceId.value) {
                 cityInput.focus();
-                cityInput.setCustomValidity('Primero selecciona una ciudad de la lista.');
+                cityInput.setCustomValidity('Primero selecciona un estado.');
                 cityInput.reportValidity();
                 return;
             }
@@ -756,22 +835,45 @@
             }
         });
 
-        function showApprovalToast() {
-            approvalToast.classList.remove('hidden');
-            approvalToast.classList.add('flex');
-        }
-
         placeForm.addEventListener('submit', (e) => {
-            if (isSubmittingApproved) return;
+            const nameInput = placeForm.querySelector('[name="name"]');
+            const typeInput = placeForm.querySelector('[name="type"]');
+            const priceInput = placeForm.querySelector('[name="price"]');
+            const validationBox = document.getElementById('clientValidationErrors');
+            const validationErrors = [];
 
+            if (!(nameInput.value || '').trim()) validationErrors.push('Escribe el nombre del lugar.');
+            if (!(typeInput.value || '').trim()) validationErrors.push('Selecciona un tipo de lugar.');
+            if (!(priceInput.value || '').trim() || Number(priceInput.value) < 0) validationErrors.push('Indica un precio válido, igual o mayor que cero.');
+            if ((descriptionInput.value || '').trim().length < 20) validationErrors.push('La descripción debe tener al menos 20 caracteres.');
+
+            if (validationErrors.length) {
+                e.preventDefault();
+                validationBox.innerHTML = `<strong>Revisa el formulario:</strong><ul class="mt-2 list-disc pl-5">${validationErrors.map(message => `<li>${message}</li>`).join('')}</ul>`;
+                validationBox.classList.remove('hidden');
+                validationBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                return;
+            }
+
+            validationBox.classList.add('hidden');
             const hasCity = !!(cityPlaceId.value || '').trim();
             const lat = (latInput.value || '').trim();
             const lng = (lngInput.value || '').trim();
 
             if (!hasCity) {
                 e.preventDefault();
-                cityInput.setCustomValidity('Selecciona una ciudad de la lista.');
+                cityInput.setCustomValidity('Selecciona un estado.');
                 cityInput.reportValidity();
+                return;
+            }
+
+            if (Number(ratingInput.value) < 1) {
+                e.preventDefault();
+                const error = document.getElementById('ratingError');
+                error.textContent = 'Selecciona una calificación de 1 a 5 estrellas antes de continuar.';
+                error.classList.add('text-red-600', 'dark:text-red-400', 'font-semibold');
+                error.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                starButtons[0]?.focus();
                 return;
             }
 
@@ -786,20 +888,19 @@
             if (selectedFiles.length < 1) {
                 e.preventDefault();
                 photosInput.setCustomValidity('Sube al menos 1 foto (máx. 3)');
-                photosInput.reportValidity();
+                photosError.textContent = 'Agrega al menos una foto antes de enviar la solicitud.';
+                photosError.classList.remove('hidden');
+                document.querySelector('label[for="photos"]')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 return;
             }
 
             photosInput.setCustomValidity('');
 
-            e.preventDefault();
-            showApprovalToast();
-
-            isSubmittingApproved = true;
-
-            setTimeout(() => {
-                placeForm.submit();
-            }, 900);
+            placeForm.querySelectorAll('button[type="submit"]').forEach((button) => {
+                button.disabled = true;
+                button.classList.add('opacity-70', 'cursor-wait');
+                button.textContent = 'Enviando solicitud…';
+            });
         });
     </script>
 

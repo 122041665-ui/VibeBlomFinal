@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\UserNotification;
 use App\Services\FastApiService;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 
 class FavoriteController extends Controller
@@ -33,7 +33,7 @@ class FavoriteController extends Controller
         $token = $this->getApiToken();
 
         if (!$token) {
-            return back()->with('error', 'Tu sesión web está activa, pero no hay sesión activa en la API.');
+            return redirect()->route('login')->with('error', 'Inicia sesión nuevamente para guardar lugares en favoritos.');
         }
 
         try {
@@ -42,32 +42,37 @@ class FavoriteController extends Controller
             ], $token);
 
             if (!$response->successful()) {
+                if ($response->status() === 401) {
+                    session()->forget(['access_token', 'api', 'api_user']);
+
+                    return redirect()->route('login')
+                        ->with('error', 'Tu sesión venció. Inicia sesión nuevamente para continuar.');
+                }
+
                 $message = $response->json('detail')
                     ?? $response->json('message')
-                    ?? 'No se pudo actualizar favoritos.';
+                    ?? 'No pudimos actualizar tus favoritos. Inténtalo nuevamente.';
 
                 return back()->with('error', $message);
             }
 
             $data = $response->json();
-            $message = $data['message'] ?? 'Favorito actualizado correctamente.';
-
-            UserNotification::sendTo(
-                user: auth()->id(),
-                type: 'favorite_updated',
-                title: 'Favorito actualizado',
-                body: $message,
-                url: route('favorites.mine'),
-                actor: auth()->user(),
-                data: ['place_id' => $place]
-            );
+            $message = $data['message'] ?? (($data['is_favorite'] ?? false)
+                ? 'Lugar guardado en tus favoritos.'
+                : 'Lugar eliminado de tus favoritos.');
 
             return back()->with(
                 'success',
                 $message
             );
         } catch (\Throwable $e) {
-            return back()->with('error', 'No se pudo conectar con la API de favoritos.');
+            Log::error('No se pudo actualizar un favorito.', [
+                'user_id' => auth()->id(),
+                'place_id' => $place,
+                'message' => $e->getMessage(),
+            ]);
+
+            return back()->with('error', 'No pudimos conectar con el servicio de favoritos. Inténtalo nuevamente.');
         }
     }
 
@@ -78,13 +83,17 @@ class FavoriteController extends Controller
         if (!$token) {
             return view('places.favorites', [
                 'favorites' => collect(),
-            ])->with('error', 'Tu sesión web está activa, pero no hay sesión activa en la API.');
+            ])->with('error', 'Inicia sesión nuevamente para ver tus favoritos.');
         }
 
         try {
             $response = $api->get('/favorites', $token);
 
             if (!$response->successful()) {
+                if ($response->status() === 401) {
+                    session()->forget(['access_token', 'api', 'api_user']);
+                }
+
                 $message = $response->json('detail')
                     ?? $response->json('message')
                     ?? 'No se pudieron cargar los favoritos.';
@@ -98,6 +107,11 @@ class FavoriteController extends Controller
 
             return view('places.favorites', compact('favorites'));
         } catch (\Throwable $e) {
+            Log::error('No se pudieron cargar los favoritos.', [
+                'user_id' => auth()->id(),
+                'message' => $e->getMessage(),
+            ]);
+
             return view('places.favorites', [
                 'favorites' => collect(),
             ])->with('error', 'No se pudo conectar con la API de favoritos.');

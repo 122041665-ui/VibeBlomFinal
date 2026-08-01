@@ -2,8 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Place;
-use App\Models\PlaceSubmission;
 use App\Services\FastApiService;
 use Illuminate\Support\Collection;
 
@@ -76,10 +74,22 @@ class PlacesMapController extends Controller
 
     private function featureFromArray(array $place, array $validTypes, array $typeToMaki): ?array
     {
+        $status = mb_strtolower(trim((string) ($place['status'] ?? '')), 'UTF-8');
+        if ($status !== '' && !in_array($status, ['approved', 'published', 'public', 'aprobado'], true)) {
+            return null;
+        }
+
         $lat = $place['lat'] ?? $place['latitude'] ?? null;
         $lng = $place['lng'] ?? $place['longitude'] ?? null;
 
         if (!is_numeric($lat) || !is_numeric($lng)) {
+            return null;
+        }
+
+        $lat = (float) $lat;
+        $lng = (float) $lng;
+
+        if ($lat < -90 || $lat > 90 || $lng < -180 || $lng > 180) {
             return null;
         }
 
@@ -91,13 +101,19 @@ class PlacesMapController extends Controller
         }
 
         $id = $place['id'] ?? null;
-        $photo = $place['photo_url'] ?? $place['photo'] ?? null;
+        $photo = $place['photo_url'] ?? null;
+        if (!$photo && is_array($place['photos_urls'] ?? null)) {
+            $photo = collect($place['photos_urls'])->first(
+                fn ($value) => is_string($value) && trim($value) !== ''
+            );
+        }
+        $photo = $photo ?: ($place['photo'] ?? null);
 
         return [
             'type' => 'Feature',
             'geometry' => [
                 'type' => 'Point',
-                'coordinates' => [(float) $lng, (float) $lat],
+                'coordinates' => [$lng, $lat],
             ],
             'properties' => [
                 'id' => $id ? 'api-' . $id : uniqid('api-', false),
@@ -162,92 +178,7 @@ class PlacesMapController extends Controller
                     });
             }
         } catch (\Throwable $e) {
-            // Si la API no responde, mantenemos el mapa con datos locales.
-        }
-
-        $places = Place::query()
-            ->whereNotNull('lat')
-            ->whereNotNull('lng')
-            ->orderByDesc('created_at')
-            ->get();
-
-        foreach ($places as $place) {
-            $typeOriginal = trim((string)($place->type ?? 'Otro'));
-            if ($typeOriginal === '') $typeOriginal = 'Otro';
-
-            $type = $this->normalizeType($typeOriginal);
-
-            if (!in_array($type, $validTypes, true)) {
-                $type = 'otro';
-            }
-
-            $maki = $typeToMaki[$type] ?? 'marker-15';
-
-            $photoUrl = $this->normalizePhotoUrl((string) ($place->photo ?? ''));
-
-            $geojson['features'][] = [
-                'type' => 'Feature',
-                'geometry' => [
-                    'type' => 'Point',
-                    'coordinates' => [(float)$place->lng, (float)$place->lat],
-                ],
-                'properties' => [
-                    'id'       => 'local-' . $place->id,
-                    'real_id'  => $place->id,
-                    'source'   => 'local',
-                    'name'     => (string) $place->name,
-                    'type'     => $typeOriginal,
-                    'iconKey'  => $type,
-                    'city'     => (string) ($place->city ?? ''),
-                    'rating'   => $place->rating ?? null,
-                    'price'    => $place->price ?? null,
-                    'maki'     => $maki,
-                    'photo_url'=> $photoUrl,
-                    'url'      => route('places.show', $place->id),
-                ],
-            ];
-        }
-
-        $submissions = PlaceSubmission::with('photos')
-            ->whereNotNull('lat')
-            ->whereNotNull('lng')
-            ->orderByDesc('created_at')
-            ->get();
-
-        foreach ($submissions as $submission) {
-            $typeOriginal = trim((string)($submission->type ?? 'Otro')) ?: 'Otro';
-            $type = $this->normalizeType($typeOriginal);
-
-            if (!in_array($type, $validTypes, true)) {
-                $type = 'otro';
-            }
-
-            $photo = $submission->photos->first()?->path;
-
-            $geojson['features'][] = [
-                'type' => 'Feature',
-                'geometry' => [
-                    'type' => 'Point',
-                    'coordinates' => [(float) $submission->lng, (float) $submission->lat],
-                ],
-                'properties' => [
-                    'id' => 'submission-' . $submission->id,
-                    'real_id' => $submission->id,
-                    'source' => 'submission',
-                    'status' => (string) ($submission->status ?? 'pending'),
-                    'name' => (string) $submission->name,
-                    'type' => $typeOriginal,
-                    'iconKey' => $type,
-                    'city' => (string) ($submission->city ?? ''),
-                    'rating' => $submission->rating ?? null,
-                    'price' => $submission->price ?? null,
-                    'maki' => $typeToMaki[$type] ?? 'marker-15',
-                    'photo_url' => $this->normalizePhotoUrl($photo),
-                    'url' => $submission->user_id === auth()->id()
-                        ? route('place-submissions.show', $submission)
-                        : null,
-                ],
-            ];
+            // Si la API pública no responde, no exponemos solicitudes locales pendientes.
         }
 
         return response()->json($geojson);

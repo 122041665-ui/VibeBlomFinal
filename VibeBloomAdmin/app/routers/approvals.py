@@ -193,6 +193,12 @@ def approval_detail(place_id):
         flash("La respuesta del detalle no es válida", "error")
         return redirect(url_for("approvals.list_approvals"))
 
+    photos = normalize_photo_list(approval.get("photos") or [])
+    approval["photos"] = photos
+    approval["photo_url"] = normalize_asset_url(
+        approval.get("photo_url") or approval.get("photo") or (photos[0]["url"] if photos else None)
+    )
+
     return render_template("approval_detail.html", approval=approval)
 
 
@@ -230,7 +236,10 @@ def reject_place(place_id):
         return access_guard
 
     reason = (request.form.get("reason") or "").strip()
-    payload = {"reason": reason} if reason else {}
+    if len(reason) < 10 or len(reason) > 500:
+        flash("Escribe un motivo claro de entre 10 y 500 caracteres.", "warning")
+        return redirect(url_for("approvals.approval_detail", place_id=place_id))
+    payload = {"reason": reason}
 
     try:
         response = api_post(f"/approvals/{place_id}/reject", payload)

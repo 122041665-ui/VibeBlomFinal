@@ -5,7 +5,7 @@ from sqlalchemy import func, select, inspect, text
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.core.security import require_admin
+from app.core.security import require_staff
 from app.models.user import User
 from app.models.place import Place
 from app.models.review import Review
@@ -228,7 +228,7 @@ def get_approval_status_counts(db: Session):
 @router.get("")
 def get_admin_dashboard(
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_staff),
 ):
     users_count = db.scalar(select(func.count()).select_from(User)) or 0
     places_count = db.scalar(select(func.count()).select_from(Place)) or 0
@@ -325,7 +325,7 @@ def get_dashboard_report_data(
     start_date: str = Query(""),
     end_date: str = Query(""),
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_staff),
 ):
     if module == "approvals":
         params = {}

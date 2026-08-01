@@ -1,10 +1,10 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional
 from datetime import datetime
 
 
 class FavoriteToggle(BaseModel):
-    place_id: int
+    place_id: int = Field(gt=0)
 
 
 class FavoritePlaceResponse(BaseModel):
@@ -20,7 +20,9 @@ class FavoritePlaceResponse(BaseModel):
     lng: Optional[float] = None
     price: float
     photo: Optional[str] = None
-    photos: Optional[str] = None
+    photos: Optional[list[str]] = None
+    photo_url: Optional[str] = None
+    photos_urls: list[str] = Field(default_factory=list)
     description: Optional[str] = None
 
     class Config:
