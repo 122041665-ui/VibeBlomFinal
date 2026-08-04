@@ -1,0 +1,145 @@
+name: vibebloom-public
+
+services:
+  gateway:
+    image: caddy:2.10-alpine
+    restart: unless-stopped
+    mem_limit: 64m
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      WEB_DOMAIN: ${WEB_DOMAIN:?Define WEB_DOMAIN}
+      API_DOMAIN: ${API_DOMAIN:?Define API_DOMAIN}
+      ADMIN_DOMAIN: ${ADMIN_DOMAIN:?Define ADMIN_DOMAIN}
+    volumes:
+      - ./deploy/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      laravel:
+        condition: service_healthy
+      api:
+        condition: service_healthy
+      admin:
+        condition: service_healthy
+    networks:
+      - app
+
+  api:
+    build:
+      context: ./VibeBloomAPI
+      dockerfile: Dockerfile.production
+    restart: unless-stopped
+    mem_limit: 280m
+    expose:
+      - "8010"
+    environment:
+      APP_ENV: production
+      APP_HOST: 0.0.0.0
+      APP_PORT: 8010
+      MYSQL_HOST: ${MYSQL_HOST:?Define MYSQL_HOST}
+      MYSQL_PORT: ${MYSQL_PORT:-3306}
+      MYSQL_DB: ${MYSQL_DATABASE:?Define MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USERNAME:?Define MYSQL_USERNAME}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?Define MYSQL_PASSWORD}
+      SECRET_KEY: ${JWT_SECRET:?Define JWT_SECRET}
+      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-60}
+      ALGORITHM: HS256
+      API_PUBLIC_URL: ${API_PUBLIC_URL:?Define API_PUBLIC_URL}
+      CORS_ORIGINS: ${CORS_ORIGINS:?Define CORS_ORIGINS}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:?Define OPENAI_API_KEY}
+      MAPBOX_TOKEN: ${MAPBOX_TOKEN:?Define MAPBOX_TOKEN}
+    volumes:
+      - ./persistent/api-storage:/app/storage
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8010/health', timeout=5)"]
+      interval: 30s
+      timeout: 8s
+      retries: 5
+      start_period: 40s
+    networks:
+      - app
+
+  admin:
+    build:
+      context: .
+      dockerfile: VibeBloomAdmin/Dockerfile.production
+    restart: unless-stopped
+    mem_limit: 180m
+    expose:
+      - "5010"
+    environment:
+      FLASK_ENV: production
+      FLASK_DEBUG: "False"
+      SECRET_KEY: ${FLASK_SECRET:?Define FLASK_SECRET}
+      FASTAPI_URL: http://api:8010
+      API_URL: http://api:8010
+      API_PUBLIC_URL: ${API_PUBLIC_URL:?Define API_PUBLIC_URL}
+      MAPBOX_TOKEN: ${MAPBOX_TOKEN:?Define MAPBOX_TOKEN}
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:5010/health', timeout=5)"]
+      interval: 30s
+      timeout: 8s
+      retries: 5
+      start_period: 30s
+    networks:
+      - app
+
+  laravel:
+    build:
+      context: ./VibeBloom
+      dockerfile: Dockerfile.production
+    restart: unless-stopped
+    mem_limit: 300m
+    expose:
+      - "8000"
+    environment:
+      APP_NAME: VibeBloom
+      APP_ENV: production
+      APP_DEBUG: "false"
+      APP_KEY: ${APP_KEY:?Define APP_KEY}
+      APP_URL: ${WEB_PUBLIC_URL:?Define WEB_PUBLIC_URL}
+      APP_LOCALE: es
+      APP_FALLBACK_LOCALE: es
+      DB_CONNECTION: sqlite
+      DB_DATABASE: /var/www/html/database/database.sqlite
+      SESSION_DRIVER: redis
+      SESSION_ENCRYPT: "true"
+      SESSION_SECURE_COOKIE: ${SESSION_SECURE_COOKIE:-false}
+      CACHE_STORE: redis
+      QUEUE_CONNECTION: redis
+      REDIS_HOST: ${REDIS_HOST:?Define REDIS_HOST}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?Define REDIS_PASSWORD}
+      FASTAPI_URL: http://api:8010
+      API_URL: http://api:8010
+      API_PUBLIC_URL: ${API_PUBLIC_URL:?Define API_PUBLIC_URL}
+      MAPBOX_TOKEN: ${MAPBOX_TOKEN:?Define MAPBOX_TOKEN}
+    volumes:
+      - ./persistent/laravel/database.sqlite:/var/www/html/database/database.sqlite
+      - ./persistent/laravel-public:/var/www/html/storage/app/public
+    command: >-
+      sh -c "php artisan config:cache && php artisan route:cache && php artisan view:cache && apache2-foreground"
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://127.0.0.1:8000/health"]
+      interval: 30s
+      timeout: 8s
+      retries: 5
+      start_period: 40s
+    networks:
+      - app
+
+networks:
+  app:
+
+volumes:
+  caddy_data:
+  caddy_config:

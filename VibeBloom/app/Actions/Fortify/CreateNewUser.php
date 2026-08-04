@@ -70,38 +70,46 @@ class CreateNewUser implements CreatesNewUsers
             ]);
         }
 
-        $apiUser = $registerResponse->json();
+        $registerData = $registerResponse->json();
+        $token = is_array($registerData) ? ($registerData['access_token'] ?? null) : null;
+        $apiUser = is_array($registerData) && is_array($registerData['user'] ?? null)
+            ? $registerData['user']
+            : $registerData;
 
-        try {
-            $loginResponse = $api->post('/auth/login', [
-                'email' => $input['email'],
-                'password' => $input['password'],
-            ]);
-        } catch (\Throwable $exception) {
-            Log::error('La cuenta fue creada en FastAPI pero falló la conexión de inicio de sesión', [
-                'email' => $input['email'],
-                'message' => $exception->getMessage(),
-            ]);
+        // Compatibilidad durante un despliegue gradual: la API anterior no
+        // entregaba el JWT al registrar y todavía requería un segundo login.
+        if (! is_string($token) || trim($token) === '') {
+            try {
+                $loginResponse = $api->post('/auth/login', [
+                    'email' => $input['email'],
+                    'password' => $input['password'],
+                ]);
+            } catch (\Throwable $exception) {
+                Log::error('La cuenta fue creada en FastAPI pero falló la conexión de inicio de sesión', [
+                    'email' => $input['email'],
+                    'message' => $exception->getMessage(),
+                ]);
 
-            throw ValidationException::withMessages([
-                'email' => 'La cuenta fue creada, pero no se pudo iniciar sesión. Inténtalo nuevamente.',
-            ]);
+                throw ValidationException::withMessages([
+                    'email' => 'La cuenta fue creada, pero no se pudo iniciar sesión. Inténtalo nuevamente.',
+                ]);
+            }
+
+            if (! $loginResponse->successful()) {
+                Log::error('La cuenta fue creada en FastAPI pero no se pudo iniciar sesión', [
+                    'email' => $input['email'],
+                    'status' => $loginResponse->status(),
+                    'body' => $loginResponse->body(),
+                ]);
+
+                throw ValidationException::withMessages([
+                    'email' => 'La cuenta fue creada, pero no se pudo iniciar sesión. Inténtalo nuevamente.',
+                ]);
+            }
+
+            $loginData = $loginResponse->json();
+            $token = is_array($loginData) ? ($loginData['access_token'] ?? null) : null;
         }
-
-        if (! $loginResponse->successful()) {
-            Log::error('La cuenta fue creada en FastAPI pero no se pudo iniciar sesión', [
-                'email' => $input['email'],
-                'status' => $loginResponse->status(),
-                'body' => $loginResponse->body(),
-            ]);
-
-            throw ValidationException::withMessages([
-                'email' => 'La cuenta fue creada, pero no se pudo iniciar sesión. Inténtalo nuevamente.',
-            ]);
-        }
-
-        $loginData = $loginResponse->json();
-        $token = is_array($loginData) ? ($loginData['access_token'] ?? null) : null;
 
         if (! is_string($token) || trim($token) === '') {
             throw ValidationException::withMessages([

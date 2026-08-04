@@ -15,7 +15,7 @@ from app.schemas.user import UserLogin, TokenResponse, UserCreate, UserResponse
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
 
-@router.post("/register", response_model=UserResponse, status_code=201)
+@router.post("/register", response_model=TokenResponse, status_code=201)
 def register(payload: UserCreate, db: Session = Depends(get_db)):
     existing = db.execute(
         select(User).where(User.email == payload.email)
@@ -34,7 +34,17 @@ def register(payload: UserCreate, db: Session = Depends(get_db)):
     db.add(user)
     db.commit()
     db.refresh(user)
-    return user
+    token = create_access_token({
+        "sub": str(user.id),
+        "email": user.email,
+        "role": user.role
+    })
+
+    return {
+        "access_token": token,
+        "token_type": "bearer",
+        "user": user
+    }
 
 
 @router.post("/login", response_model=TokenResponse)

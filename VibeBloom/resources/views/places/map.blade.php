@@ -1,6 +1,7 @@
 <x-app-layout>
     @php
-        $mapboxToken = (string) env('MAPBOX_TOKEN');
+        // env() puede devolver null cuando producción usa config:cache.
+        $mapboxToken = (string) config('services.mapbox.token');
 
         $typeIcons = [
             'RESTAURANTE' => '<svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 3v9M10 3v9M7 7h3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M14 3v8.5a3 3 0 0 0 6 0V3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
