@@ -1,7 +1,9 @@
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
+
+from app.services.content_moderator import basic_content_violation
 
 
 class UserMiniResponse(BaseModel):
@@ -115,6 +117,16 @@ class PlaceResponse(PlaceBase):
     user_id: Optional[int] = None
     user: Optional[UserMiniResponse] = None
     reviews: list[ReviewDetailResponse] = Field(default_factory=list)
+
+    @field_validator("reviews", mode="before")
+    @classmethod
+    def hide_invalid_historical_reviews(cls, value):
+        return [
+            review for review in (value or [])
+            if not basic_content_violation(
+                review.get("body", "") if isinstance(review, dict) else getattr(review, "body", "")
+            )
+        ]
 
     class Config:
         from_attributes = True

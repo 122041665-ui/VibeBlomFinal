@@ -7,7 +7,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Vibebloom Mobile</string>
+	<string>VibeBloom</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -15,7 +15,7 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>vibebloom_mobile</string>
+	<string>VibeBloom</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
@@ -26,6 +26,21 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
+	</dict>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>VibeBloom necesita conectarse al servidor local de desarrollo.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>VibeBloom utiliza tu ubicación para mostrar lugares cercanos.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>VibeBloom usa el micrófono para escuchar tu búsqueda de lugares.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>VibeBloom utiliza tus fotografías para tu perfil y las solicitudes de lugares.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>VibeBloom convierte tu voz en texto para recomendarte lugares.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
@@ -66,16 +81,5 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
-	<key>NSLocationWhenInUseUsageDescription</key>
-<string>VibeBloom utiliza tu ubicación para mostrar lugares cercanos.</string>
-
-<key>NSLocalNetworkUsageDescription</key>
-<string>VibeBloom necesita conectarse al servidor local de desarrollo.</string>
-
-<key>NSAppTransportSecurity</key>
-<dict>
-    <key>NSAllowsLocalNetworking</key>
-    <true/>
-</dict>
 </dict>
 </plist>

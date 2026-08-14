@@ -100,12 +100,12 @@
 
             <div class="field-group">
                 <label for="reportStartDate">Desde</label>
-                <input id="reportStartDate" type="date" class="field-control">
+                <input id="reportStartDate" type="date" class="field-control" aria-describedby="reportDateError">
             </div>
 
             <div class="field-group">
                 <label for="reportEndDate">Hasta</label>
-                <input id="reportEndDate" type="date" class="field-control">
+                <input id="reportEndDate" type="date" class="field-control" aria-describedby="reportDateError">
             </div>
 
             <div class="toolbar-actions">
@@ -125,6 +125,8 @@
                 </div>
             </div>
         </div>
+
+        <p id="reportDateError" class="report-date-error" role="alert" hidden></p>
 
         <div class="report-summary-wrap">
             <p id="reportSummary" class="report-summary-text">

@@ -19,6 +19,15 @@ class Settings:
     )
     ALGORITHM: str = os.getenv("ALGORITHM", "HS256")
     API_PUBLIC_URL: str = os.getenv("API_PUBLIC_URL", "http://127.0.0.1:8010")
+    MAPBOX_TOKEN: str = os.getenv("MAPBOX_TOKEN", "")
+    OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
+    CORS_ORIGINS: list[str] = [
+        value.strip()
+        for value in os.getenv(
+            "CORS_ORIGINS", "http://127.0.0.1:8000,http://localhost:8000"
+        ).split(",")
+        if value.strip()
+    ]
 
     @property
     def DATABASE_URL(self) -> str:
@@ -28,3 +37,8 @@ class Settings:
         )
 
 settings = Settings()
+
+if settings.APP_ENV == "production" and (
+    len(settings.SECRET_KEY) < 32 or settings.SECRET_KEY in {"change_me", "your-secret-key-here-change-in-production"}
+):
+    raise RuntimeError("SECRET_KEY debe ser una clave aleatoria de al menos 32 caracteres en producción.")

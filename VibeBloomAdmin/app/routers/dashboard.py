@@ -1,8 +1,11 @@
 from io import BytesIO
-from datetime import datetime
+from datetime import date, datetime
+from pathlib import Path
+from zoneinfo import ZoneInfo
 
 from flask import Blueprint, render_template, session, redirect, url_for, flash, jsonify, request, send_file
 from openpyxl import Workbook
+from openpyxl.drawing.image import Image as ExcelImage
 from openpyxl.utils import get_column_letter
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from reportlab.lib import colors
@@ -10,10 +13,12 @@ from reportlab.lib.pagesizes import landscape, letter
 from reportlab.lib.enums import TA_CENTER
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
-from reportlab.platypus import SimpleDocTemplate, Spacer, Table, TableStyle, Paragraph
+from reportlab.platypus import Image as PdfImage, SimpleDocTemplate, Spacer, Table, TableStyle, Paragraph
 from app.services.api_client import api_get
 
 dashboard_bp = Blueprint("dashboard", __name__, url_prefix="/dashboard")
+LOGO_PATH = Path(__file__).resolve().parent.parent / "static" / "images" / "vibebloom.png"
+MEXICO_TIMEZONE = ZoneInfo("America/Mexico_City")
 
 
 DEFAULT_REPORT_OPTIONS = {
@@ -125,6 +130,23 @@ def get_report_filters():
     }
 
 
+def validate_report_filters(filters: dict):
+    parsed = {}
+    for field, label in (("start_date", "fecha inicial"), ("end_date", "fecha final")):
+        value = (filters.get(field) or "").strip()
+        if not value:
+            parsed[field] = None
+            continue
+        try:
+            parsed[field] = date.fromisoformat(value)
+        except ValueError:
+            return f"La {label} no tiene un formato válido."
+
+    if parsed["start_date"] and parsed["end_date"] and parsed["start_date"] > parsed["end_date"]:
+        return "La fecha inicial no puede ser posterior a la fecha final."
+    return None
+
+
 def get_module_label(module_value: str) -> str:
     mapping = {
         "places": "Lugares",
@@ -176,6 +198,9 @@ def report_data():
         return jsonify({"error": "unauthorized"}), 401
 
     filters = get_report_filters()
+    validation_error = validate_report_filters(filters)
+    if validation_error:
+        return jsonify({"error": validation_error}), 422
 
     raw_data, response, error = safe_api_json(
         "/admin/dashboard/report-data",
@@ -188,13 +213,14 @@ def report_data():
         return jsonify({"error": "unauthorized"}), 401
 
     if error in ("forbidden", "connection_error", "http_error", "invalid_json"):
-        return jsonify({
-            "headers": DEFAULT_REPORT_HEADERS,
-            "rows": [],
-            "total": 0,
-            "module_label": get_module_label(filters["module"]),
-            "scope_label": get_scope_label(filters["module"], filters["scope"], DEFAULT_REPORT_OPTIONS),
-        }), 200
+        api_message = "No fue posible consultar el reporte."
+        if response is not None:
+            try:
+                payload = response.json()
+                api_message = payload.get("detail") or payload.get("error") or api_message
+            except Exception:
+                pass
+        return jsonify({"error": api_message}), response.status_code if response is not None else 503
 
     report_options = raw_data.get("report_options") or DEFAULT_REPORT_OPTIONS
 
@@ -209,6 +235,9 @@ def report_data():
 
 def fetch_report_for_export():
     filters = get_report_filters()
+    validation_error = validate_report_filters(filters)
+    if validation_error:
+        return filters, {}, validation_error
     data, response, error = safe_api_json(
         "/admin/dashboard/report-data",
         default={},
@@ -256,23 +285,38 @@ def export_pdf():
         topMargin=0.35 * inch,
         bottomMargin=0.35 * inch,
     )
-    generated_at = datetime.now().strftime("%d/%m/%Y %H:%M")
+    generated_at = datetime.now(MEXICO_TIMEZONE).strftime("%d/%m/%Y %H:%M")
     date_range = f"{filters.get('start_date') or 'Inicio'} — {filters.get('end_date') or 'Actualidad'}"
-    story = [
-        Paragraph("VIBEBLOOM · REPORTE ADMINISTRATIVO", ParagraphStyle("Brand", parent=styles["Title"], textColor=colors.HexColor("#1D4ED8"), fontSize=20, leading=24)),
-        Paragraph(f"{data.get('module_label', 'Reporte')} · {data.get('scope_label', filters.get('scope', 'all'))}", styles["Heading2"]),
-        Paragraph(f"Periodo: {date_range} &nbsp;&nbsp;|&nbsp;&nbsp; Generado: {generated_at} &nbsp;&nbsp;|&nbsp;&nbsp; Registros: {len(rows)}", styles["Normal"]),
-        Spacer(1, 0.2 * inch),
+    title_style = ParagraphStyle("ReportTitle", parent=styles["Title"], textColor=colors.HexColor("#172554"), fontSize=19, leading=22, alignment=0)
+    subtitle_style = ParagraphStyle("ReportSubtitle", parent=styles["Normal"], textColor=colors.HexColor("#475569"), fontSize=9, leading=13)
+    logo = PdfImage(str(LOGO_PATH), width=1.2 * inch, height=0.87 * inch) if LOGO_PATH.exists() else Paragraph("VibeBloom", title_style)
+    heading = [
+        Paragraph("REPORTE ADMINISTRATIVO", title_style),
+        Paragraph(f"{data.get('module_label', 'Reporte')} · {data.get('scope_label', filters.get('scope', 'all'))}", ParagraphStyle("ReportSection", parent=subtitle_style, textColor=colors.HexColor("#F05A47"), fontName="Helvetica-Bold", fontSize=11)),
+        Paragraph(f"Periodo: {date_range}<br/>Generado: {generated_at} &nbsp; · &nbsp; Registros: {len(rows)}", subtitle_style),
     ]
+    brand_header = Table([[logo, heading]], colWidths=[1.45 * inch, 8.45 * inch])
+    brand_header.setStyle(TableStyle([
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#F8FAFC")),
+        ("BOX", (0, 0), (-1, -1), 0.8, colors.HexColor("#E2E8F0")),
+        ("LINEBELOW", (0, 0), (-1, -1), 3, colors.HexColor("#F05A47")),
+        ("LEFTPADDING", (0, 0), (-1, -1), 12),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 12),
+        ("TOPPADDING", (0, 0), (-1, -1), 10),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 10),
+    ]))
+    story = [brand_header, Spacer(1, 0.24 * inch)]
     table = Table(table_data, repeatRows=1)
     table.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#2563EB")),
+        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#172554")),
         ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
         ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
         ("FONTSIZE", (0, 0), (-1, -1), 7),
         ("GRID", (0, 0), (-1, -1), 0.25, colors.HexColor("#CBD5E1")),
         ("VALIGN", (0, 0), (-1, -1), "TOP"),
         ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#F8FAFC")]),
+        ("LINEBELOW", (0, 0), (-1, 0), 2, colors.HexColor("#F05A47")),
         ("LEFTPADDING", (0, 0), (-1, -1), 4),
         ("RIGHTPADDING", (0, 0), (-1, -1), 4),
         ("TOPPADDING", (0, 0), (-1, -1), 6),
@@ -315,26 +359,40 @@ def export_xls():
     worksheet = workbook.active
     worksheet.title = "Reporte VibeBloom"
     last_column = max(1, len(headers))
-    worksheet.merge_cells(start_row=1, start_column=1, end_row=1, end_column=last_column)
-    worksheet["A1"] = "VIBEBLOOM · REPORTE ADMINISTRATIVO"
-    worksheet["A1"].font = Font(size=18, bold=True, color="FFFFFF")
-    worksheet["A1"].fill = PatternFill(fill_type="solid", fgColor="1D4ED8")
-    worksheet["A1"].alignment = Alignment(horizontal="left", vertical="center")
-    worksheet.row_dimensions[1].height = 34
-    worksheet.merge_cells(start_row=2, start_column=1, end_row=2, end_column=last_column)
-    worksheet["A2"] = f"{data.get('module_label', 'Reporte')} · {data.get('scope_label', filters.get('scope', 'all'))} · {len(rows)} registros · {datetime.now().strftime('%d/%m/%Y %H:%M')}"
-    worksheet["A2"].font = Font(italic=True, color="475569")
-    worksheet.append([])
+    generated_at = datetime.now(MEXICO_TIMEZONE).strftime("%d/%m/%Y %H:%M")
+    date_range = f"{filters.get('start_date') or 'Inicio'} — {filters.get('end_date') or 'Actualidad'}"
+    text_start = min(3, last_column)
+    worksheet.merge_cells(start_row=1, start_column=text_start, end_row=1, end_column=last_column)
+    worksheet.cell(1, text_start, "REPORTE ADMINISTRATIVO")
+    worksheet.cell(1, text_start).font = Font(size=19, bold=True, color="172554")
+    worksheet.merge_cells(start_row=2, start_column=text_start, end_row=2, end_column=last_column)
+    worksheet.cell(2, text_start, f"{data.get('module_label', 'Reporte')} · {data.get('scope_label', filters.get('scope', 'all'))}")
+    worksheet.cell(2, text_start).font = Font(size=12, bold=True, color="F05A47")
+    worksheet.merge_cells(start_row=3, start_column=text_start, end_row=3, end_column=last_column)
+    worksheet.cell(3, text_start, f"Periodo: {date_range}  ·  Generado: {generated_at}  ·  Registros: {len(rows)}")
+    worksheet.cell(3, text_start).font = Font(size=9, color="475569")
+    for row_number in range(1, 4):
+        worksheet.row_dimensions[row_number].height = 24
+        for cell in worksheet[row_number]:
+            cell.fill = PatternFill(fill_type="solid", fgColor="F8FAFC")
+            cell.alignment = Alignment(vertical="center")
+    if LOGO_PATH.exists():
+        logo = ExcelImage(str(LOGO_PATH))
+        logo.width = 105
+        logo.height = 77
+        worksheet.add_image(logo, "A1")
+    worksheet["A4"] = ""
+    worksheet.row_dimensions[4].height = 8
     worksheet.append([str(header).replace("_", " ").title() for header in headers])
 
     for row in rows:
         worksheet.append([row.get(header, "") for header in headers])
 
-    header_row = 4
+    header_row = 5
     thin_border = Border(bottom=Side(style="thin", color="CBD5E1"))
     for cell in worksheet[header_row]:
         cell.font = Font(bold=True, color="FFFFFF")
-        cell.fill = PatternFill(fill_type="solid", fgColor="2563EB")
+        cell.fill = PatternFill(fill_type="solid", fgColor="172554")
         cell.alignment = Alignment(horizontal="center", vertical="center")
 
     for row in worksheet.iter_rows(min_row=header_row + 1):
@@ -342,12 +400,13 @@ def export_xls():
             cell.alignment = Alignment(vertical="top", wrap_text=True)
             cell.border = thin_border
 
-    worksheet.freeze_panes = "A5"
-    worksheet.auto_filter.ref = f"A{header_row}:{worksheet.cell(header_row, last_column).coordinate}"
+    worksheet.freeze_panes = "A6"
     for column_index in range(1, last_column + 1):
         values = [worksheet.cell(row=row_index, column=column_index).value for row_index in range(header_row, worksheet.max_row + 1)]
         max_length = max((len(str(value or "")) for value in values), default=10)
         worksheet.column_dimensions[get_column_letter(column_index)].width = min(max(max_length + 2, 12), 45)
+    worksheet.sheet_view.showGridLines = False
+    worksheet.auto_filter.ref = f"A{header_row}:{worksheet.cell(worksheet.max_row, last_column).coordinate}"
 
     output = BytesIO()
     workbook.save(output)

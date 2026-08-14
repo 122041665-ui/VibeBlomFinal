@@ -10,6 +10,7 @@ from app.models.review import Review
 from app.models.review_reply import ReviewReply
 from app.models.user import User
 from app.schemas.review import ReviewCreate, ReviewResponse, ReviewUpdate
+from app.services.content_moderator import review_content
 
 
 router = APIRouter(prefix="/reviews", tags=["Reviews"])
@@ -139,6 +140,12 @@ def create_review(
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="El contenido de la reseña no puede estar vacío",
+        )
+    allowed, reason = review_content(body, "reseña")
+    if not allowed:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"La reseña debe cambiarse: {reason or 'contenido no permitido.'}",
         )
 
     now = get_utc_now()

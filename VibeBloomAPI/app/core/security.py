@@ -14,6 +14,7 @@ from app.core.database import get_db
 from app.models.user import User
 
 security = HTTPBearer()
+optional_security = HTTPBearer(auto_error=False)
 _BCRYPT_ROUNDS = 12
 
 
@@ -114,6 +115,20 @@ def get_current_user(
         )
 
     return user
+
+
+def get_optional_current_user(
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(optional_security),
+    db: Session = Depends(get_db),
+) -> Optional[User]:
+    if credentials is None:
+        return None
+    try:
+        payload = decode_access_token(credentials.credentials)
+        user_id = payload.get("sub")
+        return db.execute(select(User).where(User.id == int(user_id))).scalar_one_or_none() if user_id else None
+    except (HTTPException, ValueError, TypeError):
+        return None
 
 
 def require_admin(current_user: User = Depends(get_current_user)) -> User:

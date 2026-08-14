@@ -11,6 +11,7 @@ from app.core.security import get_current_user
 from app.core.database import get_db
 from app.core.security import require_staff
 from app.models.user import User
+from app.services.content_moderator import review_content
 
 router = APIRouter(prefix="/approvals", tags=["Approvals"])
 
@@ -324,16 +325,29 @@ def create_approval(
         raise HTTPException(status_code=422, detail="El nombre es obligatorio y debe tener máximo 255 caracteres.")
     if not city or len(city) > 255:
         raise HTTPException(status_code=422, detail="La ciudad es obligatoria y debe tener máximo 255 caracteres.")
-    if not 0 <= rating <= 5:
-        raise HTTPException(status_code=422, detail="La calificación debe estar entre 0 y 5.")
+    if not 1 <= rating <= 5:
+        raise HTTPException(status_code=422, detail="Selecciona una calificación entre 1 y 5 estrellas.")
     if price < 0:
         raise HTTPException(status_code=422, detail="El precio no puede ser negativo.")
-    if lat is not None and not -90 <= lat <= 90:
+    if lat is None or lng is None:
+        raise HTTPException(status_code=422, detail="Selecciona la ubicación exacta del lugar en el mapa.")
+    if not -90 <= lat <= 90:
         raise HTTPException(status_code=422, detail="La latitud debe estar entre -90 y 90.")
     if lng is not None and not -180 <= lng <= 180:
         raise HTTPException(status_code=422, detail="La longitud debe estar entre -180 y 180.")
     if address is not None and len(address) > 255:
         raise HTTPException(status_code=422, detail="La dirección debe tener máximo 255 caracteres.")
+    description = (description or "").strip()
+    if len(description) < 20:
+        raise HTTPException(status_code=422, detail="La descripción debe tener al menos 20 caracteres.")
+    if len(description) > 1000:
+        raise HTTPException(status_code=422, detail="La descripción no puede superar 1000 caracteres.")
+    allowed, reason = review_content(description, "descripción de lugar")
+    if not allowed:
+        raise HTTPException(
+            status_code=422,
+            detail=f"La descripción debe cambiarse porque infringe las normas: {reason or 'contenido no permitido.'}",
+        )
 
     if not photos:
         raise HTTPException(
@@ -356,7 +370,7 @@ def create_approval(
         "rating": rating,
         "price": price,
         "city": city,
-        "city_place_id": city_place_id,
+        "city_place_id": city_place_id or "",
         "address": address,
         "lat": lat,
         "lng": lng,

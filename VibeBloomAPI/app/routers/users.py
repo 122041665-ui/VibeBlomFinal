@@ -5,11 +5,12 @@ from uuid import uuid4
 
 from fastapi import APIRouter, Depends, File, HTTPException, status, UploadFile
 from pydantic import BaseModel, EmailStr, Field
-from sqlalchemy import select
+from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.core.security import hash_password, get_current_user, require_admin
+from app.core.config import settings
+from app.core.security import hash_password, get_current_user, get_optional_current_user, require_admin, verify_password
 from app.models.user import User
 from app.schemas.user import UserCreate, UserResponse
 
@@ -29,6 +30,17 @@ class UserUpdate(BaseModel):
     email: Optional[EmailStr] = None
     role: Optional[str] = None
     password: Optional[str] = Field(default=None, min_length=8, max_length=255)
+
+
+class MyProfileUpdate(BaseModel):
+    name: str = Field(min_length=1, max_length=255)
+    email: EmailStr
+    profile_is_public: bool = True
+
+
+class MyPasswordUpdate(BaseModel):
+    current_password: str = Field(min_length=1, max_length=255)
+    password: str = Field(min_length=8, max_length=255)
 
 
 VALID_ROLES = ["user", "moderator", "admin"]
@@ -51,14 +63,126 @@ def my_profile(current_user: User = Depends(get_current_user)):
     return current_user
 
 
-@router.get("/community", response_model=list[UserResponse])
-def community_users(
+@router.put("/me/profile", response_model=UserResponse)
+def update_my_profile(
+    payload: MyProfileUpdate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Return active platform users to any authenticated community member."""
-    result = db.execute(select(User).order_by(User.name, User.id))
-    return result.scalars().all()
+    name = payload.name.strip()
+    email = str(payload.email).strip().lower()
+    if not name:
+        raise HTTPException(status_code=422, detail="El nombre es obligatorio")
+    existing = db.execute(
+        select(User).where(User.email == email, User.id != current_user.id)
+    ).scalar_one_or_none()
+    if existing:
+        raise HTTPException(status_code=422, detail="El correo ya está registrado")
+    current_user.name = name
+    current_user.email = email
+    current_user.profile_is_public = payload.profile_is_public
+    db.commit()
+    db.refresh(current_user)
+    return current_user
+
+
+@router.put("/me/password")
+def update_my_password(
+    payload: MyPasswordUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    import re
+
+    if not verify_password(payload.current_password, current_user.password):
+        raise HTTPException(status_code=422, detail="La contraseña actual no es correcta")
+    if not re.search(r"[A-Z]", payload.password) or not re.search(r"[a-z]", payload.password) or not re.search(r"\d", payload.password):
+        raise HTTPException(
+            status_code=422,
+            detail="La nueva contraseña debe incluir mayúscula, minúscula y número",
+        )
+    current_user.password = hash_password(payload.password)
+    db.commit()
+    return {"message": "Contraseña actualizada correctamente"}
+
+
+@router.get("/community")
+def community_users(
+    db: Session = Depends(get_db),
+    current_user: User | None = Depends(get_optional_current_user),
+):
+    query = select(User).where(User.profile_is_public.is_(True))
+    if current_user:
+        query = query.where(User.id != current_user.id)
+    users = db.execute(query.order_by(User.name, User.id)).scalars().all()
+    following_ids = set(db.execute(
+        text('SELECT followed_id FROM user_follows WHERE follower_id = :uid'),
+        {'uid': current_user.id},
+    ).scalars().all()) if current_user else set()
+    result = []
+    for user in users:
+        places_count = db.execute(text('SELECT COUNT(*) FROM places WHERE user_id = :uid'), {'uid': user.id}).scalar() or 0
+        result.append({'id': user.id, 'name': user.name, 'email': user.email, 'role': user.role, 'profile_photo_url': user.profile_photo_url, 'places_count': places_count, 'is_following': user.id in following_ids})
+    return result
+
+
+@router.get("/me/network")
+def my_network(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    followers = db.execute(text("""
+        SELECT u.id, u.name, u.email, u.profile_photo_path
+        FROM user_follows f JOIN users u ON u.id = f.follower_id
+        WHERE f.followed_id = :uid ORDER BY f.created_at DESC
+    """), {"uid": current_user.id}).mappings().all()
+    following = db.execute(text("""
+        SELECT u.id, u.name, u.email, u.profile_photo_path
+        FROM user_follows f JOIN users u ON u.id = f.followed_id
+        WHERE f.follower_id = :uid ORDER BY f.created_at DESC
+    """), {"uid": current_user.id}).mappings().all()
+    return {"followers_count": len(followers), "following_count": len(following),
+            "followers": [dict(row) for row in followers], "following": [dict(row) for row in following]}
+
+
+@router.get("/{user_id}/public-profile")
+def public_profile(user_id: int, db: Session = Depends(get_db), current_user: User | None = Depends(get_optional_current_user)):
+    user = get_user_or_404(db, user_id)
+    if not user.profile_is_public and (not current_user or current_user.id != user_id):
+        raise HTTPException(status_code=403, detail="Este perfil es privado")
+    followers_count = db.execute(text("SELECT COUNT(*) FROM user_follows WHERE followed_id=:uid"), {"uid": user_id}).scalar() or 0
+    following_count = db.execute(text("SELECT COUNT(*) FROM user_follows WHERE follower_id=:uid"), {"uid": user_id}).scalar() or 0
+    is_following = bool(current_user and db.execute(text(
+        "SELECT COUNT(*) FROM user_follows WHERE follower_id=:me AND followed_id=:uid"
+    ), {"me": current_user.id, "uid": user_id}).scalar())
+    places = db.execute(text("""
+        SELECT id, name, city, type, rating, price, photo, photos, description, address, lat, lng
+        FROM places WHERE user_id=:uid ORDER BY id DESC
+    """), {"uid": user_id}).mappings().all()
+    place_items = []
+    for row in places:
+        item = dict(row)
+        photo = item.get("photo")
+        item["photo_url"] = f"{settings.API_PUBLIC_URL.rstrip('/')}/storage/{str(photo).lstrip('/')}" if photo else None
+        place_items.append(item)
+    return {"id": user.id, "name": user.name, "email": user.email,
+            "profile_photo_url": user.profile_photo_url, "followers_count": followers_count,
+            "following_count": following_count, "places_count": len(places),
+            "is_following": is_following, "places": place_items}
+
+
+@router.post("/{user_id}/follow")
+def follow_user(user_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    if user_id == current_user.id:
+        raise HTTPException(status_code=422, detail="No puedes seguirte a ti mismo")
+    get_user_or_404(db, user_id)
+    db.execute(text('INSERT IGNORE INTO user_follows (follower_id, followed_id, created_at, updated_at) VALUES (:me, :other, NOW(), NOW())'), {'me': current_user.id, 'other': user_id})
+    db.commit()
+    return {'message': 'Ahora sigues a este usuario', 'is_following': True}
+
+
+@router.delete("/{user_id}/follow")
+def unfollow_user(user_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    db.execute(text('DELETE FROM user_follows WHERE follower_id = :me AND followed_id = :other'), {'me': current_user.id, 'other': user_id})
+    db.commit()
+    return {'message': 'Dejaste de seguir a este usuario', 'is_following': False}
 
 
 @router.post("/me/profile-photo", response_model=UserResponse)

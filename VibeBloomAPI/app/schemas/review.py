@@ -42,11 +42,11 @@ class ReviewReplyResponse(BaseModel):
 
 class ReviewCreate(BaseModel):
     place_id: int
-    body: str
+    body: str = Field(min_length=5, max_length=1000)
 
 
 class ReviewUpdate(BaseModel):
-    body: str
+    body: str = Field(min_length=5, max_length=1000)
 
 
 class ReviewResponse(BaseModel):

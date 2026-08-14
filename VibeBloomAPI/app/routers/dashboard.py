@@ -1,6 +1,6 @@
-from datetime import datetime
+from datetime import date, datetime
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, select, inspect, text
 from sqlalchemy.orm import Session
 
@@ -107,6 +107,124 @@ def apply_date_filters(query, model, start_date: str = "", end_date: str = ""):
         query = query.where(func.date(created_col) <= end_date)
 
     return query
+
+
+def sql_date_conditions(column: str, start_date: date | None, end_date: date | None, params: dict):
+    conditions = []
+    if start_date:
+        conditions.append(f"DATE({column}) >= :start_date")
+        params["start_date"] = start_date
+    if end_date:
+        conditions.append(f"DATE({column}) <= :end_date")
+        params["end_date"] = end_date
+    return conditions
+
+
+def current_report_rows(db: Session, module: str, scope: str, start_date: date | None, end_date: date | None):
+    definitions = {
+        "places": {
+            "table": "places",
+            "select": "p.id, p.name AS nombre, p.user_id, p.type AS puesto, p.created_at, p.updated_at",
+            "from": "places p",
+            "actor": "CONCAT('Usuario ', COALESCE(p.user_id, '-'))",
+        },
+        "users": {
+            "table": "users",
+            "select": "u.id, u.name AS nombre, u.id AS user_id, COALESCE(u.role, 'user') AS puesto, u.created_at, u.updated_at",
+            "from": "users u",
+            "actor": "u.name",
+        },
+        "reviews": {
+            "table": "reviews",
+            "select": "r.id, LEFT(r.body, 120) AS nombre, r.user_id, CONCAT('Lugar ', r.place_id) AS puesto, r.created_at, r.updated_at",
+            "from": "reviews r",
+            "actor": "CONCAT('Usuario ', COALESCE(r.user_id, '-'))",
+        },
+    }
+    definition = definitions[module]
+    params = {}
+    conditions = []
+    date_column = "updated_at" if scope == "updated" else "created_at"
+    conditions.extend(sql_date_conditions(date_column, start_date, end_date, params))
+    if scope == "updated":
+        conditions.append("updated_at IS NOT NULL AND updated_at > created_at")
+
+    where_sql = f"WHERE {' AND '.join(conditions)}" if conditions else ""
+    rows = db.execute(text(f"""
+        SELECT {definition['select']}, {definition['actor']} AS realizado_por
+        FROM {definition['from']}
+        {where_sql}
+        ORDER BY {date_column} DESC, id DESC
+    """), params).mappings().all()
+
+    return [
+        {
+            "id": row["id"],
+            "nombre": row["nombre"] or "Sin nombre",
+            "accion": "updated" if scope == "updated" else "created",
+            "realizado_por": row["realizado_por"] or "Sistema",
+            "puesto": row["puesto"] or "-",
+            "fecha": str(row[date_column] or ""),
+            "estado": "modificado" if scope == "updated" else "activo",
+        }
+        for row in rows
+    ]
+
+
+def deleted_report_rows(db: Session, module: str, start_date: date | None, end_date: date | None):
+    params = {"section": module}
+    conditions = ["section = :section", "action IN ('delete', 'deleted')"]
+    conditions.extend(sql_date_conditions("created_at", start_date, end_date, params))
+    rows = db.execute(text(f"""
+        SELECT id, entity_id, entity_name, section, created_at
+        FROM audit_logs
+        WHERE {' AND '.join(conditions)}
+        ORDER BY created_at DESC, id DESC
+    """), params).mappings().all()
+    return [
+        {
+            "id": row["entity_id"] or row["id"],
+            "nombre": row["entity_name"] or "Sin nombre",
+            "accion": "deleted",
+            "realizado_por": "Administrador",
+            "puesto": row["section"] or module,
+            "fecha": str(row["created_at"] or ""),
+            "estado": "eliminado",
+        }
+        for row in rows
+    ]
+
+
+def approval_report_rows(db: Session, scope: str, start_date: date | None, end_date: date | None):
+    params = {}
+    conditions = []
+    if scope in {"approved", "rejected"}:
+        conditions.append("ps.status = :status")
+        params["status"] = scope
+    date_column = "COALESCE(ps.updated_at, ps.created_at)"
+    conditions.extend(sql_date_conditions(date_column, start_date, end_date, params))
+    where_sql = f"WHERE {' AND '.join(conditions)}" if conditions else ""
+    rows = db.execute(text(f"""
+        SELECT ps.id, ps.name, ps.type, ps.status, ps.user_id,
+               ps.created_at, ps.updated_at, u.name AS user_name
+        FROM place_submissions ps
+        LEFT JOIN users u ON u.id = ps.user_id
+        {where_sql}
+        ORDER BY {date_column} DESC, ps.id DESC
+    """), params).mappings().all()
+    status_labels = {"pending": "pendiente", "approved": "aprobado", "rejected": "rechazado"}
+    return [
+        {
+            "id": row["id"],
+            "nombre": row["name"] or "Sin nombre",
+            "accion": row["status"] or "pending",
+            "realizado_por": row["user_name"] or f"Usuario {row['user_id'] or '-'}",
+            "puesto": row["type"] or "Lugar",
+            "fecha": str(row["updated_at"] or row["created_at"] or ""),
+            "estado": status_labels.get(row["status"], row["status"] or "pendiente"),
+        }
+        for row in rows
+    ]
 
 
 def get_recent_activity_from_audit(db: Session, limit: int = 8):
@@ -322,169 +440,42 @@ def get_admin_dashboard(
 def get_dashboard_report_data(
     module: str = Query("places"),
     scope: str = Query("all"),
-    start_date: str = Query(""),
-    end_date: str = Query(""),
+    start_date: date | None = Query(None),
+    end_date: date | None = Query(None),
     db: Session = Depends(get_db),
     current_user: User = Depends(require_staff),
 ):
+    if start_date and end_date and start_date > end_date:
+        raise HTTPException(
+            status_code=422,
+            detail="La fecha inicial no puede ser posterior a la fecha final.",
+        )
+
+    allowed_scopes = {item["value"] for item in REPORT_OPTIONS.get(module, [])}
+    if not allowed_scopes or scope not in allowed_scopes:
+        raise HTTPException(status_code=422, detail="La categoría o acción del reporte no es válida.")
+
     if module == "approvals":
-        params = {}
-        where_clauses = [
-            "section = 'places'",
-            "action IN ('approve', 'reject')",
-        ]
-
-        if scope == "approved":
-            where_clauses.append("action = 'approve'")
-        elif scope == "rejected":
-            where_clauses.append("action = 'reject'")
-
-        if start_date:
-            where_clauses.append("DATE(created_at) >= :start_date")
-            params["start_date"] = start_date
-
-        if end_date:
-            where_clauses.append("DATE(created_at) <= :end_date")
-            params["end_date"] = end_date
-
-        sql = text(f"""
-            SELECT
-                id,
-                section,
-                action,
-                entity_id,
-                entity_name,
-                description,
-                created_at
-            FROM audit_logs
-            WHERE {' AND '.join(where_clauses)}
-            ORDER BY created_at DESC
-        """)
-
-        rows = db.execute(sql, params).mappings().all()
-
-        data_rows = [
-            {
-                "id": row["entity_id"] or row["id"],
-                "nombre": row["entity_name"] or "Sin nombre",
-                "accion": row["action"] or "-",
-                "realizado_por": "Sistema",
-                "puesto": "places",
-                "fecha": str(row["created_at"]) if row["created_at"] else "",
-                "estado": "aprobado" if row["action"] == "approve" else "rechazado",
-            }
-            for row in rows
-        ]
-
-        return {
-            "headers": REPORT_HEADERS,
-            "rows": data_rows,
-            "total": len(data_rows),
-            "module_label": get_module_label(module),
-            "scope_label": get_scope_label(module, scope),
-        }
-
-    if module == "places" and scope == "current":
-        query = select(Place).order_by(Place.id.desc())
-        query = apply_date_filters(query, Place, start_date, end_date)
-
-        if has_model_attr(Place, "status"):
-            query = query.where(getattr(Place, "status") == "approved")
-
-        rows = db.execute(query).scalars().all()
-
-        data_rows = [
-            {
-                "id": item.id,
-                "nombre": getattr(item, "name", "Sin nombre"),
-                "accion": "current",
-                "realizado_por": f"Usuario {getattr(item, 'user_id', '-')}",
-                "puesto": "user",
-                "fecha": str(getattr(item, "created_at", "") or ""),
-                "estado": getattr(item, "status", "activo") if has_model_attr(Place, "status") else "activo",
-            }
-            for item in rows
-        ]
-
-        return {
-            "headers": REPORT_HEADERS,
-            "rows": data_rows,
-            "total": len(data_rows),
-            "module_label": get_module_label(module),
-            "scope_label": get_scope_label(module, scope),
-        }
-
-    if module in ["places", "users", "reviews"]:
-        params = {"section": module}
-        where_clauses = ["section = :section"]
-
-        if scope == "created":
-            where_clauses.append("action IN ('create', 'created', 'store')")
-        elif scope == "updated":
-            where_clauses.append("action IN ('update', 'updated', 'edit')")
-        elif scope == "deleted":
-            where_clauses.append("action IN ('delete', 'deleted')")
-        elif scope == "all":
-            pass
-
-        if start_date:
-            where_clauses.append("DATE(created_at) >= :start_date")
-            params["start_date"] = start_date
-
-        if end_date:
-            where_clauses.append("DATE(created_at) <= :end_date")
-            params["end_date"] = end_date
-
-        sql = text(f"""
-            SELECT
-                id,
-                section,
-                action,
-                entity_id,
-                entity_name,
-                description,
-                created_at
-            FROM audit_logs
-            WHERE {' AND '.join(where_clauses)}
-            ORDER BY created_at DESC
-        """)
-
-        rows = db.execute(sql, params).mappings().all()
-
-        data_rows = []
-        for row in rows:
-            action_value = row["action"] or "-"
-            estado = "registrado"
-
-            if action_value in ["delete", "deleted"]:
-                estado = "eliminado"
-            elif action_value in ["update", "updated", "edit"]:
-                estado = "modificado"
-            elif action_value in ["create", "created", "store"]:
-                estado = "creado"
-
-            data_rows.append({
-                "id": row["entity_id"] or row["id"],
-                "nombre": row["entity_name"] or "Sin nombre",
-                "accion": action_value,
-                "realizado_por": "Sistema",
-                "puesto": row["section"] or "-",
-                "fecha": str(row["created_at"]) if row["created_at"] else "",
-                "estado": estado,
-            })
-
-        return {
-            "headers": REPORT_HEADERS,
-            "rows": data_rows,
-            "total": len(data_rows),
-            "module_label": get_module_label(module),
-            "scope_label": get_scope_label(module, scope),
-        }
+        data_rows = approval_report_rows(db, scope, start_date, end_date)
+    elif scope == "deleted":
+        data_rows = deleted_report_rows(db, module, start_date, end_date)
+    elif scope == "updated":
+        data_rows = current_report_rows(db, module, "updated", start_date, end_date)
+    elif scope in {"created", "current"}:
+        data_rows = current_report_rows(db, module, "created", start_date, end_date)
+        if scope == "current":
+            for row in data_rows:
+                row["accion"] = "current"
+                row["estado"] = "activo"
+    else:
+        data_rows = current_report_rows(db, module, "created", start_date, end_date)
+        data_rows.extend(deleted_report_rows(db, module, start_date, end_date))
+        data_rows.sort(key=lambda item: item["fecha"], reverse=True)
 
     return {
         "headers": REPORT_HEADERS,
-        "rows": [],
-        "total": 0,
+        "rows": data_rows,
+        "total": len(data_rows),
         "module_label": get_module_label(module),
         "scope_label": get_scope_label(module, scope),
     }

@@ -12,6 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const reportSummary = document.getElementById('reportSummary');
     const reportThead = document.getElementById('reportThead');
     const reportTbody = document.getElementById('reportTbody');
+    const reportDateError = document.getElementById('reportDateError');
 
     const toggleExportMenu = document.getElementById('toggleExportMenu');
     const exportMenu = document.getElementById('exportMenu');
@@ -54,6 +55,25 @@ document.addEventListener('DOMContentLoaded', () => {
             start_date: reportStartDate ? reportStartDate.value : '',
             end_date: reportEndDate ? reportEndDate.value : ''
         };
+    }
+
+    function validateDateRange(filters, showMessage = true) {
+        const invalid = Boolean(
+            filters.start_date && filters.end_date && filters.start_date > filters.end_date
+        );
+
+        if (reportDateError) {
+            reportDateError.hidden = !invalid || !showMessage;
+            reportDateError.textContent = invalid
+                ? 'La fecha inicial no puede ser posterior a la fecha final.'
+                : '';
+        }
+
+        [reportStartDate, reportEndDate].forEach((field) => {
+            if (field) field.classList.toggle('field-control-error', invalid);
+        });
+
+        return !invalid;
     }
 
     function buildQueryString(params) {
@@ -175,6 +195,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function generateReport() {
         const filters = getCurrentFilters();
+        if (!validateDateRange(filters)) {
+            setErrorState('Corrige el rango de fechas para generar el reporte.');
+            safeSetText(reportSummary, 'No se generó el reporte: el rango de fechas no es válido.');
+            return;
+        }
         const fallbackModuleLabel = getModuleLabel(filters.module);
         const fallbackScopeLabel = getLabelFromScope(filters.module, filters.scope);
 
@@ -199,11 +224,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
 
-            if (!response.ok) {
-                throw new Error(`Error HTTP ${response.status}`);
-            }
-
             const data = await response.json();
+            if (!response.ok) {
+                throw new Error(data.error || data.detail || `Error HTTP ${response.status}`);
+            }
             const rows = Array.isArray(data.rows) ? data.rows : [];
             const headers = Array.isArray(data.headers) && data.headers.length
                 ? data.headers
@@ -221,24 +245,30 @@ document.addEventListener('DOMContentLoaded', () => {
             );
         } catch (error) {
             console.error('generateReport error:', error);
-            setErrorState('No fue posible generar el reporte.');
+            const message = error instanceof Error ? error.message : 'No fue posible generar el reporte.';
+            setErrorState(message);
             safeSetText(
                 reportSummary,
-                `No fue posible generar el reporte de ${fallbackModuleLabel}.`
+                message
             );
         }
     }
 
     function updateExportLinks() {
         const filters = getCurrentFilters();
+        const validRange = validateDateRange(filters, false);
         const queryString = buildQueryString(filters);
 
         if (exportPdfBtn) {
             exportPdfBtn.href = `/dashboard/export/pdf?${queryString}`;
+            exportPdfBtn.classList.toggle('disabled', !validRange);
+            exportPdfBtn.setAttribute('aria-disabled', String(!validRange));
         }
 
         if (exportXlsBtn) {
             exportXlsBtn.href = `/dashboard/export/xls?${queryString}`;
+            exportXlsBtn.classList.toggle('disabled', !validRange);
+            exportXlsBtn.setAttribute('aria-disabled', String(!validRange));
         }
     }
 
@@ -256,11 +286,17 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if (reportStartDate) {
-            reportStartDate.addEventListener('change', updateExportLinks);
+            reportStartDate.addEventListener('change', () => {
+                validateDateRange(getCurrentFilters());
+                updateExportLinks();
+            });
         }
 
         if (reportEndDate) {
-            reportEndDate.addEventListener('change', updateExportLinks);
+            reportEndDate.addEventListener('change', () => {
+                validateDateRange(getCurrentFilters());
+                updateExportLinks();
+            });
         }
 
         if (generateReportBtn) {

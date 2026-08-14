@@ -1,0 +1,20 @@
+{$WEB_DOMAIN} {
+	request_body {
+		max_size 24MB
+	}
+	reverse_proxy laravel:8000
+}
+
+{$API_DOMAIN} {
+	request_body {
+		max_size 24MB
+	}
+	reverse_proxy api:8010
+}
+
+{$ADMIN_DOMAIN} {
+	request_body {
+		max_size 24MB
+	}
+	reverse_proxy admin:5010
+}

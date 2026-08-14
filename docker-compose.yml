@@ -1,6 +1,8 @@
 services:
   api:
     build: ./VibeBloomAPI
+    env_file:
+      - ./VibeBloom/.env
     container_name: vibebloom_api
     restart: always
     ports:
@@ -25,7 +27,9 @@ services:
       - ./VibeBloomAPI/storage:/app/storage
 
   admin:
-    build: ./VibeBloomAdmin
+    build:
+      context: .
+      dockerfile: VibeBloomAdmin/Dockerfile
     container_name: vibebloom_admin
     restart: always
     depends_on:

@@ -168,7 +168,7 @@ class PlaceSubmissionController extends Controller
             return back()->withInput()->with('error', $message);
         }
 
-        $submission = DB::transaction(function () use ($validated, $request) {
+        $submission = DB::transaction(function () use ($validated, $request, $apiResponse) {
 
             $submission = PlaceSubmission::create([
                 'user_id' => Auth::id(),
@@ -230,7 +230,6 @@ class PlaceSubmissionController extends Controller
     {
         $submissions = PlaceSubmission::with('photos')
             ->where('user_id', Auth::id())
-            ->where('status', 'pending')
             ->latest()
             ->paginate(12);
 

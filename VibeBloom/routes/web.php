@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\DB;
 
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AIVoiceController;
@@ -22,6 +23,11 @@ use App\Http\Controllers\UserNetworkController;
 |--------------------------------------------------------------------------
 */
 Route::get('/', [PlaceController::class, 'index'])->name('home');
+
+Route::get('/health', function () {
+    DB::select('SELECT 1');
+    return response()->json(['status' => 'ok', 'database' => 'ok']);
+});
 
 /*
 |--------------------------------------------------------------------------

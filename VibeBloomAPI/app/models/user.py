@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime
+from sqlalchemy import Boolean, Column, Integer, String, DateTime
 from sqlalchemy.orm import relationship
 from app.core.config import settings
 from app.core.database import Base
@@ -21,6 +21,7 @@ class User(Base):
     two_factor_recovery_codes = Column(String(255), nullable=True)
     two_factor_confirmed_at = Column(DateTime, nullable=True)
     role = Column(String(50), nullable=False, default="user")
+    profile_is_public = Column(Boolean, nullable=False, default=True)
 
     places = relationship("Place", back_populates="user")
     reviews = relationship("Review", back_populates="user")

@@ -1,4 +1,3 @@
-cat > .gitignore <<'EOF'
 .DS_Store
 .vscode/
 .idea/
@@ -7,6 +6,7 @@ cat > .gitignore <<'EOF'
 .env
 .env.*
 !.env.example
+!.env.production.example
 
 # python
 __pycache__/
@@ -36,4 +36,18 @@ node_modules/
 # temp
 tmp/
 temp/
-EOF
+
+# Flutter/iCloud generated conflict copies
+VibeBloomMobile/.flutter-plugins-dependencies 2
+VibeBloomMobile/.flutter-plugins-dependencies 3
+VibeBloomMobile/android/local*.properties
+VibeBloomMobile/ios/Flutter/Flutter 2.podspec
+VibeBloomMobile/ios/Flutter/Generated 2.xcconfig
+VibeBloomMobile/ios/Flutter/Generated 3.xcconfig
+VibeBloomMobile/ios/Flutter/flutter_export_environment 2.sh
+VibeBloomMobile/ios/Flutter/flutter_export_environment 3.sh
+
+# Local Expo runtime artifacts
+VibeBloomExpo/.expo/
+VibeBloomExpo/dist-test/
+VibeBloomExpo/expo-qr.png

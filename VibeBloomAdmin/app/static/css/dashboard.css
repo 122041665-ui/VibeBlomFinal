@@ -421,6 +421,27 @@
     line-height: 1.65;
 }
 
+.report-date-error {
+    margin: 12px 0 0;
+    padding: 11px 14px;
+    border: 1px solid #fecaca;
+    border-radius: 12px;
+    background: #fff1f2;
+    color: #b91c1c;
+    font-size: 0.9rem;
+    font-weight: 700;
+}
+
+.field-control-error {
+    border-color: #ef4444 !important;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.12) !important;
+}
+
+.export-item.disabled {
+    pointer-events: none;
+    opacity: 0.45;
+}
+
 /* =========================
    TABLA
 ========================= */

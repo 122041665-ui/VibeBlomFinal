@@ -12,7 +12,9 @@ return [
     |
     */
 
-    'default' => env('MAIL_MAILER', 'brevo'),
+    // El proyecto no depende de un proveedor SMTP externo. Los correos se
+    // registran localmente y nunca bloquean una operación del usuario.
+    'default' => 'log',
 
     /*
     |--------------------------------------------------------------------------
@@ -20,7 +22,7 @@ return [
     |--------------------------------------------------------------------------
     |
     | Aquí puedes configurar todos los "mailers" que usará tu aplicación.
-    | Se agrega un mailer especial para Brevo, usando su servidor SMTP.
+    | Los transportes externos quedan disponibles para una integración futura.
     |
     */
 
@@ -36,18 +38,6 @@ return [
             'timeout' => null,
             'local_domain' => env('MAIL_EHLO_DOMAIN', parse_url((string) env('APP_URL', 'http://localhost'), PHP_URL_HOST)),
         ],
-
-
-        // --- Brevo (Sendinblue) — SMTP oficial
-        'brevo' => [
-            'transport' => 'smtp',
-            'host' => 'smtp-relay.brevo.com', // Servidor SMTP de Brevo
-            'port' => 587,                     // Puerto recomendado (TLS)
-            'username' => env('BREVO_LOGIN'),  // Puede ser tu correo o el que Brevo te indique
-            'password' => env('BREVO_API_KEY'),// API Key de Brevo
-            'encryption' => 'tls',
-        ],
-
 
         'ses' => [
             'transport' => 'ses',
@@ -75,11 +65,6 @@ return [
             'transport' => 'array',
         ],
 
-        'failover' => [
-            'transport' => 'failover',
-            'mailers' => ['brevo', 'log'],
-            'retry_after' => 60,
-        ],
     ],
 
     /*
@@ -96,13 +81,4 @@ return [
         'address' => env('MAIL_FROM_ADDRESS', 'no-reply@vibebloom.com'),
         'name' => env('MAIL_FROM_NAME', 'VibeBloom'),
     ],
-    'brevo' => [
-    'transport' => 'smtp',
-    'host' => env('MAIL_HOST', 'smtp-relay.brevo.com'),
-    'port' => env('MAIL_PORT', 587),
-    'username' => env('BREVO_LOGIN'),
-    'password' => env('BREVO_API_KEY'),
-    'encryption' => env('MAIL_ENCRYPTION', 'tls'),
-],
-
 ];
